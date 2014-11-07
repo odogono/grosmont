@@ -39,3 +39,4 @@ Session.vim
 .dist
 .tmp
 
+ghost/core/test
