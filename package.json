@@ -1,0 +1,27 @@
+{
+  "name": "opendoorgonorth.com",
+  "version": "1.0.0",
+  "description": "site for odgn",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://odogono@bitbucket.org/odogono/opendoorgonorth.com.git"
+  },
+  "keywords": [
+    "blog",
+    "opendoorgonorth",
+    "odgn"
+  ],
+  "author": "Alex Veenendaal",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/odogono/opendoorgonorth.com#readme",
+  "devDependencies": {},
+  "dependencies": {
+    "express": "^4.13.3",
+    "ghost": "^0.7.6"
+  }
+}

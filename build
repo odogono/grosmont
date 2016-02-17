@@ -1,0 +1,1 @@
+docker build -t odogono/www:v1.0.0 .

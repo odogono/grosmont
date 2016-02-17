@@ -1,0 +1,1 @@
+docker run -d --name odogono-www -p 2368:2368 odogono/www:v1.0.0
