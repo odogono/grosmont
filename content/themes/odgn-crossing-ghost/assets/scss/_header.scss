@@ -1,16 +1,16 @@
 .site-header {
   position: relative;
 
-  &:after {
-    background-color: rgba(#000, .03);
-    content: "";
-    height: 3px;
-    left: 0;
-    position: absolute;
-    top: 100%;
-    width: 100%;
-    z-index: 1;
-  }
+  // &:after {
+  //   background-color: rgba(#000, .03);
+  //   content: "";
+  //   height: 3px;
+  //   left: 0;
+  //   position: absolute;
+  //   top: 100%;
+  //   width: 100%;
+  //   z-index: 1;
+  // }
 }
 
 .site-title {

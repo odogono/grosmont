@@ -225,9 +225,6 @@ th {
 
 body {
   background-color: #fbfbfb;
-  background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 150px);
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 150px);
-  background-repeat: no-repeat;
   color: #333;
   font-family: "Open Sans", sans-serif;
   font-size: 18px;
@@ -396,17 +393,6 @@ main > *:last-child {
   position: relative;
 }
 
-.site-header:after {
-  background-color: rgba(0, 0, 0, 0.03);
-  content: "";
-  height: 3px;
-  left: 0;
-  position: absolute;
-  top: 100%;
-  width: 100%;
-  z-index: 1;
-}
-
 .site-title {
   font-size: inherit;
   margin: 0 34px 0 0;
@@ -457,16 +443,6 @@ main > *:last-child {
   .site-footer {
     line-height: 25px;
   }
-}
-
-.site-footer:after {
-  background-color: rgba(0, 0, 0, 0.03);
-  bottom: 100%;
-  content: "";
-  height: 3px;
-  left: 0;
-  position: absolute;
-  width: 100%;
 }
 
 .site-footer a {
@@ -1162,16 +1138,6 @@ iframe,
 @media (min-width: 768px) {
   .container {
     padding: 45px;
-  }
-  .container:after {
-    background-color: rgba(0, 0, 0, 0.02);
-    content: "";
-    height: 100%;
-    left: 0;
-    position: absolute;
-    top: 0;
-    width: 3px;
-    z-index: 1;
   }
 }
 
