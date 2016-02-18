@@ -25,17 +25,8 @@
 
   <header class="site-header" role="banner">
     <div class="container">
+      <h1 class="site-title">> Open Door Go North</h1>
       {{navigation}}
-      <h1 class="site-title {{#if @blog.logo}}site-logo{{/if}}">
-          > Open Door Go North
-      </h1>
-      {{#if @blog.description}}
-        {{#is "index"}}
-          <div class="site-description">
-            {{@blog.description}}
-          </div>
-        {{/is}}
-      {{/if}}
     </div>
   </header>
 
@@ -55,6 +46,7 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/fitvids/1.1.0/jquery.fitvids.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/highlight.min.js"></script>
   <script src="{{asset "js/script.js"}}"></script>
+  <script src="http://0.0.0.0:35729/livereload.js?snipver=1" type="text/javascript"></script>
 
   {{! Ghost outputs important scripts and data with this tag }}
   {{ghost_foot}}

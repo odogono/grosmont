@@ -395,6 +395,7 @@ main > *:last-child {
 
 .site-title {
   font-size: inherit;
+  color: red;
   margin: 0 34px 0 0;
 }
 
@@ -492,6 +493,10 @@ main {
   -webkit-flex: none;
       -ms-flex: none;
           flex: none;
+}
+
+.site-nav {
+  float: right;
 }
 
 .site-nav.is-toggled .site-nav-hamburger {
