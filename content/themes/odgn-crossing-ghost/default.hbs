@@ -39,6 +39,7 @@
       <div id="footer-links" class="footer-links"></div>
       &copy; {{date format="YYYY"}} <a href="{{@blog.url}}">{{@blog.title}}</a>.
       Proudly published with <a href="https://ghost.org">Ghost</a>.
+      <p>{{config "/mail/from"}}</p>
     </div>
   </footer>
 
@@ -46,7 +47,10 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/fitvids/1.1.0/jquery.fitvids.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/highlight.min.js"></script>
   <script src="{{asset "js/script.js"}}"></script>
+
+  {{#config "/server/livereload" }}
   <script src="http://0.0.0.0:35729/livereload.js?snipver=1" type="text/javascript"></script>
+  {{/config}}
 
   {{! Ghost outputs important scripts and data with this tag }}
   {{ghost_foot}}

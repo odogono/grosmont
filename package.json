@@ -4,7 +4,7 @@
   "description": "site for odgn",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "NODE_ENV=production node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,9 +19,19 @@
   "author": "Alex Veenendaal",
   "license": "ISC",
   "homepage": "https://bitbucket.org/odogono/opendoorgonorth.com#readme",
-  "devDependencies": {},
+  "devDependencies": {
+    "connect-livereload": "^0.5.4",
+    "gulp": "^3.9.1",
+    "gulp-autoprefixer": "^3.1.0",
+    "gulp-livereload": "^3.8.1",
+    "gulp-nodemon": "^2.0.6",
+    "gulp-sass": "^2.2.0",
+    "gulp-sourcemaps": "^1.6.0",
+    "vinyl-source-stream": "^1.1.0"
+  },
   "dependencies": {
     "express": "^4.13.3",
-    "ghost": "^0.7.6"
+    "ghost": "^0.7.6",
+    "jsonpointer": "^3.0.0"
   }
 }
