@@ -238,8 +238,8 @@ body {
 
 @media (min-width: 768px) {
   body {
-    font-size: 20px;
-    line-height: 30px;
+    font-size: 14px;
+    line-height: 20px;
   }
 }
 
@@ -676,22 +676,22 @@ main {
 }
 
 .post-title {
-  font-size: 30px;
-  line-height: 35px;
+  font-size: 20px;
+  line-height: 25px;
   margin: 0 0 7px;
 }
 
 @media (min-width: 768px) {
   .post-title {
-    font-size: 40px;
-    line-height: 45px;
+    font-size: 30px;
+    line-height: 35px;
     margin: 0 0 5px;
   }
 }
 
 .post-list .post-title {
-  font-size: inherit;
-  line-height: inherit;
+  font-size: 24px;
+  line-height: 40px;
   margin: 0;
 }
 
@@ -721,26 +721,26 @@ main {
 }
 
 .post-content h1 {
-  font-size: 30px;
-  line-height: 35px;
+  font-size: 20px;
+  line-height: 25px;
 }
 
 @media (min-width: 768px) {
   .post-content h1 {
-    font-size: 35px;
-    line-height: 40px;
+    font-size: 25px;
+    line-height: 30px;
   }
 }
 
 .post-content h2 {
-  font-size: 25px;
-  line-height: 28px;
+  font-size: 20px;
+  line-height: 23px;
 }
 
 @media (min-width: 768px) {
   .post-content h2 {
-    font-size: 30px;
-    line-height: 35px;
+    font-size: 25px;
+    line-height: 30px;
   }
 }
 
