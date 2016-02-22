@@ -4,7 +4,7 @@
 // Ghost runs in `development` mode by default. Full documentation can be found at http://support.ghost.org/config/
 var Path = require('path');
 
-const ContentDir = Path.join(__dirname, '../content');
+const ContentDir = Path.join('/var/local/ghost/content');
 
 // var path = require('path'),
 var config;
