@@ -1,0 +1,1 @@
+docker run --rm --name odogono-www-ghost -p 8001:8080 odogono/www-ghost

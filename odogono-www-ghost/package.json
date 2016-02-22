@@ -1,0 +1,12 @@
+{
+  "name": "odgn-www-ghost",
+  "version": "1.0.0",
+  "description": "ghost installation",
+  "author": "Alex Veenendaal",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.3",
+    "ghost": "^0.7.6",
+    "jsonpointer": "^3.0.0"
+  }
+}
