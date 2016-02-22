@@ -3,16 +3,18 @@ https://github.com/mhart/alpine-node
 
 images
 
-odogono/www-nginx
-odogono/www-ghost
-odogono/www-ghost-data
-
 Containers
 
 odogono-nginx - nginx with conf - build with the root dir containing config
+    nginx conf path is /data/nginx
 odogono-nginx-data - nginx data (caching)
+
+odogono/ghost - nodejs + ghost installation
+
 odogono-ghost - nodejs ghost blog
+
 odogono-ghost-data - data for ghost - /content dir
+
 
 
 
@@ -39,6 +41,9 @@ docker run -r --name=odogono-www -it odogono/www /bin/bash
 copying of /etc/nginx has to be done when the image is built
 
 
+## SSL certificates
+
+https://github.com/hlandau/acme
 
 
 ## adding a custom helper

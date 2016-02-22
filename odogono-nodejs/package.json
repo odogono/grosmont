@@ -1,7 +1,7 @@
 {
-  "name": "odgn-www-ghost",
+  "name": "odgn-nodejs",
   "version": "1.0.0",
-  "description": "ghost installation",
+  "description": "nodejs+ghost installation",
   "author": "Alex Veenendaal",
   "license": "ISC",
   "dependencies": {
