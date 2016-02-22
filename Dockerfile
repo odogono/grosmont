@@ -21,7 +21,7 @@ RUN cd /app && npm install --production
 COPY server.js /app/
 COPY public/ /app/public/
 COPY etc/ /app/etc/
-COPY content/ /app/content/
+# COPY content/ /app/content/
 
 # ADD root /
 
