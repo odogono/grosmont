@@ -35,7 +35,6 @@ function registerHelpers( ghostServer ){
 Ghost({ config: __dirname + '/etc/ghost-config.js' })
     .then( ghostServer => {  
         registerHelpers( ghostServer );
-
         app.use( ghostServer.rootApp );
         ghostServer.start( app );
         // console.log( ghostServer.config );

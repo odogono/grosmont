@@ -6,7 +6,7 @@
 
 # https://github.com/mhart/alpine-node
 
-FROM odogono/nodejs:v1.0.0
+FROM odogono/www-ghost:v1.0.0
 
 # Create app directory
 # RUN mkdir -p /usr/src/app
@@ -14,7 +14,7 @@ WORKDIR /app
 
 # Install app dependencies
 COPY package.json /app/package.json
-# RUN cd /app && npm install --production
+RUN cd /app && npm install --production
 
 # Bundle app source
 # COPY . /usr/src/app
