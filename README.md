@@ -22,7 +22,7 @@ odogono/www - odgn specific instance of ghost
 
 helped by https://engineering.riotgames.com/news/docker-jenkins-data-persists
 
-### build the image
+### build the container
 docker build -t odogono-data .
 
 ### create an image from the data
