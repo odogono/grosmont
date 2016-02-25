@@ -6,7 +6,9 @@
 
 # https://github.com/mhart/alpine-node
 
-FROM odogono/www-ghost:v1.0.0
+FROM odogono/nodejs:v1.0.0
+
+
 
 # Create app directory
 # RUN mkdir -p /usr/src/app
@@ -21,7 +23,8 @@ RUN cd /app && npm install --production
 COPY server.js /app/
 COPY public/ /app/public/
 COPY etc/ /app/etc/
-# COPY content/ /app/content/
+RUN mkdir -p /var/local/ghost
+COPY content/ /var/local/ghost/content/
 
 # ADD root /
 

@@ -1,0 +1,18 @@
+nginx:
+  container_name: odogono-nginx
+  build: ./odogono-nginx
+  volumes: ./data/nginx:/var/local/nginx
+  ports:
+    - "80:80"
+    - "443:443"
+  links:
+    - ghost
+  restart: always
+
+nodejs:
+  build: ./odogono-nodejs
+
+ghost:
+    container_name: odogono-ghost
+    build: .
+    volumes: ./content:/var/local/ghost/content

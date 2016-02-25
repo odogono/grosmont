@@ -1,19 +1,21 @@
-https://github.com/mhart/alpine-node
 
 
-images
+### Inspiro-Blogs
 
-Containers
+https://sivers.org/
 
-odogono-nginx - nginx with conf - build with the root dir containing config
-    nginx conf path is /data/nginx
-odogono-nginx-data - nginx data (caching)
 
-odogono/ghost - nodejs + ghost installation
 
-odogono-ghost - nodejs ghost blog
+### images
 
-odogono-ghost-data - data for ghost - /content dir
+odogono/nginx - nginx with conf - build with the root dir containing config
+    - uses /data/nginx - for cache
+
+odogono/nodejs - nodejs + ghost installation
+
+odogono/www - odgn specific instance of ghost
+    - uses /var/local/ghost for data
+
 
 
 
