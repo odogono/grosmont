@@ -1,0 +1,2 @@
+# not required
+docker run --rm --name odogono-ghostnodejs -p 8001:8080 odogono/ghostnodejs

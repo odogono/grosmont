@@ -1,1 +1,1 @@
-docker build -t odogono/ghost:v1.0.0 .
+docker build -t odogono/ghost .

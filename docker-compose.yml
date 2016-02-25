@@ -5,14 +5,18 @@ nginx:
   ports:
     - "80:80"
     - "443:443"
-  links:
-    - ghost
   restart: always
 
-nodejs:
-  build: ./odogono-nodejs
+ghostnodejs:
+  build: ./odogono-ghostnodejs
+
 
 ghost:
     container_name: odogono-ghost
     build: .
     volumes: ./content:/var/local/ghost/content
+    ports:
+      - "2368:2368"
+    restart: always
+    environment:
+      - NODE_ENV=production
