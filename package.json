@@ -1,6 +1,6 @@
 {
   "name": "opendoorgonorth.com",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "site for odgn",
   "main": "server.js",
   "scripts": {

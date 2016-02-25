@@ -4,10 +4,17 @@
 // Ghost runs in `development` mode by default. Full documentation can be found at http://support.ghost.org/config/
 var Path = require('path');
 
-const ContentDir = Path.join('/var/local/ghost/content');
-
-// var path = require('path'),
+var ContentDir = process.env.GHOST_CONTENT_DIR || '/var/local/ghost/content';
 var config;
+
+
+// TODO: host specific config should be moved out
+if ( require('os').hostname() == 'leiden.local' ){
+    ContentDir = './content';
+}
+
+console.log('host ' + require('os').hostname() );
+console.log('ghost content dir ' + ContentDir);
 
 config = {
     // ### Production
@@ -105,48 +112,6 @@ config = {
             client: 'sqlite3',
             connection: {
                 filename: Path.join( ContentDir, '/data/ghost-test.db')
-            }
-        },
-        server: {
-            host: '0.0.0.0',
-            port: '2369'
-        },
-        logging: false
-    },
-
-    // ### Testing MySQL
-    // Used by Travis - Automated testing run through GitHub
-    'testing-mysql': {
-        url: 'http://0.0.0.0:2369',
-        database: {
-            client: 'mysql',
-            connection: {
-                host     : '0.0.0.0',
-                user     : 'root',
-                password : '',
-                database : 'ghost_testing',
-                charset  : 'utf8'
-            }
-        },
-        server: {
-            host: '0.0.0.0',
-            port: '2369'
-        },
-        logging: false
-    },
-
-    // ### Testing pg
-    // Used by Travis - Automated testing run through GitHub
-    'testing-pg': {
-        url: 'http://0.0.0.0:2369',
-        database: {
-            client: 'pg',
-            connection: {
-                host     : '0.0.0.0',
-                user     : 'postgres',
-                password : '',
-                database : 'ghost_testing',
-                charset  : 'utf8'
             }
         },
         server: {
