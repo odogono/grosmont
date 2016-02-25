@@ -1,1 +1,1 @@
-docker run -d --name odogono-ghost -p 2368:2368 -v ./content:/var/local/ghost odogono/ghost:v1.0.0
+docker run -d --name odogono-ghost -p 2368:2368 -v ./content:/var/local/ghost odogono/ghost

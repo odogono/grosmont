@@ -6,7 +6,7 @@
 
 # https://github.com/mhart/alpine-node
 
-FROM odogono/nodejs
+FROM odogono/ghostnodejs
 
 
 
