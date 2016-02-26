@@ -1,1 +1,1 @@
-docker run -d --name odogono-ghost -p 2368:2368 --volumes-from=odogono-ghost-data odogono/ghost
+docker run -d --name odogono-ghost --net=app --volumes-from=odogono-ghost-data odogono/ghost

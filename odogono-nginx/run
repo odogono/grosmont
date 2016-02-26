@@ -1,1 +1,1 @@
-docker run -d --name odogono-nginx -v /var/local/nginx:/var/local/nginx -p 80:80 -p 443:443 --restart=on-failure:5 odogono/nginx
+docker run -d --name odogono-nginx -v /var/local/nginx:/var/local/nginx --net=app -p 80:80 -p 443:443 --restart=on-failure:5 odogono/nginx
