@@ -2,6 +2,7 @@ ghost-nodejs:
   build: ./odogono-ghost-nodejs
 
 ghost-data:
+  container_name: odogono-ghost-data
   build: .
   dockerfile: ./odogono-ghost-data/Dockerfile
   entrypoint: echo 'ghost data container'
@@ -23,6 +24,7 @@ nginx:
   build: ./odogono-nginx
   volumes: 
     - /var/local/nginx:/var/local/nginx
+    - /var/run/acme/acme-challenge/:/var/run/acme/acme-challenge/
   ports:
     - "80:80"
     - "443:443"
