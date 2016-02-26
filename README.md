@@ -5,6 +5,9 @@
 https://sivers.org/
 
 
+running site:
+sudo docker-compose up -d
+
 
 ### images
 
@@ -13,9 +16,12 @@ odogono/nginx - nginx with conf - build with the root dir containing config
 
 odogono/nodejs - nodejs + ghost installation
 
-odogono/www - odgn specific instance of ghost
+odogono/ghost - odgn specific instance of ghost
     - uses /var/local/ghost for data
 
+odogono/ghost-data
+
+sudo docker network create app
 
 
 
