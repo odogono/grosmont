@@ -21,7 +21,8 @@ ghost:
 nginx:
   container_name: odogono-nginx
   build: ./odogono-nginx
-  volumes: /var/local/nginx:/var/local/nginx
+  volumes: 
+    - /var/local/nginx:/var/local/nginx
   ports:
     - "80:80"
     - "443:443"
