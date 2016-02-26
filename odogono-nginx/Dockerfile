@@ -7,7 +7,7 @@ RUN echo "http://dl-1.alpinelinux.org/alpine/v3.3/main" >> /etc/apk/repositories
   echo "http://dl-4.alpinelinux.org/alpine/v3.3/main" >> /etc/apk/repositories; \
   echo "http://dl-5.alpinelinux.org/alpine/v3.3/main" >> /etc/apk/repositories
 
-RUN apk --update add bash
+RUN apk --update add bash curl
 
 ADD root /
 
