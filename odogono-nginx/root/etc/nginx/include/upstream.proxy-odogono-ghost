@@ -1,0 +1,4 @@
+upstream proxy-odogono-ghost {  
+    # Use the default ghost port (2368)
+    server odogono-ghost:2368;
+}
