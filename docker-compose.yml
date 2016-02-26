@@ -25,6 +25,7 @@ nginx:
   volumes: 
     - /var/local/nginx:/var/local/nginx
     - /var/run/acme/acme-challenge/:/var/run/acme/acme-challenge/
+    - /var/lib/acme:/var/lib/acme
   ports:
     - "80:80"
     - "443:443"

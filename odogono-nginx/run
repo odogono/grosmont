@@ -1,1 +1,1 @@
-docker run -d --name odogono-nginx -v /var/run/acme/acme-challenge/:/var/run/acme/acme-challenge/ -v /var/local/nginx:/var/local/nginx --net=app -p 80:80 -p 443:443 --restart=on-failure:5 odogono/nginx
+docker run -d --name odogono-nginx -v /var/lib/acme:/var/lib/acme -v /var/run/acme/acme-challenge/:/var/run/acme/acme-challenge/ -v /var/local/nginx:/var/local/nginx --net=app -p 80:80 -p 443:443 --restart=on-failure:5 odogono/nginx
