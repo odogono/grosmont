@@ -1,22 +1,30 @@
-nginx:
-  container_name: odogono-nginx
-  build: ./odogono-nginx
-  volumes: ./data/nginx:/var/local/nginx
-  ports:
-    - "80:80"
-    - "443:443"
-  restart: always
-
 ghostnodejs:
   build: ./odogono-ghostnodejs
 
+ghost-data:
+  build: ./odogono-ghost-data
+  entrypoint: echo 'ghost data container'
 
 ghost:
-    container_name: odogono-ghost
-    build: .
-    volumes: ./content:/var/local/ghost/content
-    ports:
-      - "2368:2368"
-    restart: always
-    environment:
-      - NODE_ENV=production
+  container_name: odogono-ghost
+  build: .
+  volumes_from:
+      - ghost-data
+  ports:
+    - "2368:2368"
+  restart: always
+  environment:
+    - NODE_ENV=production
+  links:
+    - nginx
+
+nginx:
+  container_name: odogono-nginx
+  build: ./odogono-nginx
+  volumes: /var/local/nginx:/var/local/nginx
+  ports:
+    - "80:80"
+    - "443:443"
+  restart: on-failure:5
+  links:
+    - ghost
