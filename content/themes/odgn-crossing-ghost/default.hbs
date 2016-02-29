@@ -15,8 +15,6 @@
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/styles/solarized_light.min.css" />
   <link rel="stylesheet" href="{{asset "css/style.css"}}" />
 
-  {{> "config"}}
-
   {{! Ghost outputs important style and meta data with this tag }}
   {{ghost_head}}
 </head>
@@ -36,7 +34,15 @@
 
   <footer class="site-footer" role="contentinfo">
     <div class="container">
-      <div id="footer-links" class="footer-links"></div>
+      <div id="footer-links" class="footer-links">
+        <ul class="x-separated-list">
+          {{! read values from main config }}
+          {{#config "/footer_links"}}
+            {{! we use a template helper here to compile the config data }}
+            <li><a href="{{tmpl href}}">{{name}}</a></li>
+          {{/config}}
+        </ul>
+      </div>
       &copy; {{date format="YYYY"}} <a href="{{@blog.url}}">{{@blog.title}}</a>.
       Somewhat published with <a href="https://ghost.org">Ghost</a>.
     </div>

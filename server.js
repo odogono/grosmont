@@ -5,6 +5,7 @@ const Ghost = require('ghost');
 const Express = require('express');  
 const app = Express();  
 const Path = require('path');
+const _ = require('underscore');
 
 app.get('/nuts', function (req, res) {
   res.send('Hello World!');
@@ -26,7 +27,21 @@ function registerHelpers( ghostServer ){
         if( !options.fn ){
             return result;
         }
-        return result ? options.fn(this) : options.inverse(this);    
+        
+        if( Array.isArray(result) ){
+            console.log(path, result, options);
+            var buffer = "";
+            for( var ii=0,len=result.length;ii<len;ii++ ){
+                buffer += options.fn( result[ii] );
+            }
+            return buffer;    
+        }
+
+        return result ? options.fn(this) : options.inverse(this);
+    })
+    HBS.registerHelper("tmpl", function(expression, options){
+        let template = HBS.compile(expression);
+        return template( this, options );
     })
 }
 

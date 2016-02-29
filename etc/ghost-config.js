@@ -50,7 +50,12 @@ config = {
         // Specify where your content directory lives
         paths: {
             contentPath: ContentDir
-        }
+        },
+        footer_links:[
+            { name: "Twitter", href:"https://twitter.com/odogono" },
+            { name: "RSS", href:"{{@blog.url}}/rss/" } 
+        ],
+        disqus_shortname: ""
     },
 
     // ### Development **(default)**
@@ -98,7 +103,12 @@ config = {
         // Specify where your content directory lives
         paths: {
             contentPath: ContentDir
-        }
+        },
+        footer_links:[
+            { name: "Twitter", href:"https://twitter.com/odogono" },
+            { name: "RSS", href:"{{@blog.url}}/rss/" } 
+        ],
+        disqus_shortname: ""
     },
 
     // **Developers only need to edit below here**

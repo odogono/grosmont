@@ -1,6 +1,6 @@
 {
   "name": "opendoorgonorth.com",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "site for odgn",
   "main": "server.js",
   "scripts": {
@@ -33,6 +33,7 @@
     "express": "^4.13.3",
     "express-hbs": "0.8.4",
     "ghost": "^0.7.8",
-    "jsonpointer": "^3.0.0"
+    "jsonpointer": "^3.0.0",
+    "underscore": "^1.8.3"
   }
 }
