@@ -4,7 +4,6 @@
 const Ghost = require('ghost');
 const Express = require('express');  
 const app = Express();  
-// const Ghost = require('./src/ghost_middleware');
 const Path = require('path');
 
 app.get('/nuts', function (req, res) {
@@ -17,7 +16,7 @@ function registerHelpers( ghostServer ){
     // http://jegtnes.co.uk/blog/how-to-serve-different-assets-in-production-environments-with-ghost/
 
     // important that we use the same express-hbs module as ghost is using
-    const HBS = require('ghost/node_modules/express-hbs');
+    const HBS = require('express-hbs');
     const Jsonpointer = require('jsonpointer');
     
     // a general purpose config helper which returns the value of config from a jsonpointer

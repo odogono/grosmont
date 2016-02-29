@@ -31,7 +31,8 @@
   },
   "dependencies": {
     "express": "^4.13.3",
-    "ghost": "^0.7.6",
+    "express-hbs": "0.8.4",
+    "ghost": "^0.7.8",
     "jsonpointer": "^3.0.0"
   }
 }

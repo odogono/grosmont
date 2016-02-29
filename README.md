@@ -4,6 +4,7 @@
 
 https://sivers.org/
 
+NOTE : currently you have to build odogono-ghost-nodejs first before docker-compose
 
 running site:
 sudo docker-compose up -d

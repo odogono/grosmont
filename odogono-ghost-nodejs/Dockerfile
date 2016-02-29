@@ -1,7 +1,7 @@
 FROM alpine:3.3
 
 ENV NODE_PREFIX=/usr/local \
-    NODE_VERSION=v4.2.5 \
+    NODE_VERSION=v4.3.0 \
     NPM_VERSION=3.6.0
 
 # For base builds
