@@ -42,8 +42,10 @@
 
 .post-title {
   font-size: 20px;
+  font-weight: normal;
   line-height: 25px;
   margin: 0 0 7px;
+  letter-spacing: -1px;
 
   @include breakpoint {
     font-size: 30px;

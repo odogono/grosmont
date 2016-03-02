@@ -38,25 +38,11 @@
   </div>
 </article>
 
-{{#author}}
-  <div class="post-author {{#if image}}has-avatar{{/if}}">
-    {{#if image}}
-      <a href="{{url}}" class="post-author-avatar" aria-hidden="true" style="background-image: url({{image}})"></a>
-    {{/if}}
-    <a class="post-author-name" href="{{url}}">{{name}}</a>
-    <div class="post-author-bio">
-      {{#if bio}}
-        {{bio}}
-      {{else}}
-        Read <a href="{{url}}">more posts</a> by this author.
-      {{/if}}
-    </div>
-  </div>
-{{/author}}
 
+{{#config "/server/disqus" }}
 <div id="disqus_thread"></div>
 <script>
-  {{#config "/server/disqus" }}
+  
     var disqus_shortname = {{config "/server/disqus/shortname"}};
     var disqus_identifier = '{{url absolute="true"}}';
     var disqus_url = '{{url absolute="true"}}';
@@ -65,8 +51,8 @@
       dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
       (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
     })();
-  {{/config}}
 </script>
+{{/config}}
 
 <nav class="read-next">
   {{#next_post}}

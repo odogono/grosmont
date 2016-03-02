@@ -226,7 +226,7 @@ th {
 body {
   background-color: #fbfbfb;
   color: #333;
-  font-family: "Open Sans", sans-serif;
+  font-family: "Helvetica Neue",Arial,Helvetica,"Nimbus Sans L",sans-serif;
   font-size: 18px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -682,8 +682,10 @@ main {
 
 .post-title {
   font-size: 20px;
+  font-weight: normal;
   line-height: 25px;
   margin: 0 0 7px;
+  letter-spacing: -1px;
 }
 
 @media (min-width: 768px) {
