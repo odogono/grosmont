@@ -306,10 +306,15 @@ blockquote p:last-child {
 
 pre,
 code {
-  font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  overflow: auto;
+  font-family: monospace, monospace;
+  font-size: 1em;
+  white-space: pre;
+  background: #F1F1F1;
 }
 
 code {
+  font-size: 80%;
   color: #000;
 }
 

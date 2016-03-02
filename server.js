@@ -28,8 +28,10 @@ function registerHelpers( ghostServer ){
             return result;
         }
         
+        // if the config returned was an array, then call the 
+        // options function multiple times in order to render
+        // for each item.
         if( Array.isArray(result) ){
-            console.log(path, result, options);
             var buffer = "";
             for( var ii=0,len=result.length;ii<len;ii++ ){
                 buffer += options.fn( result[ii] );
@@ -38,11 +40,13 @@ function registerHelpers( ghostServer ){
         }
 
         return result ? options.fn(this) : options.inverse(this);
-    })
+    });
+
+    // renders the given expression
     HBS.registerHelper("tmpl", function(expression, options){
         let template = HBS.compile(expression);
         return template( this, options );
-    })
+    });
 }
 
 

@@ -78,10 +78,15 @@ blockquote {
 
 pre,
 code {
-  font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  overflow: auto;
+  font-family: monospace, monospace;
+  font-size: 1em;
+  white-space: pre;
+  background: #F1F1F1;
 }
 
 code {
+  font-size: 80%;
   color: #000;
 }
 
@@ -91,7 +96,7 @@ pre {
   padding: 7px 20px;
   word-break: normal;
   word-wrap: normal;
-
+  
   @include breakpoint {
     font-size: 16px;
     line-height: 25px;
