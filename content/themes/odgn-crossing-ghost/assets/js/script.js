@@ -12,4 +12,4 @@
   $('pre code[class]').each(function (i, block) {
     hljs.highlightBlock(block);
   });
-}(jQuery, Crossing.config));
+}(jQuery));

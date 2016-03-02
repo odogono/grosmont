@@ -56,8 +56,8 @@
 
 <div id="disqus_thread"></div>
 <script>
-  if (Crossing.config.disqus_shortname) {
-    var disqus_shortname = Crossing.config.disqus_shortname;
+  {{#config "/server/disqus" }}
+    var disqus_shortname = {{config "/server/disqus/shortname"}};
     var disqus_identifier = '{{url absolute="true"}}';
     var disqus_url = '{{url absolute="true"}}';
     (function() {
@@ -65,7 +65,7 @@
       dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
       (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
     })();
-  }
+  {{/config}}
 </script>
 
 <nav class="read-next">
