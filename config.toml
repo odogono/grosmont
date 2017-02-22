@@ -1,2 +1,3 @@
-siteTitle="Open Door Go North"
-linkPrefix = "/gatsby-starter-default"
+blogTitle = "Open Door Go North"
+authorName = "Alexander Veenendaal"
+linkPrefix = "/"
