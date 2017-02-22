@@ -1,39 +1,41 @@
 {
-  "name": "opendoorgonorth.com",
-  "version": "1.0.3",
-  "description": "site for odgn",
-  "main": "server.js",
-  "scripts": {
-    "start": "NODE_ENV=production node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "name": "opendoorgonorth-com",
+  "description": "Open Door Go North",
+  "version": "1.0.0",
+  "author": "Alexander Veenendaal <alex@opendoorgonorth.com>",
+  "dependencies": {
+    "front-matter": "^2.1.1",
+    "gatsby": "^0.12.20",
+    "highlight.js": "^9.8.0",
+    "history": "^2.0.2",
+    "js-yaml": "^3.7.0",
+    "markdown-it": "^7.0.1",
+    "markdown-it-abbr": "^1.0.3",
+    "markdown-it-attrs": "^0.6.3",
+    "markdown-it-deflist": "^2.0.1",
+    "markdown-it-footnote": "^3.0.1",
+    "markdown-it-sub": "^1.0.0",
+    "object-assign": "^4.1.0",
+    "react-headroom": "^2.1.2",
+    "react-helmet": "^3.2.2",
+    "react-responsive-grid": "^0.3.3",
+    "react-typography": "^0.15.0",
+    "toml-js": "0.0.8",
+    "typography": "^0.15.0",
+    "typography-plugin-code": "^0.15.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://odogono@bitbucket.org/odogono/opendoorgonorth.com.git"
+  "devDependencies": {
+    "gh-pages": "^0.12.0"
   },
   "keywords": [
-    "blog",
-    "opendoorgonorth",
-    "odgn"
+    "opendoorgonorth"
   ],
-  "author": "Alex Veenendaal",
-  "license": "ISC",
-  "homepage": "https://bitbucket.org/odogono/opendoorgonorth.com#readme",
-  "devDependencies": {
-    "connect-livereload": "^0.5.4",
-    "gulp": "^3.9.1",
-    "gulp-autoprefixer": "^3.1.0",
-    "gulp-livereload": "^3.8.1",
-    "gulp-nodemon": "^2.0.6",
-    "gulp-sass": "^2.3.1",
-    "gulp-sourcemaps": "^2.0.0-alpha",
-    "vinyl-source-stream": "^1.1.0"
-  },
-  "dependencies": {
-    "express": "^4.13.3",
-    "express-hbs": "1.0.1",
-    "ghost": "^0.7.9",
-    "jsonpointer": "^3.0.0",
-    "underscore": "^1.8.3"
+  "license": "MIT",
+  "main": "n/a",
+  "scripts": {
+    "build": "gatsby build",
+    "deploy": "gatsby build --prefix-links && gh-pages -d public",
+    "develop": "gatsby develop",
+    "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
