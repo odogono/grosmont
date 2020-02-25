@@ -1,60 +1,25 @@
 {
-  "name": "opendoorgonorth-com",
-  "description": "Open Door Go North",
+  "name": "gatsby-starter-default",
+  "description": "Gatsby default starter",
   "version": "1.0.0",
-  "author": "Alex Veenendaal <alex@opendoorgonorth.com>",
-  "bugs": {
-    "url": "https://github.com/odogono/com.opendoorgonorth"
-  },
+  "author": "Kyle Mathews <mathews.kyle@gmail.com>",
   "dependencies": {
-    "gatsby": "next",
-    "gatsby-link": "next",
-    "gatsby-plugin-google-analytics": "next",
-    "gatsby-plugin-manifest": "next",
-    "gatsby-plugin-offline": "next",
-    "gatsby-plugin-preact": "next",
-    "gatsby-plugin-sharp": "next",
-    "gatsby-remark-copy-linked-files": "next",
-    "gatsby-remark-prismjs": "next",
-    "gatsby-remark-responsive-iframe": "next",
-    "gatsby-remark-responsive-image": "next",
-    "gatsby-remark-smartypants": "next",
-    "gatsby-source-filesystem": "next",
-    "gatsby-transformer-remark": "next",
-    "gatsby-transformer-sharp": "next",
-    "lodash": "^4.15.0",
-    "moment": "^2.14.1",
-    "react-helmet": "^4.0.0",
-    "react-responsive-grid": "^0.3.3",
-    "react-typography": "^0.15.0",
-    "safe-access": "^0.1.0",
-    "typeface-clear-sans": "^0.0.20",
-    "typeface-merriweather": "^0.0.25",
-    "typeface-montserrat": "^0.0.24",
-    "typography": "^0.15.8",
-    "typography-theme-fairy-gates": "^0.15.11",
-    "underscore.string": "^3.2.3"
+    "gatsby": "^1.9.247",
+    "gatsby-link": "^1.6.40",
+    "gatsby-plugin-react-helmet": "^2.0.10",
+    "react-helmet": "^5.2.0"
   },
-  "devDependencies": {
-    "gh-pages": "^0.12.0"
-  },
-  "homepage": "https://github.com/odogono/com.opendoorgonorth#README.md",
   "keywords": [
     "gatsby"
   ],
   "license": "MIT",
-  "main": "n/a",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/odogono/com.opendoorgonorth"
-  },
   "scripts": {
-    "dev": "gatsby develop",
-    "lint": "./node_modules/.bin/eslint --ext .js,.jsx --ignore-pattern public .",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "develop": "gatsby develop",
     "build": "gatsby build",
-    "deploy": "gatsby build --prefix-links && gh-pages -d public",
-    "fix-semi": "eslint --quiet --ignore-pattern node_modules --ignore-pattern public --parser babel-eslint --no-eslintrc --rule '{\"semi\": [2, \"never\"], \"no-extra-semi\": [2]}' --fix gatsby-node.js"
+    "develop": "gatsby develop",
+    "format": "prettier --write 'src/**/*.js'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "prettier": "^1.12.0"
   }
 }
