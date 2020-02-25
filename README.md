@@ -1,26 +1,21 @@
-# gatsby-starter-default
-The default Gatsby starter.
+# React-Static - TypeScript Template
 
-For an overview of the project structure please refer to the [Gatsby documentation - Building with Components](https://www.gatsbyjs.org/docs/building-with-components/).
+To use this template, run `react-static create` and use the `typescript` template.
 
-## Install
+## Path Aliases for Absolute Imports
 
-Make sure that you have the Gatsby CLI program installed:
-```sh
-npm install --global gatsby-cli
+`react-static-typescript-plugin` supports path aliases [since v3.1](https://github.com/react-static/react-static/pull/963#issuecomment-455596728). It has been set up in this template.
+
+```js
+// tsconfig.json
+{
+  // ...
+    "paths": {
+      "@components/*": ["src/components/*"]
+    },
+  // ...
+}
+
+// this works in your React app
+import FancyDiv from '@components/FancyDiv'
 ```
-
-And run from your CLI:
-```sh
-gatsby new gatsby-example-site
-```
-
-Then you can run it by:
-```sh
-cd gatsby-example-site
-npm run develop
-```
-
-## Deploy
-
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/gatsbyjs/gatsby-starter-default)
