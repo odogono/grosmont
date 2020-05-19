@@ -3,7 +3,7 @@ import React from 'react'
 export default () => (
   <div style={{ textAlign: 'center' }}>
     <h1>
-      Welcome to React-Static <br /> + TypeScript
+      OpenDoorGoNorth
     </h1>
     <p>
       Learn{' '}
