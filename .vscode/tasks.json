@@ -1,0 +1,62 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Test Current File",
+			"type": "process",
+			"command": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"args": [  "${file}" ],
+			"presentation": {
+                "clear": true,
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Run all",
+			"type": "process",
+			"command": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"group": "test"
+		},
+		,
+        {
+            "label": "Run Stored Test",
+            "command": "${workspaceRoot}/.vscode/run_stored_test.sh",
+            "args": ["${workspaceRoot}/.vscode/STORED_TEST" ],
+            "type": "shell",
+            "group": "test",
+            "problemMatcher": [
+                "$mixCompileError",
+                "$mixCompileWarning",
+                "$mixTestFailure"
+            ],
+            "presentation": {
+                "clear": true,
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        }
+		{
+            "label": "Store Current Test File",
+            "group": "test",
+            "type": "process",
+            "command": "${workspaceRoot}/.vscode/write_stored_test.sh",
+            "args": [ "${relativeFile}", "${workspaceRoot}/.vscode/STORED_TEST"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+	]
+	
+}
