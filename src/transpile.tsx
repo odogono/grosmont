@@ -1,11 +1,11 @@
 import Path from 'path';
 import Fs from 'fs-extra';
 import Mdx from '@mdx-js/mdx';
+import { mdx, MDXProvider } from '@mdx-js/react'
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import * as Babel from "@babel/core";
 const _eval = require('eval');
-import { mdx, MDXProvider } from '@mdx-js/react'
 const emoji = require('remark-emoji')
 const frontmatter = require('remark-frontmatter');
 import unistVisit from 'unist-util-visit';
@@ -24,6 +24,8 @@ const presets = [
 
 
 export async function transpile(path: string) {
+
+    await altParse(path);
 
     const Component = readToElements(path);
 
@@ -48,6 +50,25 @@ export async function transpile(path: string) {
     // console.log('out = ', mdx("h1", null, `Hello, world!`) );
 }
 
+
+
+async function altParse(path:string){
+    const {read, write} = require('to-vfile')
+    const remark = require('remark')
+    const mdx = require('remark-mdx')
+    const file = await read(path)
+    const contents = await remark()
+        .use(emoji)
+        .use(frontmatter, {type:'config', marker: '+'})
+        .use(configPlugin)
+        .use(removeCommentPlugin)
+        .use(mdx)
+        .use(() => tree => console.log(tree))
+        .process(file);
+
+    console.log('[altParse]', contents);
+}
+
 function readToElements(path: string) {
     const content = Fs.readFileSync(path, 'utf8');
 
@@ -66,7 +87,7 @@ function readToElements(path: string) {
 
     let jsx = Mdx.sync(content, options);
 
-    console.log('jsx', jsx);
+    // console.log('jsx', jsx);
     let code = transformJSX(jsx);
     const el = buildElement(code, path);
 

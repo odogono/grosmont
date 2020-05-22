@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import Path from 'path';
-import {transpile} from '../src/transpile';
-
+// import {transpile} from '../src/transpile';
+import {transpile as transpileP} from '../src/preact';
 
 describe('Pipleline', () => {
 
@@ -10,10 +10,11 @@ describe('Pipleline', () => {
         const filename = 'pages/index.mdx';
         const path = Path.resolve(root, filename);
 
-        const out = await transpile(path);
+        const out = await transpileP(path);
         // const out = await transpileAlt(Path.resolve(root, 'usr/footer.mdx'));
 
-        console.log("Transpiled:", out);
+        console.log("Transpiled:");
+        console.log(out);
 
     });
 
