@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import Path from 'path';
 import Fs from 'fs-extra';
 // import {transpile} from '../src/transpile';
-import {transpile} from '../src/preact';
+import {transpile} from '../src/transpile';
 import Beautify from 'js-beautify';
 import Klaw from 'klaw';
 

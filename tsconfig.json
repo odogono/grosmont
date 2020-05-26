@@ -6,7 +6,6 @@
       "baseUrl": ".",
       "moduleResolution": "node",
       "jsx": "react",
-      "jsxFactory": "h",
       "lib": ["es2018", "dom"],
       "module": "commonjs",
       "target": "esnext",

@@ -1,5 +1,4 @@
-import { Fragment, h, toChildArray, VNode } from 'preact'
-import { useState } from 'preact/hooks';
+import React, { useState } from 'react';
 import {abbrev} from "abbrev";
 
 
