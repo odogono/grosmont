@@ -6,9 +6,11 @@
     "serve": "serve dist -p 3000 -s"
   },
   "dependencies": {
-    "@mdx-js/mdx": "^1.6.1",
-    "@mdx-js/preact": "^1.6.4",
+    "@mdx-js/mdx": "next",
+    "@mdx-js/preact": "next",
     "eval": "^0.1.4",
+    "js-beautify": "^1.11.0",
+    "klaw": "^3.0.0",
     "preact": "^10.4.4",
     "preact-compat": "^3.19.0",
     "preact-render-to-string": "^5.1.8",
@@ -27,6 +29,8 @@
     "@types/chai": "^4.2.11",
     "@types/expect": "^24.3.0",
     "@types/fs-extra": "^9.0.0",
+    "@types/js-beautify": "^1.11.0",
+    "@types/klaw": "^3.0.1",
     "@types/mocha": "^7.0.2",
     "@types/node": "^12.7.2",
     "babel-plugin-module-resolver": "^4.0.0",

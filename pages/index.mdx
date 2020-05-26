@@ -2,24 +2,22 @@
 title = "Testing Compilation"
 tags = [ "tag1", "tag2", "tag3" ]
 description = "something"
+wrapper = "./layout/main"
 +++
 
-// import Footer from './footer.mdx'
+<Layout src=".layout/main" />
 
-# <div>{page.title}</div>
+<Head>
+  <title>Open Door Go North</title>
+  <meta name="description" content="Open Door Go North" />
+  <meta name="author" content="SitePoint" />
+  <meta charset="utf-8" />
+</Head>
 
-export const myVariable = 'Yay!'
 
-<div>{myVariable}</div>
-<div>{page.title}</div>
+# {page.title}
 
-<Fragment>This is some inline JSX: {page.title}</Fragment>
-
-<ClientSide>
-  <App />
-</ClientSide>
-
-<Something>here?</Something>
+This is some inline JSX: {page.description}
 
 Emojis in this text will be replaced: :dog: :+1:
 
@@ -28,4 +26,4 @@ Emojis in this text will be replaced: :dog: :+1:
 </div>
 
 
-<Footer />
+{/* <Footer /> */}

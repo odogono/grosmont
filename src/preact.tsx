@@ -3,9 +3,9 @@ import Fs from 'fs-extra';
 
 import Toml from 'toml';
 import Mdx from '@mdx-js/mdx';
-import { Fragment, h, toChildArray } from 'preact'
+import { Fragment, h, toChildArray, VNode } from 'preact'
 import { mdx, MDXProvider } from '@mdx-js/preact'
-import { render } from 'preact-render-to-string'
+import { render as renderPreactToString } from 'preact-render-to-string'
 // import render from 'preact-render-to-string/jsx';
 import { useState } from 'preact/hooks';
 
@@ -15,6 +15,9 @@ const emoji = require('remark-emoji')
 const frontmatter = require('remark-frontmatter');
 import unistVisit from 'unist-util-visit';
 import unistRemove from 'unist-util-remove';
+import { Layout } from './components/layout';
+import { Head } from './components/head';
+
 
 const presets = [
     // ["latest-node", { "target": "current" }],
@@ -27,30 +30,54 @@ const presets = [
     "babel-preset-preact"
 ];
 
+export interface TranspileProps {
+    path: string;
+    relativePath: string;
+    render?: boolean;
+}
 
-export async function transpile(path: string) {
+export interface TranspileResult extends TranspileProps {
+    html?: string;
+    component?: VNode;
+}
 
-    // await altParse(path);
 
-    const {Component, frontMatter, ...rest} = readToElements(path);
+export async function transpile(props:TranspileProps):Promise<TranspileResult> {
+    const doRender = props.render ?? false;
+    const {path} = props;
 
     const components = {
         wrapper: ({ children, ...props }) => {
-            return <Fragment>{children}</Fragment>
+            return <div class="layout">{children}</div>
         },
-        Something: ({ children, ...props }) => <div className="blnk">{children}</div>,
-        ClientSide: ({ children, ...props }) => {
-            console.log('[ClientSide]', App.toString());
-            // console.log('[ClientSide]', toChildArray( children ) );
-            return <div id="attach0" />
-        }
+        Head,
+        Layout
     }
 
-    const props = {page:frontMatter, ...rest};
+    // console.log('[transpile]', props);
 
-    console.log('🦉props are', props);
+    const {component, frontMatter, ...rest} = parseMdx(path);
 
-    const html = render(
+    // console.log('[transpile]', path, frontMatter);
+
+    if( frontMatter !== undefined && frontMatter.enabled === false ){
+        return props;
+    }
+
+    const html = doRender ? 
+        renderHTML({components, component, frontMatter, ...rest}) 
+        : undefined;
+
+    return {
+        ...props,
+        component,
+        html
+    }
+}
+
+function renderHTML({components, component:Component, frontMatter, ...rest}){
+
+    const html = renderPreactToString(
         <MDXProvider components={components}>
             <Component />
         </MDXProvider>, { pretty: true });
@@ -59,26 +86,14 @@ export async function transpile(path: string) {
 }
 
 
+function parseMdx(path: string) {
+    let content = Fs.readFileSync(path, 'utf8');
 
-// async function altParse(path: string) {
-//     const { read, write } = require('to-vfile')
-//     const remark = require('remark')
-//     const mdx = require('remark-mdx')
-//     const file = await read(path)
-//     const contents = await remark()
-//         .use(emoji)
-//         .use(frontmatter, { type: 'frontMatter', marker: '+' })
-//         .use(configPlugin)
-//         .use(removeCommentPlugin)
-//         .use(mdx)
-//         // .use(() => tree => console.log(tree))
-//         .process(file);
-
-//     console.log('[altParse]', contents);
-// }
-
-function readToElements(path: string) {
-    const content = Fs.readFileSync(path, 'utf8');
+    // todo - must be a better way to handle this
+    // essentially, fragments defined as <> get converted into
+    // React.Fragment, which gets complained about
+    content = content.replace(/<\>/g, '<Fragment>');
+    content = content.replace(/\<\/\>/g, '</Fragment>');
 
     // this is probably the key to extracting data from the mdx
 
@@ -89,17 +104,23 @@ function readToElements(path: string) {
             [frontmatter, { type: 'frontMatter', marker: '+' }],
             configPlugin,
             removeCommentPlugin,
-            () => tree => console.log('[readToElements]', 'tree', tree)
+            // () => tree => console.log('[parseMdx]', 'tree', tree)
         ],
         // skipExport: true
     };
 
     let jsx = Mdx.sync(content, options);
 
-    // console.log('jsx', jsx);
+    // if( path.includes('index.mdx') )
+    // console.log('🦉jsx');
+
     let code = transformJSX(jsx);
-    console.log('code', code);
-    const el = buildElement(code, path);
+    // console.log('🦉evalCode', path);
+    const el = evalCode(code, path);
+
+    // if( path.includes('index.mdx') )
+    // console.log('el', el);
+    // console.log('🦉el', path);
 
     return el;
 }
@@ -118,17 +139,24 @@ function transformJSX(jsx: string) {
     return Babel.transform(jsx, { presets, plugins }).code;
 }
 
-function buildElement(code: string, path: string) {
-    const require = (requirePath) => {
+function evalCode(code: string, path: string) {
+    let requires = [];
+    const requireManual = (requirePath) => {
+        console.log('[require]', requirePath );
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
-        return readToElements(fullPath);
+        if( Fs.existsSync(fullPath) && fullPath.endsWith('.mdx') ){
+            // console.log('[require]', fullPath);
+            return parseMdx(fullPath).default;
+        }
+        const req = require(requirePath);
+
+        requires.push({ exports:Object.keys(req).join(','), path:requirePath})
+        return req;
     }
-    let out = _eval(code, path, { mdx, require });
-    const Component = out['default'];
+    let out = _eval(code, path, { mdx, require:requireManual });
+    const component = out['default'];
 
-    // console.log('[buildElement]', out);
-
-    return {...out, Component};
+    return {...out, requires, component};
 }
 
 
@@ -180,14 +208,3 @@ function removeCommentPlugin() {
 };
 
 
-
-const App = () => {
-    const [input, setInput] = useState('');
-
-    return (
-        <div>
-            <p>Do you agree to the statement: "Preact is awesome"?</p>
-            <input value={input} onChange={e => setInput((e.target as HTMLTextAreaElement).value)} />
-        </div>
-    )
-}
