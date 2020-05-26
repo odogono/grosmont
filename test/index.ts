@@ -31,7 +31,7 @@ export interface Page {
     outPath?: string;
     html?: string;
     component?: any;
-    page: any; // page config
+    pageProps: any; // page config
     layout?: string;
 }
 
@@ -64,6 +64,7 @@ async function writePages( pages:Page[] ):Promise<Page[]> {
 
         await writeHTML(page.outPath, page.html);
         await writeFile(page.outPath+'.code', (page as any).code);
+        await writeFile(page.outPath+'.jsx', (page as any).jsx);
     }
     return pages;
 }
@@ -81,29 +82,37 @@ async function renderPages( pages:Page[] ):Promise<Page[]> {
     return result;
 }
 
-async function renderPage( page:Page, pages:Page[] ):Promise<Page> {
-    let wrapper = undefined;
+async function renderPage( page:Page, pages:Page[], pageProps:object = {} ):Promise<Page> {
+    // let wrapper = undefined;
     let layoutPage;
     if( page.layout ){
         layoutPage = pages.find( p => p.relativePath === page.layout );
-        wrapper = layoutPage.component;
-        // let children = Test;
+
+        // wrapper = layoutPage.component;
+        let props = {...layoutPage.pageProps, ...page.pageProps, ...pageProps};
+        
+        // return await renderPage( layoutPage, pages, props );
+
         const {html} = await transpile({...layoutPage, 
+            pageProps: props,
             forceRender:true,
             children: page.component
         });
-        // console.log('[renderPage]', 'layout', (page as any).code);
-        // console.log('[renderPage]', 'layout', page.component);
-        // console.log('[renderPage]', 'layout', layoutPage.component);
-        // console.log('[renderPage]', 'layout', html);
-        // throw 'stop';
+        // // console.log('[renderPage]', 'layout', (page as any).code);
+        // // console.log('[renderPage]', 'layout', page.pageProps);
+        // // console.log('[renderPage]', 'layout', layoutPage.component);
+        // // console.log('[renderPage]', 'layout', html);
+        // // throw 'stop';
         return {...page, html};
     }
 
     try {
+        let props = {...page.pageProps, ...pageProps};
         const {html,...rest} = await transpile({
             ...page,
-            wrapper,
+            pageProps:props,
+            forceRender:true,
+            // wrapper,
             render: true
         });
         return {...page, html};
@@ -118,7 +127,7 @@ function setOutPath( pages:Page[], outPath:string ): Page[] {
     let result = [];
 
     for( const page of pages ){
-        if( page.page?.enabled === false ){
+        if( page.pageProps?.enabled === false ){
             result.push(page);
             continue;
         }
@@ -133,7 +142,7 @@ function setOutPath( pages:Page[], outPath:string ): Page[] {
 function resolveLayouts( pages:Page[] ): Page[] {
     let result = [];
     for( let page of pages ){
-        let config = page.page;
+        let config = page.pageProps;
         if( config === undefined ){
             result.push(page);
             continue;

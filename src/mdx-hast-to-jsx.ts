@@ -116,7 +116,6 @@ return (
 <>${doc}</>
 )
 };`;
-// MDXContent.isMDXComponent = true`
 //   const fn = `function MDXContent({ components, ...props }) {
 // return (
 //   <MDXLayout {...layoutProps} {...props} components={components}>
@@ -183,9 +182,9 @@ return (
 
   const moduleBase = `${importStatements}
 ${exportStatementsPostMdxTypeProps}
-${fakedModulesForGlobalScope}`;
-// ${layoutProps}`
-// ${mdxLayout}`
+${fakedModulesForGlobalScope}
+${layoutProps}
+${mdxLayout}`;
 
   if (skipExport) {
     return `${moduleBase}
@@ -213,6 +212,7 @@ function serializeElement(node, options, parentNode) {
 
   delete props.key
   const data = parentName ? {...props, parentName} : props
+  // const data = props
 
   const spread =
     Object.keys(data).length === 0 ? null : ' {...' + JSON.stringify(data) + '}'

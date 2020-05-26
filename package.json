@@ -8,6 +8,7 @@
   "dependencies": {
     "@mdx-js/mdx": "next",
     "@mdx-js/react": "next",
+    "@mdx-js/runtime": "^2.0.0-next.1",
     "eval": "^0.1.4",
     "js-beautify": "^1.11.0",
     "klaw": "^3.0.0",
@@ -19,8 +20,8 @@
     "remark-mdx": "^2.0.0-next.1",
     "to-vfile": "^6.1.0",
     "unist-util-filter": "^2.0.2",
-    "yaml": "^1.10.0",
-    "vfile-reporter": "^6.0.1"
+    "vfile-reporter": "^6.0.1",
+    "yaml": "^1.10.0"
   },
   "devDependencies": {
     "@babel/core": "^7.9.6",
