@@ -1,19 +1,11 @@
-+++
-title = "Testing Compilation"
-tags = [ "tag1", "tag2", "tag3" ]
-description = "something"
-wrapper = "./layout/main"
-+++
+---
+title: Testing Compilation
+tags: [ tag1, tag2, tag3 ]
+description: something
+layout: "./layout/main"
+---
 
-<Layout src=".layout/main" />
-
-<Head>
-  <title>Open Door Go North</title>
-  <meta name="description" content="Open Door Go North" />
-  <meta name="author" content="SitePoint" />
-  <meta charset="utf-8" />
-</Head>
-
+import Footer from './footer.mdx';
 
 # {page.title}
 
@@ -26,4 +18,4 @@ Emojis in this text will be replaced: :dog: :+1:
 </div>
 
 
-{/* <Footer /> */}
+<Footer />

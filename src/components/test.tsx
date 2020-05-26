@@ -12,7 +12,7 @@ export const Test = () => {
     return (
         <div>
             <p>Do you agree to the statement: {msg}</p>
-            <input value={input} onChange={e => setInput((e.target as HTMLTextAreaElement).value)} />
+            <input value={input} onChange={e => setInput((e.target).value)} />
         </div>
     )
 }

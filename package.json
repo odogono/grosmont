@@ -8,17 +8,19 @@
   "dependencies": {
     "@mdx-js/mdx": "next",
     "@mdx-js/react": "next",
-    "@types/react": "^16.9.35",
     "eval": "^0.1.4",
     "js-beautify": "^1.11.0",
     "klaw": "^3.0.0",
     "react": "^16.13.1",
+    "react-dom": "^16.13.1",
     "remark": "^12.0.0",
     "remark-emoji": "^2.1.0",
     "remark-frontmatter": "^2.0.0",
+    "remark-mdx": "^2.0.0-next.1",
     "to-vfile": "^6.1.0",
-    "toml": "^3.0.0",
-    "unist-util-filter": "^2.0.2"
+    "unist-util-filter": "^2.0.2",
+    "yaml": "^1.10.0",
+    "vfile-reporter": "^6.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.9.6",
@@ -32,10 +34,11 @@
     "@types/klaw": "^3.0.1",
     "@types/mocha": "^7.0.2",
     "@types/node": "^14.0.5",
+    "@types/react": "^16.9.35",
+    "babel-plugin-module-resolver": "^4.0.0",
     "chai": "^4.2.0",
     "fs-extra": "^9.0.0",
     "mocha": "^7.2.0",
-    "react-dom": "^16.13.1",
     "serve": "^11.3.1",
     "ts-node": "^8.10.1",
     "typescript": "^3.9.3"

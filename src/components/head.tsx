@@ -12,3 +12,11 @@ export function Head({children, ...props}) {
     });
     return null; //<Fragment></>;
 }
+
+
+/*{ <Head>
+  <title>Open Door Go North</title>
+  <meta name="description" content="Open Door Go North" />
+  <meta name="author" content="SitePoint" />
+  <meta charset="utf-8" />
+</Head>}*/
