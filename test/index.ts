@@ -12,8 +12,6 @@ describe('Pipleline', () => {
         const path = Path.resolve(root, 'pages');
         let outPath = Path.resolve( root, 'dist' );
 
-        await Fs.emptyDir(outPath);
-        
         // processPages( path, outPath, 'index.mdx' );
         processPages( path, outPath );
     });

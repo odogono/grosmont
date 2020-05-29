@@ -26,12 +26,31 @@ export interface PageMeta {
     resolveParent?: boolean;
 }
 
+type BuildContextStage = [Function, any[]];
 
-export interface BuildContext {
+class BuildContext {
+    _stages: BuildContextStage[] = [];
     rootPath: string;
-    outPath: string;
-    pages: Dir[];
+    dstPath: string;
+    pages: Dir[] = [];
     targetPage?: string;
+
+    constructor(rootPath: string, dstPath: string, targetPage?: string) {
+        this.rootPath = rootPath;
+        this.dstPath = dstPath;
+    }
+
+    use(fn: Function, ...args: any[]) {
+        // console.log('huh', this);
+        this._stages.push([fn, args]);
+        return this;
+    }
+    async process() {
+        for( const [fn,args] of this._stages ){
+            await fn(this, ...args);
+        }
+        return this;
+    }
 }
 
 
@@ -57,33 +76,38 @@ export interface Page extends Dir {
 
 
 
-export async function processPages(rootPath: string, outPath: string, targetPage?: string) {
+export async function processPages(rootPath: string, dstPath: string, targetPage?: string) {
 
-    let ctx: BuildContext = { rootPath, outPath, targetPage, pages: [] };
+    let ctx = new BuildContext(rootPath, dstPath);
 
-    ctx = await gatherPages(ctx)
-        .then(parsePages)
-        .then(resolveMeta)
-        .then(resolveDest)
-        .then(resolveLinks)
-        .then(renderPages)
-        // .then(debug)
-        .then(writePages)
-        .catch(err => {
-            console.error('[processPages]', 'error', err);
-            return ctx;
-        })
+    try {
+        ctx
+            .use( () => Fs.emptyDir(dstPath) )
+            .use(gatherPages)
+            .use(parsePages)
+            .use(resolveMeta)
+            .use(resolveDest)
+            .use(resolveLinks)
+            .use(renderPages)
+            // .use( debug )
+            .use(writePages, {writeCode:false, writeJSX:false})
+            .process()
+    } catch (err) {
+        console.error('[processPages]', 'error', err);
+    }
 
-
+    // console.log(ctx);
     function debug(ctx: BuildContext) {
         console.log('> pages');
         for (const page of ctx.pages) {
             let { code, jsx, meta, ...rest } = page as any;
             meta = getPageMeta(ctx, page);
-            console.dir({ meta, 
+            console.dir({
+                meta,
                 code: truncate(code),
                 jsx: truncate(jsx),
-                ...rest });
+                ...rest
+            });
         }
         return ctx;
     }
@@ -92,22 +116,22 @@ export async function processPages(rootPath: string, outPath: string, targetPage
 
 
 
-
 async function resolveDest(ctx: BuildContext): Promise<BuildContext> {
     let pages = [];
     for (const page of ctx.pages) {
         const isRenderable = page.meta.isRenderable ?? false;
         const isEnabled = page.meta.isEnabled ?? true;
-        if( !isRenderable || !isEnabled ){
+        if (!isRenderable || !isEnabled) {
             pages.push(page);
             continue;
         }
-        
+
         let dstPath = page.path + (isDir(page) ? '' : '.html');
-        
-        pages.push({...page,dstPath});
+
+        pages.push({ ...page, dstPath });
     }
-    return { ...ctx, pages };
+    ctx.pages = pages;
+    return ctx;
 }
 
 async function resolveLinks(ctx: BuildContext): Promise<BuildContext> {
@@ -117,38 +141,48 @@ async function resolveLinks(ctx: BuildContext): Promise<BuildContext> {
             pages.push(page);
             continue;
         }
-        let {links} = page as Page;
-        if( links === undefined || links.size === 0 ){
+        let { links } = page as Page;
+        if (links === undefined || links.size === 0) {
             pages.push(page);
             continue;
         }
-        
-        let rewriteLinks = new Map<string,PageLink>();
-        for( const [url,value] of links ){
-            const dir = parentDir(ctx,page)
-            let path = Path.resolve( dir, url );
+
+        let rewriteLinks = new Map<string, PageLink>();
+        for (const [url, value] of links) {
+            const dir = parentDir(ctx, page)
+            let path = Path.resolve(dir, url);
             path = Path.relative(ctx.rootPath, path);
-            let linkPage = ctx.pages.find( p => p.path === path );
-            if( linkPage !== undefined ){
-                let rel = Path.relative( dirPath(ctx,page), fullPath(ctx,linkPage,true) );
+            let linkPage = ctx.pages.find(p => p.path === path);
+            if (linkPage !== undefined) {
+                let rel = Path.relative(dirPath(ctx, page), fullPath(ctx, linkPage, true));
                 // console.log('[resolveLinks]', url, page.path, linkPage.path, rel );
                 // console.log('[resolveLinks]', url, dirPath(ctx,page) );
                 // console.log('[resolveLinks]', url,  fullPath(ctx,linkPage,true) );
                 // console.log('[resolveLinks]', url,  rel );
-                rewriteLinks.set(url, {...value, url:rel });
+                rewriteLinks.set(url, { ...value, url: rel });
             } else {
                 rewriteLinks.set(url, value);
             }
         }
         // console.log('[resolveLinks]', rewriteLinks );
-        
-        pages.push({...page, links:rewriteLinks});
+
+        pages.push({ ...page, links: rewriteLinks });
     }
-    return { ...ctx, pages };
+    ctx.pages = pages;
+    return ctx;
 }
 
-async function writePages(ctx: BuildContext): Promise<BuildContext> {
+interface WritePagesOptions {
+    writeCode?: boolean;
+    writeJSX?: boolean;
+    writeHTML?: boolean;
+}
 
+async function writePages(ctx: BuildContext, options: WritePagesOptions = {}): Promise<BuildContext> {
+    // console.log('[writePages]', options);
+    const doWriteHTML = options.writeHTML ?? true;
+    const doWriteCode = options.writeCode ?? false;
+    const doWriteJSX = options.writeJSX ?? false;
     for (const page of ctx.pages) {
         if (isDir(page)) {
             continue;
@@ -158,11 +192,11 @@ async function writePages(ctx: BuildContext): Promise<BuildContext> {
             continue;
         }
 
-        const outPath = Path.join(ctx.outPath, dstPath);
+        const outPath = Path.join(ctx.dstPath, dstPath);
 
-        await writeHTML(outPath, html);
-        await writeFile(outPath + '.code', code);
-        await writeFile(outPath + '.jsx', jsx);
+        if( doWriteHTML ) await writeHTML(outPath, html);
+        if( doWriteCode ) await writeFile(outPath + '.code', code);
+        if( doWriteJSX ) await writeFile(outPath + '.jsx', jsx);
     }
     return ctx;
 }
@@ -177,7 +211,8 @@ async function renderPages(ctx: BuildContext): Promise<BuildContext> {
         }
         pages.push(await renderPage(ctx, (page as Page)));
     }
-    return { ...ctx, pages };
+    ctx.pages = pages;
+    return ctx;
 }
 
 async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
@@ -187,21 +222,22 @@ async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
         return page;
     }
 
-    let {meta,links} = page;
+    let { meta, links } = page;
     let path = fullPath(ctx, page);
 
     try {
         // const unpick = ({code,component,html,jsx}:any) => ({code,component,html,jsx});
         let result = await transpile({ path, links, meta }, { forceRender: true });
-        
+
         const layoutPage = getPageLayout(ctx, page);
 
         if (layoutPage === undefined) {
-            return { ...page, 
-                code:result.code, 
-                component:result.component, 
-                html:result.html, 
-                jsx:result.jsx 
+            return {
+                ...page,
+                code: result.code,
+                component: result.component,
+                html: result.html,
+                jsx: result.jsx
             };
         }
 
@@ -209,12 +245,13 @@ async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
         path = fullPath(ctx, layoutPage);
 
         result = await transpile({ path, meta, children: result.component }, { forceRender: true });
-        
-        return { ...page, 
-            code:result.code, 
-            component:result.component, 
-            html:result.html,
-            jsx:result.jsx
+
+        return {
+            ...page,
+            code: result.code,
+            component: result.component,
+            html: result.html,
+            jsx: result.jsx
         };
 
     } catch (err) {
@@ -234,7 +271,7 @@ async function parsePages(ctx: BuildContext): Promise<BuildContext> {
             pages.push(page);
             continue;
         }
-        
+
         const path = fullPath(ctx, page);
         let { meta } = page;
 
@@ -242,14 +279,15 @@ async function parsePages(ctx: BuildContext): Promise<BuildContext> {
 
         // console.log('[parsePages]', 'links', links );
         meta = { ...page.meta, ...outMeta };
-        let upd:any = {...page, meta};
-        if( links !== undefined && links.size > 0 ){
-            upd = {...upd, links};
+        let upd: any = { ...page, meta };
+        if (links !== undefined && links.size > 0) {
+            upd = { ...upd, links };
         }
 
         pages.push(upd);
     }
-    return { ...ctx, pages };
+    ctx.pages = pages;
+    return ctx;
 }
 
 
@@ -273,7 +311,7 @@ async function resolveMeta(ctx: BuildContext): Promise<BuildContext> {
         pages.push({ ...page, meta });
     }
 
-    ctx = { ...ctx, pages };
+    ctx.pages = pages;
     pages = [];
 
     // resolve pages
@@ -301,7 +339,8 @@ async function resolveMeta(ctx: BuildContext): Promise<BuildContext> {
         pages.push({ ...page, meta });
     }
 
-    return { ...ctx, pages };
+    ctx.pages = pages;
+    return ctx;
 }
 
 function getDirMeta(ctx: BuildContext, path: string, meta: PageMeta = createMeta()) {
@@ -347,11 +386,10 @@ async function gatherPages(ctx: BuildContext): Promise<BuildContext> {
         const { ctime, mtime } = stats;
         let relativePath = Path.relative(ctx.rootPath, rootPath);
 
-        return {
-            ...ctx, pages: [
-                createPage(relativePath, createMeta(), { ctime, mtime })
-            ]
-        };
+        ctx.pages = [
+            createPage(relativePath, createMeta(), { ctime, mtime })
+        ];
+        return ctx;
     }
 
     for await (const file of Klaw(rootPath)) {
@@ -377,7 +415,8 @@ async function gatherPages(ctx: BuildContext): Promise<BuildContext> {
         pages.push(createPage(relativePath, createMeta(), { ctime, mtime }));
     }
 
-    return { ...ctx, pages };
+    ctx.pages = pages;
+    return ctx;
 }
 
 
@@ -427,16 +466,16 @@ function createMeta(values: object = {}): PageMeta {
     }
 }
 
-function fullPath(ctx: BuildContext, page: Dir, useDst:boolean = false) {
-    if( useDst ){
-        return Path.join(ctx.outPath, page.dstPath);
+function fullPath(ctx: BuildContext, page: Dir, useDst: boolean = false) {
+    if (useDst) {
+        return Path.join(ctx.dstPath, page.dstPath);
     }
     return Path.join(ctx.rootPath, page.path) +
         (('ext' in page) ? `.${page['ext']}` : '');
 }
 
-function dirPath(ctx:BuildContext, page:Dir){
-    let path = isDir(page) ? Path.join(ctx.outPath, page.dstPath) : parentDir(ctx,page,true) + '/';
+function dirPath(ctx: BuildContext, page: Dir) {
+    let path = isDir(page) ? Path.join(ctx.dstPath, page.dstPath) : parentDir(ctx, page, true) + '/';
     return path;
 }
 
@@ -445,12 +484,12 @@ function isDir(dir: Dir) {
 }
 
 
-function truncate(str:string, len = 10){
-    return str === undefined ? '' : str.length <= len ? str : str.slice(0,len) + '...';
+function truncate(str: string, len = 10) {
+    return str === undefined ? '' : str.length <= len ? str : str.slice(0, len) + '...';
 }
 
-function parentDir(ctx: BuildContext, page: Dir, useDst:boolean = false) {
-    const fullPath = useDst ? Path.join(ctx.outPath, page.dstPath) : Path.join(ctx.rootPath, page.path);
+function parentDir(ctx: BuildContext, page: Dir, useDst: boolean = false) {
+    const fullPath = useDst ? Path.join(ctx.dstPath, page.dstPath) : Path.join(ctx.rootPath, page.path);
     const dir = Path.resolve(fullPath, '..');// dirnameExtra(fullPath);
     return dir;
 }
