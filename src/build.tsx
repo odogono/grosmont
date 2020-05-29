@@ -14,7 +14,7 @@ export interface PageMeta {
     date?: string;
 
     // path to render to
-    output?: string;
+    dstPath?: string;
 
     // layout file into which this page will be rendered
     layout?: string;
@@ -46,7 +46,7 @@ class BuildContext {
         return this;
     }
     async process() {
-        for( const [fn,args] of this._stages ){
+        for (const [fn, args] of this._stages) {
             await fn(this, ...args);
         }
         return this;
@@ -82,15 +82,15 @@ export async function processPages(rootPath: string, dstPath: string, targetPage
 
     try {
         ctx
-            .use( () => Fs.emptyDir(dstPath) )
+            .use(() => Fs.emptyDir(dstPath))
             .use(gatherPages)
             .use(parsePages)
             .use(resolveMeta)
             .use(resolveDest)
+            // .use(debug)
             .use(resolveLinks)
             .use(renderPages)
-            // .use( debug )
-            .use(writePages, {writeCode:false, writeJSX:false})
+            .use(writePages, { writeCode: false, writeJSX: false })
             .process()
     } catch (err) {
         console.error('[processPages]', 'error', err);
@@ -125,8 +125,13 @@ async function resolveDest(ctx: BuildContext): Promise<BuildContext> {
             pages.push(page);
             continue;
         }
+        let path = page.meta.dstPath ?? page.path;
+        if (path.endsWith('/')) {
+            path = Path.join(path, Path.basename(page.path));
+        }
+        // console.log('[resolveDest]', page.path, path );
 
-        let dstPath = page.path + (isDir(page) ? '' : '.html');
+        let dstPath = path + (isDir(page) ? '' : '.html');
 
         pages.push({ ...page, dstPath });
     }
@@ -137,7 +142,7 @@ async function resolveDest(ctx: BuildContext): Promise<BuildContext> {
 async function resolveLinks(ctx: BuildContext): Promise<BuildContext> {
     let pages = [];
     for (const page of ctx.pages) {
-        if (isDir(page)) {
+        if (isDir(page) || (page as Page).ext !== 'mdx' ) {
             pages.push(page);
             continue;
         }
@@ -187,16 +192,25 @@ async function writePages(ctx: BuildContext, options: WritePagesOptions = {}): P
         if (isDir(page)) {
             continue;
         }
-        const { code, dstPath, jsx, html } = (page as Page);
-        if (html === undefined) {
-            continue;
+        const {dstPath, ext} = page as Page;
+
+        if( ext === 'mdx' ){
+            const { code, jsx, html } = (page as Page);
+            if (html === undefined) {
+                continue;
+            }
+
+            const outPath = Path.join(ctx.dstPath, dstPath);
+
+            if (doWriteHTML) await writeHTML(outPath, html);
+            if (doWriteCode) await writeFile(outPath + '.code', code);
+            if (doWriteJSX) await writeFile(outPath + '.jsx', jsx);
         }
-
-        const outPath = Path.join(ctx.dstPath, dstPath);
-
-        if( doWriteHTML ) await writeHTML(outPath, html);
-        if( doWriteCode ) await writeFile(outPath + '.code', code);
-        if( doWriteJSX ) await writeFile(outPath + '.jsx', jsx);
+        else {
+            const src = Path.join(ctx.rootPath, page.path + `.${ext}`);
+            const dst = Path.join(ctx.dstPath,dstPath);
+            await Fs.copyFile( src, dst );
+        }
     }
     return ctx;
 }
@@ -205,7 +219,7 @@ async function renderPages(ctx: BuildContext): Promise<BuildContext> {
     let pages = [];
 
     for (const page of ctx.pages) {
-        if (isDir(page)) {
+        if (isDir(page) || (page as Page).ext !== 'mdx') {
             pages.push(page);
             continue;
         }
@@ -267,7 +281,7 @@ async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
 async function parsePages(ctx: BuildContext): Promise<BuildContext> {
     let pages = [];
     for (const page of ctx.pages) {
-        if (isDir(page)) {
+        if (isDir(page) || (page as Page).ext !== 'mdx') {
             pages.push(page);
             continue;
         }
@@ -297,7 +311,7 @@ async function resolveMeta(ctx: BuildContext): Promise<BuildContext> {
     // first pass, resolve own meta
     for (const page of ctx.pages) {
         let { meta } = page;
-        if (isDir(page)) {
+        if (isDir(page) || (page as Page).ext !== 'mdx') {
             pages.push(page);
             continue;
         }
@@ -377,9 +391,12 @@ async function gatherPages(ctx: BuildContext): Promise<BuildContext> {
 
     let stats = Fs.statSync(rootPath);
 
+    const validExtensions = ['mdx', 'html', 'css'];
+
     // if we have a single file
     if (stats.isFile()) {
-        if (Path.extname(rootPath) !== '.mdx') {
+        const ext = Path.extname(rootPath).substring(1);
+        if (validExtensions.indexOf(ext) === -1) {
             return ctx;
         }
 
@@ -405,14 +422,18 @@ async function gatherPages(ctx: BuildContext): Promise<BuildContext> {
             continue;
         }
 
-        // console.log('[gatherPages]', file.path );
-        if (Path.extname(file.path) !== '.mdx') {
+        const ext = Path.extname(file.path).substring(1);
+        // console.log('[gatherPages]', file.path, ext);
+        if (validExtensions.indexOf(ext) === -1) {
             continue;
         }
+        // if (Path.extname(file.path) !== '.mdx') {
+        //     continue;
+        // }
 
         relativePath = relativePath.replace(/\.[^/.]+$/, "");
 
-        pages.push(createPage(relativePath, createMeta(), { ctime, mtime }));
+        pages.push(createPage(relativePath, createMeta(), { ext, ctime, mtime }));
     }
 
     ctx.pages = pages;
