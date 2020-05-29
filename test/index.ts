@@ -14,10 +14,16 @@ describe('Pipleline', () => {
 
         await Fs.emptyDir(outPath);
         
-        // await mdxTest();
-
+        // processPages( path, outPath, 'index.mdx' );
         processPages( path, outPath );
     });
 
+    // it.only('gets parent directory', () => {
+    //     let path = '/Users/alex/work/opendoorgonorth.com/pages/main';
+    //     let parent = Path.resolve(path, '..');
+
+    //     console.log('path', path);
+    //     console.log('parent', parent);
+    // })
 });
 

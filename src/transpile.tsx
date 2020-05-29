@@ -44,28 +44,31 @@ const presets = [
 
 export interface TranspileProps {
     path: string;
-    relativePath: string;
     render?: boolean;
     forceRender?: boolean;
     wrapper?: JSX.Element;
-    pageProps?: object;
+    meta?: object;
     children?: any;
 }
 
-export interface TranspileResult extends TranspileProps {
+export interface TranspileResult {
     html?: string;
     component?: any;
-    pageProps: any;
+    meta: any;
     code?: string;
     jsx?: string;
 }
 
 
+export interface TranspileOptions {
+    render?: boolean;
+    forceRender?: boolean;
+}
 
-export async function transpile(props:TranspileProps):Promise<TranspileResult> {
-    let {children,path,pageProps} = props;
-    const forceRender = props.forceRender ?? false;
-    const doRender = forceRender || (props.render ?? false);
+export async function transpile(props:TranspileProps, options:TranspileOptions={}):Promise<TranspileResult> {
+    let {children,path,meta} = props;
+    const forceRender = options.forceRender ?? false;
+    const doRender = forceRender || (options.render ?? false);
 
     const components = {
         Head,
@@ -78,16 +81,18 @@ export async function transpile(props:TranspileProps):Promise<TranspileResult> {
 
     // console.log('[transpile]', path);
     // if( forceRender )
-    // console.log('[transpile]', path, pageProps );
+    // console.log('[transpile]', path );
 
-    const mdxResult = await parseMdx(path, pageProps);
-    const {component, frontMatter, code, jsx, ...rest} = mdxResult;
-    pageProps = mdxResult.pageProps;
+    const mdxResult = await parseMdx(path, meta);
+    const {component, frontMatter, 
+        code, jsx, page, default:d, requires,
+        pageProps, ...rest} = mdxResult;
+    meta = {...pageProps, ...rest};
 
+    // console.log('[transpile]', path, rest );
     
-
     if( !forceRender && (frontMatter !== undefined && frontMatter.enabled === false) ){
-        return {...props, jsx,code, pageProps, component};
+        return {code, jsx, meta, component, ...rest};
     }
 
     const html = doRender ? 
@@ -95,11 +100,10 @@ export async function transpile(props:TranspileProps):Promise<TranspileResult> {
         : undefined;
 
     return {
-        ...props,
-        code, jsx,
-        pageProps,
+        code, jsx, meta,
         component,
-        html
+        html,
+        ...rest
     }
 }
 
@@ -144,43 +148,18 @@ function renderHTML({components, component:Component,children, ...rest}){
 function parseMdx(path: string, pageProps:object) {
     let content = Fs.readFileSync(path, 'utf8');
 
-    // const options = {
-    //     filepath: path,
-    //     remarkPlugins: [
-    //         emoji,
-    //         [frontmatter, { type: 'yaml', marker: '-' }],
-    //         configPlugin, //({page:pageProps}),
-    //         removeCommentPlugin,
-    //         // () => tree => console.log('[parseMdx]', 'tree', tree)
-    //     ],
-    //     // skipExport: true
-    // };
-
-    // let jsxOG = MdxOG.sync(content, options);
-
     let jsx = processMdx(content, pageProps);
 
     // if( path.includes('index.mdx') )
     // console.log('🦉jsx', jsx);
     // console.log('🦉jsxOG', jsxOG);
 
-    
     // console.log('code', code);
     
-    
-    // let code = transformBuble(jsx, { objectAssign: 'Object.assign' }).code
     let code = transformJSX(jsx);
     
-    // console.log('🦉code', code);
-    // throw 'stop';
-
     let el = evalCode(code, path);
-    // console.log('🦉evalCode', el.component);
-
-    // if( path.includes('index.mdx') )
-    // console.log('el', el);
-    // console.log('🦉el', path);
-
+    
     return {...el, code, jsx};
 }
 
@@ -235,7 +214,7 @@ function evalCode(code: string, path: string) {
         return req;
     }
     // console.log('[evalCode]', code);
-    const child = () => <div className="poop">Heck</div>;
+    // const child = () => <div className="poop">Heck</div>;
     let out = _eval(code, path, { 
         mdx:mdxReact, 
         createElement: mdxReact, 
@@ -266,9 +245,11 @@ export function configPlugin(options) {
             // TODO : convert this into a javascript call
             try {
                 let parsed = Yaml.parse(config);
+
+                // const {enabled, ...rest} = parsed;
                 // console.log('[configPlugin]', parsed, options);
                 if( options.page ){
-                    parsed = {...options.page, parsed };
+                    parsed = {...options.page, ...parsed };
                 }
 
                 (node as any).type = 'export';
