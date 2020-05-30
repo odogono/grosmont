@@ -13,7 +13,7 @@
 
 - [ ] create slug from page title
 
-- [ ] add css - processed with postcss
+- [x] add css - processed with postcss
 
 - [ ] inline css - extract from the mdx and dump to local file
 

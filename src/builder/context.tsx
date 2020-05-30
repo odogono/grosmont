@@ -73,7 +73,7 @@ export interface Page extends Dir {
     component?: any;
     code?: string;
     jsx?: string;
-    html?: string;
+    content?: string;
     links?: PageLinks;
     // pageProps: Meta; // page config
 }

@@ -46,9 +46,10 @@ export async function processPages(rootPath: string, dstPath: string, targetPage
     function debug(ctx: BuildContext) {
         console.log('> pages');
         for (const page of ctx.pages) {
-            let { code, jsx, meta, ...rest } = page as any;
+            let { code, jsx, content, meta, ...rest } = page as any;
             meta = getPageMeta(ctx, page);
             let out:any = {meta,...rest};
+            if( content != null ){ out.content = truncate(content) }
             if( code != null ){ out.code = truncate(code) }
             if( jsx != null ){ out.jsx = truncate(jsx) }
             console.dir(out);
@@ -139,16 +140,21 @@ async function writePages(ctx: BuildContext, options: WritePagesOptions = {}): P
         const {dstPath, ext} = page as Page;
 
         if( ext === 'mdx' ){
-            const { code, jsx, html } = (page as Page);
-            if (html === undefined) {
+            const { code, jsx, content } = (page as Page);
+            if (content === undefined) {
                 continue;
             }
 
-            const outPath = Path.join(ctx.dstPath, dstPath);
+            const outPath = pageDstPath(ctx,page);
 
-            if (doWriteHTML) await writeHTML(outPath, html);
+            if (doWriteHTML) await writeHTML(outPath, content);
             if (doWriteCode) await writeFile(outPath + '.code', code);
             if (doWriteJSX) await writeFile(outPath + '.jsx', jsx);
+        }
+        else if( ext === 'css' ){
+            const {content} = (page as Page);
+            const outPath = pageDstPath(ctx,page);
+            await writeFile( outPath, content );
         }
         else {
             const src = Path.join(ctx.rootPath, page.path + `.${ext}`);
@@ -194,7 +200,7 @@ async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
                 ...page,
                 code: result.code,
                 component: result.component,
-                html: result.html,
+                content: result.html,
                 jsx: result.jsx
             };
         }
@@ -208,7 +214,7 @@ async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
             ...page,
             code: result.code,
             component: result.component,
-            html: result.html,
+            content: result.html,
             jsx: result.jsx
         };
 
@@ -310,9 +316,9 @@ async function processCSS(ctx:BuildContext): Promise<BuildContext> {
     
     for (const page of cssPages) {
         
-        await transformCSS(ctx,page);
+        let tpage = await transformCSS(ctx,page);
 
-        pages.push(page);
+        pages.push(tpage);
     }
 
     ctx.pages = [...other, ...cssPages];
