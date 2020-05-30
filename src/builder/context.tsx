@@ -30,6 +30,8 @@ export interface PageMeta {
 
     // parent wont be folded into this
     resolveParent?: boolean;
+
+    css?: string;
 }
 
 type BuildContextStage = [Function, any[]];

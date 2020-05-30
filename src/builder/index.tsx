@@ -33,10 +33,11 @@ export async function processPages(rootPath: string, dstPath: string, targetPage
             .use(resolveMeta)
             .use(resolveDest)
             .use(processCSS)
-            .use(debug)
             .use(resolveLinks)
+            .use(resolveCSSLinks)
+            // .use(debug)
             .use(renderPages)
-            .use(writePages, { writeCode: false, writeJSX: false })
+            .use(writePages, { beautify:true, writeCode: false, writeJSX: false })
             .process()
     } catch (err) {
         console.error('[processPages]', 'error', err);
@@ -85,6 +86,46 @@ async function resolveDest(ctx: BuildContext): Promise<BuildContext> {
     return ctx;
 }
 
+async function resolveCSSLinks(ctx: BuildContext): Promise<BuildContext> {
+    let pages = [];
+    let [mdxPages,other] = filterPagesByExt(ctx,'mdx');
+
+    for (const page of mdxPages) {
+
+        let {_inlineCSS, ...meta} = page.meta;
+        if( _inlineCSS === undefined || _inlineCSS.length === 0 ){
+            pages.push(page);
+            continue;
+        }
+        const dir = parentDir(ctx, page);
+        const cssPages = _inlineCSS.map( url => {
+            let path = Path.resolve(dir, url);
+            path = Path.relative(ctx.rootPath, path);
+            path = removeExtension(path);
+            return ctx.pages.find(p => p.path === path);
+        }).filter(Boolean);
+
+        const cssLinks = cssPages.map( cssPage => 
+            Path.relative(dirPath(ctx, page), pageDstPath(ctx, cssPage)) );
+
+        let css:string = cssPages.reduce( (content,cssPage) => 
+            content + ' ' + cssPage.content
+            , '');
+        
+        if( cssLinks.length > 0 ){
+            meta = {...meta, cssLinks};
+        }
+        if( css.length > 0 ){
+            // css = css.replace('>', "\\u003E");
+            meta = {...meta, css};
+        }
+
+        pages.push({...page, meta});
+    }
+    ctx.pages = [...other, ...pages];
+    return ctx;
+}
+
 async function resolveLinks(ctx: BuildContext): Promise<BuildContext> {
     let pages = [];
     let [mdxPages,other] = filterPagesByExt(ctx,'mdx');
@@ -98,12 +139,16 @@ async function resolveLinks(ctx: BuildContext): Promise<BuildContext> {
 
         let rewriteLinks = new Map<string, PageLink>();
         for (const [url, value] of links) {
+
             const dir = parentDir(ctx, page)
             let path = Path.resolve(dir, url);
             path = Path.relative(ctx.rootPath, path);
+
             let linkPage = ctx.pages.find(p => p.path === path);
+
             if (linkPage !== undefined) {
                 let rel = Path.relative(dirPath(ctx, page), pageDstPath(ctx, linkPage));
+                // console.log('[resolveL]', path, linkPage?.dstPath, rel );
                 // console.log('[resolveLinks]', url, page.path, linkPage.path, rel );
                 // console.log('[resolveLinks]', url, dirPath(ctx,page) );
                 // console.log('[resolveLinks]', url,  fullPath(ctx,linkPage,true) );
@@ -117,11 +162,14 @@ async function resolveLinks(ctx: BuildContext): Promise<BuildContext> {
         pages.push({ ...page, links: rewriteLinks });
     }
 
-    ctx.pages = [...mdxPages, ...other];
+    ctx.pages = [...other, ...pages];
     return ctx;
 }
 
-interface WritePagesOptions {
+
+
+
+interface WritePagesOptions extends WriteHTMLOptions {
     writeCode?: boolean;
     writeJSX?: boolean;
     writeHTML?: boolean;
@@ -147,7 +195,7 @@ async function writePages(ctx: BuildContext, options: WritePagesOptions = {}): P
 
             const outPath = pageDstPath(ctx,page);
 
-            if (doWriteHTML) await writeHTML(outPath, content);
+            if (doWriteHTML) await writeHTML(outPath, content, options);
             if (doWriteCode) await writeFile(outPath + '.code', code);
             if (doWriteJSX) await writeFile(outPath + '.jsx', jsx);
         }
@@ -219,7 +267,7 @@ async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
         };
 
     } catch (err) {
-        console.error('[renderPage]', err);
+        console.error('[renderPage]', page.path, err);
         console.log('[renderPage]', (page as any).jsx);// (layoutPage as any).jsx);
         return page;
     }
@@ -302,6 +350,7 @@ async function resolveMeta(ctx: BuildContext): Promise<BuildContext> {
         let { meta: outMeta, jsx } = await transpile({ meta, path });
 
         meta = { ...meta, ...outMeta };
+
         pages.push({ ...page, meta });
     }
 
@@ -315,9 +364,7 @@ async function processCSS(ctx:BuildContext): Promise<BuildContext> {
     let [cssPages,other] = filterPagesByExt(ctx,'css');
     
     for (const page of cssPages) {
-        
-        let tpage = await transformCSS(ctx,page);
-
+        let tpage = await transformCSS(ctx,page, {minify:true});
         pages.push(tpage);
     }
 
@@ -408,7 +455,7 @@ async function gatherPages(ctx: BuildContext): Promise<BuildContext> {
         //     continue;
         // }
 
-        relativePath = relativePath.replace(/\.[^/.]+$/, "");
+        relativePath = removeExtension(relativePath);
 
         pages.push(createPage(relativePath, createMeta(), { ext, ctime, mtime }));
     }
@@ -423,8 +470,13 @@ async function writeFile(path: string, content: string) {
     await Fs.writeFile(path, content);
 }
 
-async function writeHTML(path: string, html: string) {
-    writeFile(path, Beautify.html(html));
+interface WriteHTMLOptions {
+    beautify?:boolean;
+}
+
+async function writeHTML(path: string, html: string, options:WriteHTMLOptions={}) {
+    html = (options.beautify ?? false) ? Beautify.html(html) : html;
+    writeFile(path, html);
 }
 
 async function readDirConfig(path: string): Promise<PageMeta> {
@@ -438,7 +490,9 @@ async function readDirConfig(path: string): Promise<PageMeta> {
 }
 
 
-
+function removeExtension(path:string){
+    return path.replace(/\.[^/.]+$/, "");
+}
 
 function truncate(str: string, len = 10) {
     return str === undefined ? '' : str.length <= len ? str : str.slice(0, len) + '...';

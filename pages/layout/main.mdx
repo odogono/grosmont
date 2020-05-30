@@ -10,6 +10,8 @@ comment: Master Layout
         <meta name="description" content="Open Door Go North" />
         <meta name="author" content="SitePoint" />
         <meta charSet="utf-8" />
+        {/* { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)} */}
+        <InlineCSS />
     </head>
 
     <body>{children}</body>

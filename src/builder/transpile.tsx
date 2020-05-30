@@ -9,6 +9,7 @@ import ReactDOMServer from 'react-dom/server';
 import Yaml from 'yaml';
 import MdxOG from '@mdx-js/mdx';
 import * as Babel from "@babel/core";
+import { parse as babelParser } from '@babel/parser';
 const _eval = require('eval');
 const emoji = require('remark-emoji')
 import unistVisit from 'unist-util-visit';
@@ -30,7 +31,7 @@ import squeeze from 'remark-squeeze-paragraphs';
 import mdxAstToMdxHast from '@mdx-js/mdx/mdx-ast-to-mdx-hast';
 // import mdxHastToJsx from '@mdx-js/mdx/mdx-hast-to-jsx';
 import mdxHastToJsx from './mdx-hast-to-jsx';
-import { PageContext, PageLinks, PageLink } from './context';
+import { PageContext, PageLinks, PageLink, PageMeta } from './context';
 
 
 const presets = [
@@ -49,7 +50,7 @@ export interface TranspileProps {
     render?: boolean;
     forceRender?: boolean;
     wrapper?: JSX.Element;
-    meta?: object;
+    meta?: PageMeta;
     children?: any;
     links?: PageLinks;
 }
@@ -60,7 +61,7 @@ export interface TranspileProps {
 export interface TranspileResult {
     html?: string;
     component?: any;
-    meta: any;
+    meta: PageMeta;
     code?: string;
     jsx?: string;
     links?: PageLinks;
@@ -72,8 +73,8 @@ export interface TranspileOptions {
     forceRender?: boolean;
 }
 
-export async function transpile(props:TranspileProps, options:TranspileOptions={}):Promise<TranspileResult> {
-    let {children,path,meta, links:applyLinks} = props;
+export async function transpile(props: TranspileProps, options: TranspileOptions = {}): Promise<TranspileResult> {
+    let { children, path, meta, links: applyLinks } = props;
     const forceRender = options.forceRender ?? false;
     const doRender = forceRender || (options.render ?? false);
 
@@ -81,6 +82,9 @@ export async function transpile(props:TranspileProps, options:TranspileOptions={
 
     const components = {
         Head,
+        InlineCSS: (props) => {
+            return <style dangerouslySetInnerHTML={{__html:meta.css}} />;
+        }
         // Layout,
         // a: (props) => {
         //     const {href,children} = props;
@@ -92,23 +96,23 @@ export async function transpile(props:TranspileProps, options:TranspileOptions={
     }
 
     const mdxResult = await parseMdx(path, meta, applyLinks);
-    const {component, frontMatter, 
-        code, jsx, page, default:d, requires, links,
-        pageProps, ...rest} = mdxResult;
+    const { component, frontMatter,
+        code, jsx, page, default: d, requires, links,
+        pageProps, ...rest } = mdxResult;
 
-    meta = {...pageProps, ...rest};
+    meta = { ...pageProps, ...rest };
 
-    
-    if( !forceRender && (frontMatter !== undefined && frontMatter.enabled === false) ){
-        return {code, jsx, meta, component, links, ...rest};
+
+    if (!forceRender && (frontMatter !== undefined && frontMatter.enabled === false)) {
+        return { code, jsx, meta, component, links, ...rest };
     }
-    
-    const html = doRender ? 
-    renderHTML({components, component, children, ...rest}) 
-    : undefined;
+
+    const html = doRender ?
+        renderHTML({ components, component, children, ...rest })
+        : undefined;
     // if( Object.keys(links).length > 0 )
     // console.log('[transpile]', path, links );
-    
+
     return {
         code, jsx, meta,
         component,
@@ -122,7 +126,7 @@ export async function transpile(props:TranspileProps, options:TranspileOptions={
 //     return <div className="dogshite">{children}</div>
 // };
 
-function renderHTML({components, component:Component,children, ...rest}){
+function renderHTML({ components, component: Component, children, ...rest }) {
 
     // let kids = <span>poppo</span>;
     // console.log('HAHAHA', kids);
@@ -143,57 +147,58 @@ function renderHTML({components, component:Component,children, ...rest}){
     };
 
     let child = children !== undefined ?
-        React.createElement(children, {components})
+        React.createElement(children, { components })
         : undefined;
 
     const html = ReactDOMServer.renderToStaticMarkup(
         <PageContext.Provider value={ctxValue}>
-        <MDXProvider components={components}>
-            <Component>{child}</Component>
-        </MDXProvider></PageContext.Provider>, { pretty: true });
+            <MDXProvider components={components}>
+                <Component>{child}</Component>
+            </MDXProvider></PageContext.Provider>, { pretty: true });
 
     return html;
 }
 
 
-function parseMdx(path: string, pageProps:object, applyLinks?:PageLinks) {
+function parseMdx(path: string, pageProps: object, applyLinks?: PageLinks) {
     let content = Fs.readFileSync(path, 'utf8');
 
-    let [jsx,links] = processMdx(content, pageProps, applyLinks);
+    let [jsx, links] = processMdx(content, pageProps, applyLinks);
 
     // if( path.includes('index.mdx') )
     // console.log('🦉jsx', jsx);
     // console.log('🦉jsxOG', jsxOG);
 
     // console.log('code', code);
-    
+
     let code = transformJSX(jsx);
-    
+
     let el = evalCode(code, path);
-    
-    return {...el, code, jsx, links};
+
+    return { ...el, code, jsx, links };
 }
 
 
-export function processMdx(content:string, pageProps:object, applyLinks?:PageLinks):[string,PageLinks] {
+export function processMdx(content: string, pageProps: object, applyLinks?: PageLinks): [string, PageLinks] {
 
-    let links = new Map<string,any>();
+    let links = new Map<string, any>();
 
     // return new Promise( (res,rej) => {
     let output = unified()
         .use(parse)
         .use(stringify)
-        .use( frontmatter )
-        .use( configPlugin, { page: pageProps} )
-        .use( removeCommentPlugin )
-        .use( linkProc, { links, applyLinks } )
-        // .use( () => console.dir )
+        .use(frontmatter)
+        .use(configPlugin, { page: pageProps })
+        .use(removeCommentPlugin)
+        .use(linkProc, { links, applyLinks })
         .use(mdx)
         .use(mdxjs)
+        .use(importCSSPlugin)
+        // .use(() => console.dir)
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
-        .processSync( content );
+        .processSync(content);
     // console.log(output);
 
     return ['/* @jsx mdx */\n' + output.toString(), links];
@@ -205,7 +210,7 @@ function transformJSX(jsx: string) {
     //     'react-dom': 'preact-compat',
     // }
     const plugins = [
-        [ "module-resolver", {
+        ["module-resolver", {
             "root": ["."],
             // alias
         }]
@@ -216,30 +221,31 @@ function transformJSX(jsx: string) {
 function evalCode(code: string, path: string) {
     let requires = [];
     const requireManual = (requirePath) => {
-        // console.log('[require]', requirePath );
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
-        if( Fs.existsSync(fullPath) && fullPath.endsWith('.mdx') ){
+        console.log('[require]', fullPath);
+        if (Fs.existsSync(fullPath) && fullPath.endsWith('.mdx')) {
             // console.log('[require]', fullPath);
-            return parseMdx(fullPath,{}).default;
+            return parseMdx(fullPath, {}).default;
         }
-        const req = require(requirePath);
 
-        requires.push({ exports:Object.keys(req).join(','), path:requirePath})
+        const req = require(fullPath);
+
+        requires.push({ exports: Object.keys(req).join(','), path: requirePath })
         return req;
     }
     // console.log('[evalCode]', code);
     // const child = () => <div className="poop">Heck</div>;
-    let out = _eval(code, path, { 
-        mdx:mdxReact, 
-        createElement: mdxReact, 
-        React, 
-        require:requireManual 
+    let out = _eval(code, path, {
+        mdx: mdxReact,
+        createElement: mdxReact,
+        React,
+        require: requireManual
     });
     const component = out['default'];
     const pageProps = out['page'];
     // console.log('[evalCode]', component);
-    
-    return {...out, pageProps, requires, component};
+
+    return { ...out, pageProps, requires, component };
 }
 
 
@@ -252,9 +258,9 @@ function removeTypePlugin(options = {}) {
 }
 
 export function configPlugin(options) {
-    return (tree, file,...rest) => {
+    return (tree, file, ...rest) => {
         unistVisit(tree, { type: 'yaml' }, (node, index, parent) => {
-            
+
             const config = (node as any).value;
             // TODO : convert this into a javascript call
             try {
@@ -262,14 +268,14 @@ export function configPlugin(options) {
 
                 // const {enabled, ...rest} = parsed;
                 // console.log('[configPlugin]', parsed, options);
-                if( options.page ){
-                    parsed = {...options.page, ...parsed };
+                if (options.page) {
+                    parsed = { ...options.page, ...parsed };
                 }
 
                 (node as any).type = 'export';
                 // (node as any).value = 'export const frontMatter = ' + JSON.stringify(parsed) + ';';
                 (node as any).value = 'export const page = ' + JSON.stringify(parsed) + ';';
-                
+
             } catch (e) {
                 console.error("Parsing error on line " + e.line + ", column " + e.column +
                     ": " + e.message);
@@ -298,10 +304,10 @@ export function removeCommentPlugin() {
 
 interface LinkProcProps {
     links: PageLinks;
-    applyLinks?: PageLinks; 
+    applyLinks?: PageLinks;
 }
 
-function linkProc( {links, applyLinks}:LinkProcProps ){
+function linkProc({ links, applyLinks }: LinkProcProps) {
     // console.log('[linkProc]', options);
 
     return (tree, file, ...args) => {
@@ -314,17 +320,64 @@ function linkProc( {links, applyLinks}:LinkProcProps ){
             const ctx = node;
             if (!ctx) return;
 
-            if( applyLinks !== undefined ){
+            if (applyLinks !== undefined) {
                 let applyLink = applyLinks.get(ctx.url);
-                if( applyLink !== undefined ){
+                if (applyLink !== undefined) {
                     ctx.url = applyLink.url;
                 }
             }
 
             // console.log('[linkProc]', args, ctx);
             let child = ctx.children[0];
-            let link:PageLink = { url:ctx.url, child: child.type === 'text' ? child.value : ctx.url };
-            links.set(ctx.url, link );
+            let link: PageLink = { url: ctx.url, child: child.type === 'text' ? child.value : ctx.url };
+            links.set(ctx.url, link);
         }
+    }
+}
+
+
+
+function importCSSPlugin() {
+    return (tree, file) => {
+        let cssPaths = [];
+        unistVisit(tree, ['import'], (node) => {
+            const ast = babelParser(node.value as string, { sourceType: 'module' });
+            
+            if (ast.type === 'File'
+                && ast.program?.sourceType === 'module'
+            ) {
+                const decls = ast.program.body.filter(n => n.type === 'ImportDeclaration');
+
+                for (const decl of decls) {
+                    const value = decl['source'].value;
+                    if (value.endsWith('.css')) {
+                        cssPaths.push(value);
+                        node.type = 'killme';
+                    }
+                }
+            }
+        });
+
+        unistRemove(tree, {cascade: false}, n => n.type === 'killme');
+
+        if( cssPaths.length > 0 ){
+            let cssNode = {
+                type: 'export',
+                value: `export const _inlineCSS = [ ${cssPaths.map(c => `'${c}'`).join(',')} ]`
+            };
+            tree.children.unshift(cssNode);
+        }
+
+        // unistRemove(tree, { cascade: false }, (node, idx, parent) => {
+        //     if (node.type === 'import') {
+        //         // const exists = node.children.filter(node => node.type === 'text' && node.value.trim().startsWith('//'));
+        //         if (node.value > 0) {
+        //             // console.log('[removeCommentPlugin]', node);
+        //             // return true;
+        //         }
+        //     }
+        //     return false;
+        // });
+        // console.log('[importCSSPlugin]', cssPaths);
     }
 }

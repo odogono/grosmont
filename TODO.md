@@ -15,7 +15,7 @@
 
 - [x] add css - processed with postcss
 
-- [ ] inline css - extract from the mdx and dump to local file
+- [x] inline css - extract from the mdx and dump to local file
 
 - [ ] inline svg
 
