@@ -1,5 +1,5 @@
 import React from 'react';
-import { PageContext } from '../context';
+import { PageContext } from '../builder/context';
 
 export function Head({children, ...props}) {
 

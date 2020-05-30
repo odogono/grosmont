@@ -14,8 +14,8 @@ const emoji = require('remark-emoji')
 import unistVisit from 'unist-util-visit';
 import Definitions from 'mdast-util-definitions';
 import unistRemove from 'unist-util-remove';
-import { Layout } from './components/layout';
-import { Head } from './components/head';
+import { Layout } from '../components/layout';
+import { Head } from '../components/head';
 
 import vfile from 'to-vfile';
 import report from 'vfile-reporter';

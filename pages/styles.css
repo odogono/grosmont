@@ -1,0 +1,33 @@
+body {
+	grid-kiss:
+		"+------------------------------+      "
+		"|           header ↑           | 120px"
+		"+------------------------------+      "
+		"                                      "
+		"+--150px---+  +----- auto -----+      "
+		"| .sidebar |  |      main      | auto "
+		"+----------+  +----------------+      "
+		"                                      "
+		"+------------------------------+      "
+		"|              ↓               |      "
+		"|         → footer ←           | 60px "
+		"+------------------------------+      "
+}
+
+header   { background: cyan; }
+.sidebar { background: lime; }
+main     { background: yellow; }
+footer   { background: pink; }
+
+
+$blue: #056ef0;
+$column: 200px;
+ 
+.menu {
+  width: calc(4 * $column);
+}
+ 
+.menu_link {
+  background: $blue;
+  width: $column;
+}

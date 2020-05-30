@@ -4,9 +4,12 @@
 
 - [x] read page meta from directory config file - pages still override
 
-- [ ] cope with regular html - should just copy to dst
+- [x] cope with regular html - should just copy to dst
+
+- [ ] single file based update instead of dir scan - take single file and find its dependencies to include in page list
 
 - [ ] setup dev server with live reload for pages (sse)
+    this relies on tracking which files change
 
 - [ ] create slug from page title
 

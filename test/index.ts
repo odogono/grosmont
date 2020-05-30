@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import Path from 'path';
 import Fs, { pathExists } from 'fs-extra';
-import {processPages} from '../src/build';
+import {processPages} from '../src/builder';
 import {Test} from '../src/components/test';
 
 describe('Pipleline', () => {
