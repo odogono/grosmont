@@ -4,7 +4,7 @@ import PostCSS from 'postcss';
 import PreCSS from 'precss';
 
 
-import { BuildContext, Page, pageSrcPath, pageDstPath } from ".";
+import { BuildContext, Page, pageSrcPath, pageDstPath } from "./context";
 
 
 

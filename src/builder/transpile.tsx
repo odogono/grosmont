@@ -30,7 +30,7 @@ import squeeze from 'remark-squeeze-paragraphs';
 import mdxAstToMdxHast from '@mdx-js/mdx/mdx-ast-to-mdx-hast';
 // import mdxHastToJsx from '@mdx-js/mdx/mdx-hast-to-jsx';
 import mdxHastToJsx from './mdx-hast-to-jsx';
-import { PageContext } from './context';
+import { PageContext, PageLinks, PageLink } from './context';
 
 
 const presets = [
@@ -54,12 +54,7 @@ export interface TranspileProps {
     links?: PageLinks;
 }
 
-export interface PageLink {
-    url?: string;
-    child: any;
-}
 
-export type PageLinks = Map<string, PageLink>;
 
 
 export interface TranspileResult {
