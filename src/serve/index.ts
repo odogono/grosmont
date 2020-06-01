@@ -22,6 +22,8 @@ Chokidar.watch('.').on('all', (event, path) => {
     }
 });
 
+
+
 // app.use(serveStatic('dist') );
 
 app.use(async (req, res, next) => {

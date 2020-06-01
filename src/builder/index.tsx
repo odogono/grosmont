@@ -12,7 +12,7 @@ import { BuildContext,
     createPage, createDir,
     isDir, dirPath,
     pageSrcPath, pageDstPath,
-    PageLink, PageLinks, getPageLayout, parentDir, getPageMeta
+    PageLink, PageLinks, getPageLayout, parentDir, getPageMeta, isMdxPage
 } from './context';
 
 
@@ -23,21 +23,19 @@ export async function processPages(rootPath: string, dstPath: string, targetPage
 
     let ctx = new BuildContext(rootPath, dstPath);
 
-    
-
     try {
         ctx
             .use(() => Fs.emptyDir(dstPath))
             .use(gatherPages)
-            .use(parsePages)
             .use(resolveMeta)
+            .use(removeDisabled)
+            // .use(debug)
             .use(resolveDest)
             .use(processCSS)
             .use(resolveLinks)
             .use(resolveCSSLinks)
-            // .use(debug)
             .use(renderPages)
-            .use(writePages, { beautify:true, writeCode: false, writeJSX: false })
+            .use(writePages, { beautify:true, writeCode: true, writeJSX: false })
             .process()
     } catch (err) {
         console.error('[processPages]', 'error', err);
@@ -196,17 +194,20 @@ async function writePages(ctx: BuildContext, options: WritePagesOptions = {}): P
             const outPath = pageDstPath(ctx,page);
 
             if (doWriteHTML) await writeHTML(outPath, content, options);
-            if (doWriteCode) await writeFile(outPath + '.code', code);
+            if (doWriteCode) await writeFile(outPath + '.js', code);
             if (doWriteJSX) await writeFile(outPath + '.jsx', jsx);
         }
         else if( ext === 'css' ){
             const {content} = (page as Page);
             const outPath = pageDstPath(ctx,page);
+            await Fs.ensureDir( Path.dirname(outPath) );
             await writeFile( outPath, content );
         }
         else {
+            // console.log('[writePages]', page.path, page.meta );
             const src = Path.join(ctx.rootPath, page.path + `.${ext}`);
             const dst = Path.join(ctx.dstPath,dstPath);
+            await Fs.ensureDir( Path.dirname(dst) );
             await Fs.copyFile( src, dst );
         }
     }
@@ -217,7 +218,7 @@ async function renderPages(ctx: BuildContext): Promise<BuildContext> {
     let pages = [];
 
     for (const page of ctx.pages) {
-        if (isDir(page) || (page as Page).ext !== 'mdx') {
+        if( !isMdxPage(page) ){
             pages.push(page);
             continue;
         }
@@ -276,64 +277,40 @@ async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
 
 
 
-async function parsePages(ctx: BuildContext): Promise<BuildContext> {
-    let pages = [];
-    let [mdxPages,other] = filterPagesByExt(ctx,'mdx');
-
-    for (const page of mdxPages) {
-        
-        const path = pageSrcPath(ctx,page);
-        let { meta } = page;
-
-        let { meta: outMeta, links } = await transpile({ meta, path });
-
-        // console.log('[parsePages]', 'links', links );
-        meta = { ...page.meta, ...outMeta };
-        let upd: any = { ...page, meta };
-        if (links !== undefined && links.size > 0) {
-            upd = { ...upd, links };
-        }
-
-        pages.push(upd);
-    }
-    ctx.pages = [...other, ...pages];
-    return ctx;
-}
-
-
-function filterPagesByExt(ctx:BuildContext, ext:string = 'mdx' ) {
-    return ctx.pages.reduce( ([mdx,other], d) => {
-        if( !isDir(d) && (d as Page).ext === ext ){
-            mdx = [...mdx,d]
-        }  else {
-            other = [...other,d];
-        }
-        return [mdx,other];
-   },[[],[]]);
-}
-
+/**
+ * Parses pages of their meta data and links by doing a transpile on
+ * the page source. Then resolves against directory meta. 
+ * 
+ * @param ctx 
+ */
 async function resolveMeta(ctx: BuildContext): Promise<BuildContext> {
     let pages = [];
 
     // filter out dirs
     let [mdxPages,other] = filterPagesByExt(ctx,'mdx');
 
-    // first pass, resolve own meta
+    // first pass, resolve own meta, and also links
     for (const page of mdxPages) {
         let { meta } = page;
         // console.log('[resolveMeta]', page);
         const path = pageSrcPath(ctx, page);
 
         // just interested in meta
-        let { meta: outMeta } = await transpile({ meta, path });
+        let { meta: outMeta, links } = await transpile({ meta, path });
         meta = { ...meta, ...outMeta };
-        pages.push({ ...page, meta });
+
+        let upd: any = { ...page, meta };
+        if (links !== undefined && links.size > 0) {
+            upd = { ...upd, links };
+        }
+        
+        pages.push(upd);
     }
-    mdxPages = pages;
+    ctx.pages = [...other, ...pages];
     pages = [];
 
     // second pass, resolve directory meta
-    for (const page of mdxPages) {
+    for (const page of ctx.pages) {
         let { meta } = page;
         const path = pageSrcPath(ctx, page);
 
@@ -347,16 +324,34 @@ async function resolveMeta(ctx: BuildContext): Promise<BuildContext> {
             meta = { ...layout.meta, ...meta };
         }
 
-        let { meta: outMeta, jsx } = await transpile({ meta, path });
-
-        meta = { ...meta, ...outMeta };
+        if( isMdxPage(page) ){
+            let { meta: outMeta } = await transpile({ meta, path });
+            meta = { ...meta, ...outMeta };
+        }
 
         pages.push({ ...page, meta });
+    }
+
+    ctx.pages = pages;
+    return ctx;
+}
+
+
+async function removeDisabled(ctx:BuildContext): Promise<BuildContext> {
+    let pages = [];
+    let [mdxPages,other] = filterPagesByExt(ctx,'mdx');
+    
+    for (const page of mdxPages) {
+        if( page.meta.isEnabled === false ){
+            continue;
+        }
+        pages.push(page);
     }
 
     ctx.pages = [...other, ...pages];
     return ctx;
 }
+
 
 
 async function processCSS(ctx:BuildContext): Promise<BuildContext> {
@@ -368,7 +363,7 @@ async function processCSS(ctx:BuildContext): Promise<BuildContext> {
         pages.push(tpage);
     }
 
-    ctx.pages = [...other, ...cssPages];
+    ctx.pages = [...other, ...pages];
     return ctx;
 }
 
@@ -433,16 +428,31 @@ async function gatherPages(ctx: BuildContext): Promise<BuildContext> {
         return ctx;
     }
 
+    let inactivePaths = [];
+
     for await (const file of Klaw(rootPath)) {
         let relativePath = Path.relative(ctx.rootPath, file.path);
+
+        const isDisabled = inactivePaths.find( p => relativePath.startsWith(p) );
+
+        if( isDisabled ){
+            // console.log('[gatherPages]', relativePath, 'disabled' );
+            continue;
+        }
 
         const { ctime, mtime } = file.stats;
         if (file.stats.isDirectory()) {
             let meta = await readDirConfig(file.path);
             if (meta !== undefined) {
-                pages.push(createDir(relativePath, meta, { ctime, mtime }));
+                // early culling of disabled paths
+                if( meta.isEnabled === false ){
+                    inactivePaths.push( relativePath );
+                    continue;
+                }
+                const dir = createDir(relativePath, meta, { ctime, mtime });
+                pages.push(dir);
             }
-            // console.log('[gatherPages]', file.path, meta);
+            // console.log('[gatherPages]', relativePath, meta);
             continue;
         }
 
@@ -498,3 +508,13 @@ function truncate(str: string, len = 10) {
     return str === undefined ? '' : str.length <= len ? str : str.slice(0, len) + '...';
 }
 
+function filterPagesByExt(ctx:BuildContext, ext:string = 'mdx' ) {
+    return ctx.pages.reduce( ([mdx,other], d) => {
+        if( !isDir(d) && (d as Page).ext === ext ){
+            mdx = [...mdx,d]
+        }  else {
+            other = [...other,d];
+        }
+        return [mdx,other];
+   },[[],[]]);
+}

@@ -25,7 +25,10 @@ export interface PageMeta {
     // layout file into which this page will be rendered
     layout?: string;
 
+    // whether the page is enabled - it will be ignored if not
     isEnabled: boolean;
+
+    // whether the page can be rendered
     isRenderable: boolean;
 
     // parent wont be folded into this
@@ -126,6 +129,11 @@ export function dirPath(ctx: BuildContext, page: Dir) {
 
 export function isDir(dir: Dir) {
     return !('ext' in dir);
+}
+
+
+export function isMdxPage(page:Dir){
+    return page !== undefined && ('ext' in page) && page['ext'] === 'mdx';
 }
 
 
