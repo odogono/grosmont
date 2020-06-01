@@ -35,7 +35,7 @@ export async function processPages(rootPath: string, dstPath: string, targetPage
             .use(resolveLinks)
             .use(resolveCSSLinks)
             .use(renderPages)
-            .use(writePages, { beautify:true, writeCode: true, writeJSX: false })
+            .use(writePages, { beautify:true, writeCode: false, writeJSX: false })
             .process()
     } catch (err) {
         console.error('[processPages]', 'error', err);
@@ -175,9 +175,10 @@ interface WritePagesOptions extends WriteHTMLOptions {
 
 async function writePages(ctx: BuildContext, options: WritePagesOptions = {}): Promise<BuildContext> {
     // console.log('[writePages]', options);
-    const doWriteHTML = options.writeHTML ?? true;
-    const doWriteCode = options.writeCode ?? false;
-    const doWriteJSX = options.writeJSX ?? false;
+    let doWriteHTML = options.writeHTML ?? true;
+    let doWriteCode = options.writeCode ?? false;
+    let doWriteJSX = options.writeJSX ?? false;
+    let doWriteAST = false;
 
     for (const page of ctx.pages) {
         if (isDir(page)) {
@@ -185,17 +186,22 @@ async function writePages(ctx: BuildContext, options: WritePagesOptions = {}): P
         }
         const {dstPath, ext} = page as Page;
 
-        if( ext === 'mdx' ){
-            const { code, jsx, content } = (page as Page);
+        if( isMdxPage(page) ){
+            const { code, jsx,ast, meta, content } = (page as Page);
             if (content === undefined) {
                 continue;
             }
 
             const outPath = pageDstPath(ctx,page);
 
+            doWriteCode = meta['writeJS'] === true || doWriteCode;
+            doWriteJSX = meta['writeJSX'] === true || doWriteJSX;
+            doWriteAST = meta['writeAST'] === true || doWriteAST;
+
             if (doWriteHTML) await writeHTML(outPath, content, options);
             if (doWriteCode) await writeFile(outPath + '.js', code);
             if (doWriteJSX) await writeFile(outPath + '.jsx', jsx);
+            if (doWriteAST) await writeFile(outPath + '.ast', JSON.stringify(ast,null,'\t'));
         }
         else if( ext === 'css' ){
             const {content} = (page as Page);
@@ -230,8 +236,7 @@ async function renderPages(ctx: BuildContext): Promise<BuildContext> {
 
 async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
     const isRenderable = page.meta.isRenderable ?? false;
-    const isEnabled = page.meta.isEnabled ?? true;
-    if (!isEnabled || !isRenderable) {
+    if (!isRenderable) {
         return page;
     }
 
@@ -257,13 +262,14 @@ async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
         // render the page into the layout page
         path = pageSrcPath(ctx,layoutPage);
 
-        result = await transpile({ path, meta, children: result.component }, { forceRender: true });
+        let layoutResult = await transpile({ path, meta, children: result.component }, { forceRender: true });
 
         return {
             ...page,
             code: result.code,
-            component: result.component,
-            content: result.html,
+            ast: result.ast,
+            component: layoutResult.component,
+            content: layoutResult.html,
             jsx: result.jsx
         };
 

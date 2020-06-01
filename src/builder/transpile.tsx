@@ -63,6 +63,7 @@ export interface TranspileResult {
     component?: any;
     meta: PageMeta;
     code?: string;
+    ast?: object;
     jsx?: string;
     links?: PageLinks;
 }
@@ -97,14 +98,14 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
 
     const mdxResult = await parseMdx(path, meta, applyLinks);
     const { component, frontMatter,
-        code, jsx, page, default: d, requires, links,
+        code, jsx, ast, page, default: d, requires, links,
         pageProps, ...rest } = mdxResult;
 
     meta = { ...pageProps, ...rest };
 
 
     if (!forceRender && (frontMatter !== undefined && frontMatter.enabled === false)) {
-        return { code, jsx, meta, component, links, ...rest };
+        return { code, jsx, ast, meta, component, links, ...rest };
     }
 
     const html = doRender ?
@@ -114,7 +115,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     // console.log('[transpile]', path, links );
 
     return {
-        code, jsx, meta,
+        code, jsx, meta, ast,
         component,
         html,
         links,
@@ -163,7 +164,7 @@ function renderHTML({ components, component: Component, children, ...rest }) {
 function parseMdx(path: string, pageProps: object, applyLinks?: PageLinks) {
     let content = Fs.readFileSync(path, 'utf8');
 
-    let [jsx, links] = processMdx(content, pageProps, applyLinks);
+    let [jsx, links, ast] = processMdx(content, pageProps, applyLinks);
 
     // if( path.includes('index.mdx') )
     // console.log('🦉jsx', jsx);
@@ -172,16 +173,16 @@ function parseMdx(path: string, pageProps: object, applyLinks?: PageLinks) {
     // console.log('code', code);
 
     let code = transformJSX(jsx);
-
     let el = evalCode(code, path);
 
-    return { ...el, code, jsx, links };
+    return { ...el, code, jsx, ast, links };
 }
 
 
-export function processMdx(content: string, pageProps: object, applyLinks?: PageLinks): [string, PageLinks] {
+export function processMdx(content: string, pageProps: object, applyLinks?: PageLinks): [string, PageLinks, object] {
 
     let links = new Map<string, any>();
+    let ast;
 
     // return new Promise( (res,rej) => {
     let output = unified()
@@ -191,6 +192,7 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
         .use(configPlugin, { page: pageProps })
         .use(removeCommentPlugin)
         .use(linkProc, { links, applyLinks })
+        .use( () => tree => ast = {...tree} )
         .use(mdx)
         .use(mdxjs)
         .use(importCSSPlugin)
@@ -201,7 +203,7 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
         .processSync(content);
     // console.log(output);
 
-    return ['/* @jsx mdx */\n' + output.toString(), links];
+    return ['/* @jsx mdx */\n' + output.toString(), links, ast];
 }
 
 function transformJSX(jsx: string) {
@@ -222,13 +224,22 @@ function evalCode(code: string, path: string) {
     let requires = [];
     const requireManual = (requirePath) => {
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
-        console.log('[require]', fullPath);
+        
+        // console.log('[require]', fullPath);
+        
         if (Fs.existsSync(fullPath) && fullPath.endsWith('.mdx')) {
             // console.log('[require]', fullPath);
             return parseMdx(fullPath, {}).default;
         }
 
-        const req = require(fullPath);
+        const extPath = findFileWithExt(fullPath, ['jsx', 'js'] );
+        if( extPath.endsWith('.jsx') ){
+            let jsx = Fs.readFileSync(extPath, 'utf8');
+            let code = transformJSX(jsx);
+            return evalCode(code, extPath);
+        }
+
+        const req = require(requirePath);
 
         requires.push({ exports: Object.keys(req).join(','), path: requirePath })
         return req;
@@ -248,7 +259,16 @@ function evalCode(code: string, path: string) {
     return { ...out, pageProps, requires, component };
 }
 
-
+function findFileWithExt( path:string, exts:string[] ){
+    exts = [ '', ...exts ];
+    for( const ext of exts ){
+        let epath = path + `.${ext}`;
+        if( Fs.existsSync(epath) ){
+            return epath;
+        }
+    }
+    return path;
+}
 
 function removeTypePlugin(options = {}) {
     return (tree, file) => {

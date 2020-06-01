@@ -1,8 +1,8 @@
 import React from 'react';
 
 
-export const TomatoHighlight = () => (
+export const TomatoHighlight = ({children}) => (
     <div style={{ padding: '20px', backgroundColor: 'tomato' }}>
-    <h3>This is Tomato</h3>
+    <h3>{children}</h3>
     </div>
 );
