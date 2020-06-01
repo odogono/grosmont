@@ -6,20 +6,20 @@ import { mdx as mdxReact, MDXProvider } from '@mdx-js/react'
 import ReactDOMServer from 'react-dom/server';
 // import {transform as transformBuble} from 'buble-jsx-only'
 
-import Yaml from 'yaml';
-import MdxOG from '@mdx-js/mdx';
+
+// import MdxOG from '@mdx-js/mdx';
 import * as Babel from "@babel/core";
-import { parse as babelParser } from '@babel/parser';
+
 const _eval = require('eval');
 const emoji = require('remark-emoji')
 import unistVisit from 'unist-util-visit';
-import Definitions from 'mdast-util-definitions';
+// import Definitions from 'mdast-util-definitions';
 import unistRemove from 'unist-util-remove';
-import { Layout } from '../components/layout';
+// import { Layout } from '../components/layout';
 import { Head } from '../components/head';
 
-import vfile from 'to-vfile';
-import report from 'vfile-reporter';
+// import vfile from 'to-vfile';
+// import report from 'vfile-reporter';
 import unified from 'unified';
 import parse from 'remark-parse';
 import stringify from 'remark-stringify';
@@ -32,6 +32,11 @@ import mdxAstToMdxHast from '@mdx-js/mdx/mdx-ast-to-mdx-hast';
 // import mdxHastToJsx from '@mdx-js/mdx/mdx-hast-to-jsx';
 import mdxHastToJsx from './mdx-hast-to-jsx';
 import { PageContext, PageLinks, PageLink, PageMeta } from './context';
+import { deepExtend } from '../util/deep_extend';
+import { importCSSPlugin } from './unified/plugin/import_css';
+import { linkProc } from './unified/plugin/link';
+import { configPlugin } from './unified/plugin/config';
+import { removeCommentPlugin } from './unified/plugin/remove_comment';
 
 
 const presets = [
@@ -63,7 +68,7 @@ export interface TranspileResult {
     component?: any;
     meta: PageMeta;
     code?: string;
-    ast?: object;
+    ast?: any;
     jsx?: string;
     links?: PageLinks;
 }
@@ -179,7 +184,7 @@ function parseMdx(path: string, pageProps: object, applyLinks?: PageLinks) {
 }
 
 
-export function processMdx(content: string, pageProps: object, applyLinks?: PageLinks): [string, PageLinks, object] {
+export function processMdx(content: string, pageProps: object, applyLinks?: PageLinks): [string, PageLinks, any] {
 
     let links = new Map<string, any>();
     let ast;
@@ -187,16 +192,17 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
     // return new Promise( (res,rej) => {
     let output = unified()
         .use(parse)
+        // .use(() => console.dir)
         .use(stringify)
         .use(frontmatter)
         .use(configPlugin, { page: pageProps })
         .use(removeCommentPlugin)
         .use(linkProc, { links, applyLinks })
-        .use( () => tree => ast = {...tree} )
+        .use( () => tree => {ast = JSON.stringify(tree,null,'\t')} )
         .use(mdx)
         .use(mdxjs)
         .use(importCSSPlugin)
-        // .use(() => console.dir)
+        
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
@@ -270,134 +276,4 @@ function findFileWithExt( path:string, exts:string[] ){
     return path;
 }
 
-function removeTypePlugin(options = {}) {
-    return (tree, file) => {
-        // console.log('[removeTypePlugin]', file);
-        unistRemove(tree, options);
-    }
-}
 
-export function configPlugin(options) {
-    return (tree, file, ...rest) => {
-        unistVisit(tree, { type: 'yaml' }, (node, index, parent) => {
-
-            const config = (node as any).value;
-            // TODO : convert this into a javascript call
-            try {
-                let parsed = Yaml.parse(config);
-
-                // const {enabled, ...rest} = parsed;
-                // console.log('[configPlugin]', parsed, options);
-                if (options.page) {
-                    parsed = { ...options.page, ...parsed };
-                }
-
-                (node as any).type = 'export';
-                // (node as any).value = 'export const frontMatter = ' + JSON.stringify(parsed) + ';';
-                (node as any).value = 'export const page = ' + JSON.stringify(parsed) + ';';
-
-            } catch (e) {
-                console.error("Parsing error on line " + e.line + ", column " + e.column +
-                    ": " + e.message);
-            }
-
-        })
-        unistRemove(tree, 'frontMatter');
-    }
-};
-
-export function removeCommentPlugin() {
-    return (tree, file) => {
-        unistRemove(tree, { cascade: false }, (node, idx, parent) => {
-            if (node.type === 'paragraph') {
-                const exists = node.children.filter(node => node.type === 'text' && node.value.trim().startsWith('//'));
-                if (exists.length > 0) {
-                    // console.log('[removeCommentPlugin]', node);
-                    return true;
-                }
-            }
-            return false;
-        });
-    }
-};
-
-
-interface LinkProcProps {
-    links: PageLinks;
-    applyLinks?: PageLinks;
-}
-
-function linkProc({ links, applyLinks }: LinkProcProps) {
-    // console.log('[linkProc]', options);
-
-    return (tree, file, ...args) => {
-        // let links =  {};
-
-        unistVisit(tree, ['link', 'linkReference'], visitor);
-
-        function visitor(node) {
-            // const ctx = node.type === 'link' ? node : Definitions(node.identifier)
-            const ctx = node;
-            if (!ctx) return;
-
-            if (applyLinks !== undefined) {
-                let applyLink = applyLinks.get(ctx.url);
-                if (applyLink !== undefined) {
-                    ctx.url = applyLink.url;
-                }
-            }
-
-            // console.log('[linkProc]', args, ctx);
-            let child = ctx.children[0];
-            let link: PageLink = { url: ctx.url, child: child.type === 'text' ? child.value : ctx.url };
-            links.set(ctx.url, link);
-        }
-    }
-}
-
-
-
-function importCSSPlugin() {
-    return (tree, file) => {
-        let cssPaths = [];
-        unistVisit(tree, ['import'], (node) => {
-            const ast = babelParser(node.value as string, { sourceType: 'module' });
-            
-            if (ast.type === 'File'
-                && ast.program?.sourceType === 'module'
-            ) {
-                const decls = ast.program.body.filter(n => n.type === 'ImportDeclaration');
-
-                for (const decl of decls) {
-                    const value = decl['source'].value;
-                    if (value.endsWith('.css')) {
-                        cssPaths.push(value);
-                        node.type = 'killme';
-                    }
-                }
-            }
-        });
-
-        unistRemove(tree, {cascade: false}, n => n.type === 'killme');
-
-        if( cssPaths.length > 0 ){
-            let cssNode = {
-                type: 'export',
-                value: `export const _inlineCSS = [ ${cssPaths.map(c => `'${c}'`).join(',')} ]`
-            };
-            tree.children.unshift(cssNode);
-        }
-
-        // unistRemove(tree, { cascade: false }, (node, idx, parent) => {
-        //     if (node.type === 'import') {
-        //         // const exists = node.children.filter(node => node.type === 'text' && node.value.trim().startsWith('//'));
-        //         if (node.value > 0) {
-        //             // console.log('[removeCommentPlugin]', node);
-        //             // return true;
-        //         }
-        //     }
-        //     return false;
-        // });
-        // console.log('[importCSSPlugin]', cssPaths);
-    }
-}

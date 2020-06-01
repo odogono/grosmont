@@ -201,7 +201,7 @@ async function writePages(ctx: BuildContext, options: WritePagesOptions = {}): P
             if (doWriteHTML) await writeHTML(outPath, content, options);
             if (doWriteCode) await writeFile(outPath + '.js', code);
             if (doWriteJSX) await writeFile(outPath + '.jsx', jsx);
-            if (doWriteAST) await writeFile(outPath + '.ast', JSON.stringify(ast,null,'\t'));
+            if (doWriteAST) await writeFile(outPath + '.ast', ast as any);
         }
         else if( ext === 'css' ){
             const {content} = (page as Page);
