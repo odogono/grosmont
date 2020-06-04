@@ -3,14 +3,14 @@ title: Testing Compilation
 tags: [ tag1, tag2, tag3 ]
 description: something
 layout: layout/main
-writeJS: true
-writeJSX: true
-writeAST: true
+writeJS: false
+writeJSX: false
+writeAST: false
 ---
 
 import './styles/layout.css';
 import {TomatoHighlight} from './components/tomato_highlight';
-
+import Comment from './components/comment';
 
 
 export const facts = {
@@ -30,3 +30,4 @@ So this should work, [I'm an inline-style link](https://www.google.com)
 
 [I'm a relative reference to a repository file](./blog/about)
 
+<Comment />

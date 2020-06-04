@@ -71,6 +71,7 @@ export interface TranspileResult {
     ast?: any;
     jsx?: string;
     links?: PageLinks;
+    requires: string[];
 }
 
 
@@ -108,43 +109,30 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
 
     meta = { ...pageProps, ...rest };
 
+    let depends = requires.map( r => r.path );
+
 
     if (!forceRender && (frontMatter !== undefined && frontMatter.enabled === false)) {
-        return { code, jsx, ast, meta, component, links, ...rest };
+        return { code, jsx, ast, meta, component, requires:depends, links, ...rest };
     }
+
+    // console.log('[transpile]', path, code );
 
     const html = doRender ?
         renderHTML({ components, component, children, ...rest })
         : undefined;
-    // if( Object.keys(links).length > 0 )
-    // console.log('[transpile]', path, links );
 
     return {
         code, jsx, meta, ast,
         component,
+        requires:depends,
         html,
         links,
         ...rest
     }
 }
 
-// function MDXShite({children,components,...props}) {
-//     return <div className="dogshite">{children}</div>
-// };
-
 function renderHTML({ components, component: Component, children, ...rest }) {
-
-    // let kids = <span>poppo</span>;
-    // console.log('HAHAHA', kids);
-    // console.log('HAHAHA', children );
-    // console.log('HAHAHA', MDXShite({children:kids, components:null}) );
-    // kids = children()({});
-    // let huh = React.createElement( children );
-    // console.log('HAHAHA', components );
-
-    // console.log('HAHAHAH', ReactDOMServer.renderToStaticMarkup(  
-    //     huh
-    // ) );
 
     const ctxValue = {
         status: 'ready to go',
@@ -195,6 +183,7 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
         // .use(() => console.dir)
         .use(stringify)
         .use(frontmatter)
+        .use(emoji)
         .use(configPlugin, { page: pageProps })
         .use(removeCommentPlugin)
         .use(linkProc, { links, applyLinks })
@@ -231,36 +220,50 @@ function evalCode(code: string, path: string) {
     const requireManual = (requirePath) => {
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
         
-        // console.log('[require]', fullPath);
+        let extPath = findFileWithExt(fullPath, ['mdx'] );
         
-        if (Fs.existsSync(fullPath) && fullPath.endsWith('.mdx')) {
-            // console.log('[require]', fullPath);
-            return parseMdx(fullPath, {}).default;
+        if (Fs.existsSync(extPath) && extPath.endsWith('.mdx')) {
+            requires.push({path:extPath});
+            const out = parseMdx(extPath, {});
+            // console.log('[require]', requirePath, Object.keys(out), out);
+            out.__esModule = true;
+
+            return out;
         }
 
-        const extPath = findFileWithExt(fullPath, ['jsx', 'js'] );
+        extPath = findFileWithExt(fullPath, ['jsx', 'js'] );
         if( extPath.endsWith('.jsx') ){
+            requires.push({path:extPath});
             let jsx = Fs.readFileSync(extPath, 'utf8');
             let code = transformJSX(jsx);
             return evalCode(code, extPath);
         }
-
+        
         const req = require(requirePath);
 
         requires.push({ exports: Object.keys(req).join(','), path: requirePath })
         return req;
     }
-    // console.log('[evalCode]', code);
+
+    // code = code.replace('/* @jsx mdx */', `
+    // function wankerShim(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+    // console.log('oh bollocks', wankerShim( {__esModule:true, stuff:false} ) );
+    // /* @jsx mdx */`)
+
+    // if( path.includes('/pages/index.mdx') )
+    // console.log('[evalCode]', path, code);
     // const child = () => <div className="poop">Heck</div>;
     let out = _eval(code, path, {
         mdx: mdxReact,
         createElement: mdxReact,
         React,
-        require: requireManual
+        require: requireManual,
+        console: console
     });
     const component = out['default'];
     const pageProps = out['page'];
-    // console.log('[evalCode]', component);
+    // console.log('[evalCode]', Object.keys(out));
 
     return { ...out, pageProps, requires, component };
 }

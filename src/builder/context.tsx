@@ -1,7 +1,40 @@
 import Path from 'path';
 import React from 'react';
+import Fs from 'fs-extra';
 
 export const PageContext = React.createContext({})
+
+
+
+export interface Dir {
+    path: string;
+    dstPath?: string;
+    // relativePath: string;
+    meta: PageMeta;
+
+    // used during build to indicate this pages meta has been resolved
+    isResolved: boolean;
+
+    isEnabled: boolean;
+    isRenderable: boolean;
+
+    // an array of paths that this dir depends on
+    requires: string[];
+}
+
+export interface Page extends Dir {
+    ext: string;
+    component?: any;
+    code?: string;
+    jsx?: string;
+    ast?: any;
+    content?: string;
+    links?: PageLinks;
+
+    
+    // pageProps: Meta; // page config
+}
+
 
 
 export interface PageLink {
@@ -17,24 +50,28 @@ export interface PageMeta {
     description?: string;
 
     // created at date - otherwise sourced from file
-    date?: string;
+    // date?: string;
 
     // path to render to
-    dstPath?: string;
+    // dstPath?: string;
 
     // layout file into which this page will be rendered
     layout?: string;
 
     // whether the page is enabled - it will be ignored if not
-    isEnabled: boolean;
+    // isEnabled?: boolean;
 
-    // whether the page can be rendered
-    isRenderable: boolean;
+    /**
+     * Things that can be rendered - html,mdx,css
+     */
+    // isRenderable?: boolean;
 
     // parent wont be folded into this
     resolveParent?: boolean;
 
     css?: string;
+    // _inlineCSS?: string[];
+    // cssLinks: string[];
 }
 
 type BuildContextStage = [Function, any[]];
@@ -44,9 +81,8 @@ export class BuildContext {
     rootPath: string;
     dstPath: string;
     pages: Dir[] = [];
-    targetPage?: string;
 
-    constructor(rootPath: string, dstPath: string, targetPage?: string) {
+    constructor(rootPath: string, dstPath: string) {
         this.rootPath = rootPath;
         this.dstPath = dstPath;
     }
@@ -65,50 +101,35 @@ export class BuildContext {
 }
 
 
-export interface Dir {
-    path: string;
-    dstPath?: string;
-    // relativePath: string;
-    meta: PageMeta;
-
-}
-
-export interface Page extends Dir {
-    ext: string;
-    component?: any;
-    code?: string;
-    jsx?: string;
-    ast?: any;
-    content?: string;
-    links?: PageLinks;
-    // pageProps: Meta; // page config
-}
-
-
-
 
 export function createDir(path: string, meta: PageMeta = createMeta(), extra: object = {}): Dir {
     return {
         meta,
         path,
+        isResolved: false,
+        isEnabled: true,
+        isRenderable: false,
+        requires: [],
         // relativePath,
         ...extra
     }
 }
 
 export function createPage(path: string, meta: PageMeta = createMeta(), extra: object = {}): Page {
-    return {
+    const page = createDir(path, meta, {
         ext: 'mdx',
-        meta,
-        path,
-        ...extra
-    }
+        ...extra,
+    }) as Page;
+
+    page.isRenderable = ['mdx','html','css'].indexOf(page.ext) !== -1;
+    
+    return page;
 }
 
 export function createMeta(values: object = {}): PageMeta {
     return {
-        isEnabled: true,
-        isRenderable: true,
+        // isEnabled: true,
+        // isRenderable: true,
         ...values
     }
 }
@@ -116,6 +137,27 @@ export function createMeta(values: object = {}): PageMeta {
 export function pageSrcPath(ctx: BuildContext, page:Dir):string {
     return Path.join(ctx.rootPath, page.path) +
         (('ext' in page) ? `.${page['ext']}` : '');
+}
+
+export function hasPage(ctx:BuildContext, pagePath:string):boolean {
+    pagePath = removeExtension(pagePath);
+    return ctx.pages.find( p => p.path === pagePath ) !== undefined;
+}
+
+export async function findPagePath(ctx:BuildContext, pagePath:string): Promise<string> {
+    let page = ctx.pages.find( p => p.path === pagePath );
+    if( page !== undefined ){
+        return pageSrcPath(ctx,page);
+    }
+    let path = Path.join(ctx.rootPath, pagePath);
+    if( await Fs.pathExists(path) ){
+        return path;
+    }
+    let extPath = path + '.mdx';
+    if( await Fs.pathExists(extPath) ){
+        return extPath;
+    }
+    return undefined;
 }
 
 export function pageDstPath(ctx: BuildContext, page:Dir):string {
@@ -135,6 +177,10 @@ export function isDir(dir: Dir) {
 
 export function isMdxPage(page:Dir){
     return page !== undefined && ('ext' in page) && page['ext'] === 'mdx';
+}
+
+export function isPageRenderable(page:Dir){
+    return !isDir(page) && page.dstPath !== undefined;// && page.meta.isRenderable;
 }
 
 
@@ -159,16 +205,10 @@ export function getPageLayout(ctx: BuildContext, page: Dir) {
     if (page === undefined) {
         return undefined;
     }
-    if (page.meta === undefined || !('layout' in page.meta)) {
-        const parent = getParent(ctx, page);
-        return getPageLayout(ctx, parent);
-    }
-    const dir = parentDir(ctx, page);
-    const layoutPath = Path.join(dir, page.meta.layout);
-    const result = ctx.pages.find(d => {
-        return Path.join(ctx.rootPath, d.path) === layoutPath
-    });
-    return result;
+    const layoutPath = page.meta.layout ?? undefined;
+    return layoutPath === undefined ? 
+        undefined 
+        : ctx.pages.find(d => layoutPath === d.path);
 }
 
 export function getPageMeta(ctx: BuildContext, page: Dir): PageMeta {
@@ -178,4 +218,18 @@ export function getPageMeta(ctx: BuildContext, page: Dir): PageMeta {
     const parent = getParent(ctx, page);
     const pMeta = getPageMeta(ctx, parent);
     return { ...pMeta, ...page.meta };
+}
+
+
+export function resolvePaths(ctx:BuildContext, paths:string[]): string[] {
+    let result = [];
+    for( const path of paths ){
+        result.push( Path.relative(ctx.rootPath, path) );
+    }
+
+    return result;
+}
+
+export function removeExtension(path:string){
+    return path.replace(/\.[^/.]+$/, "");
 }
