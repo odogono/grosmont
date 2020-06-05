@@ -31,12 +31,13 @@ import squeeze from 'remark-squeeze-paragraphs';
 import mdxAstToMdxHast from '@mdx-js/mdx/mdx-ast-to-mdx-hast';
 // import mdxHastToJsx from '@mdx-js/mdx/mdx-hast-to-jsx';
 import mdxHastToJsx from './mdx-hast-to-jsx';
-import { PageContext, PageLinks, PageLink, PageMeta } from './context';
+import { PageContext, PageLinks, PageLink, PageMeta, resolveRelativePath } from './context';
 import { deepExtend } from '../util/deep_extend';
 import { importCSSPlugin } from './unified/plugin/import_css';
 import { linkProc } from './unified/plugin/link';
 import { configPlugin } from './unified/plugin/config';
 import { removeCommentPlugin } from './unified/plugin/remove_comment';
+import { isObject } from 'util';
 
 
 const presets = [
@@ -109,14 +110,33 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
 
     meta = { ...pageProps, ...rest };
 
-    let depends = requires.map( r => r.path );
+    // let depends:string[] = await Promise.all( requires.map( r => {
+    //     resolveRelativePath(path, isObject(r) ? r.path : r )
+    // }))
 
+    let depends = [];
+    for( let r of requires ){
+        r = isObject(r) ? r.path : r;
+        r = await resolveRelativePath(path, r);
+        depends.push(r);
+    }
 
+    if( 'cssLinks' in meta ){
+        let cssLinks:string[] = meta['cssLinks'];
+        // console.log('[transpile]', path, 'but also', cssLinks );
+        
+        // resolve these to absolute
+        cssLinks = await Promise.all( cssLinks.map( link => resolveRelativePath(path,link)) );
+        
+        meta = { ...(meta as any), cssLinks };
+
+    }
+    
+    // console.log('[transpile]', path, 'and now', meta );
     if (!forceRender && (frontMatter !== undefined && frontMatter.enabled === false)) {
         return { code, jsx, ast, meta, component, requires:depends, links, ...rest };
     }
-
-    // console.log('[transpile]', path, code );
+    
 
     const html = doRender ?
         renderHTML({ components, component, children, ...rest })
@@ -245,15 +265,6 @@ function evalCode(code: string, path: string) {
         return req;
     }
 
-    // code = code.replace('/* @jsx mdx */', `
-    // function wankerShim(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-    // console.log('oh bollocks', wankerShim( {__esModule:true, stuff:false} ) );
-    // /* @jsx mdx */`)
-
-    // if( path.includes('/pages/index.mdx') )
-    // console.log('[evalCode]', path, code);
-    // const child = () => <div className="poop">Heck</div>;
     let out = _eval(code, path, {
         mdx: mdxReact,
         createElement: mdxReact,
@@ -263,7 +274,12 @@ function evalCode(code: string, path: string) {
     });
     const component = out['default'];
     const pageProps = out['page'];
-    // console.log('[evalCode]', Object.keys(out));
+    
+    let {cssLinks} = out;
+    if( cssLinks !== undefined ){
+        requires = [...requires,...cssLinks];
+    }
+    // console.log('[evalCode]', requires);
 
     return { ...out, pageProps, requires, component };
 }

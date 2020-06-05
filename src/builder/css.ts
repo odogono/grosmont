@@ -16,7 +16,7 @@ export interface TransformCSSOptions {
 export async function transformCSS( ctx: BuildContext, page:Page, options:TransformCSSOptions = {} ){
     const minify = options.minify ?? false;
     const from = pageSrcPath(ctx, page);
-    const to = pageDstPath(ctx, page);
+    const to = pageDstPath(ctx, page) || from;
     const css = await Fs.readFile(from, 'utf8');
 
     const plugins = [
@@ -25,9 +25,11 @@ export async function transformCSS( ctx: BuildContext, page:Page, options:Transf
         minify ? CSSNano : undefined
     ].filter(Boolean);
 
-    // console.log('[transformCSS]', page.path, to );
+    // console.log('[transformCSS]', page.path, {from,to} );
+    let args = {from, to};
+    // if( to !== undefined ){ args['to'] = to; }
     
-    const result = await PostCSS(plugins).process(css, {from,to});
+    const result = await PostCSS(plugins).process(css, args);
 
     page.content = result.css;
 

@@ -1,1 +1,3 @@
-isEnabled: false
+isEnabled: true
+isRenderable: true
+minify: true

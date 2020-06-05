@@ -6,7 +6,7 @@
 
 - [x] cope with regular html - should just copy to dst
 
-- [ ] single file based update instead of dir scan - take single file and find its dependencies to include in page list
+- [x] single file based update instead of dir scan - take single file and find its dependencies to include in page list
 
 - [ ] setup dev server with live reload for pages (sse)
     this relies on tracking which files change
@@ -41,3 +41,4 @@
     /component/css - ref to css files?
     /component/link - url, description, createdAt (probably its own entity)
     /component/category - an array of tags/categories associated
+    /component/dependencies - array of eid linking to pages which this is dependent on

@@ -9,21 +9,8 @@ export function importCSSPlugin() {
         unistVisit(tree, ['import'], (node) => {
             const ast = babelParser(node.value as string, { sourceType: 'module' });
             
-            if (ast.type === 'File'
-                && ast.program?.sourceType === 'module'
+            if (ast.type === 'File' && ast.program?.sourceType === 'module'
             ) {
-                
-                // const decls = ast.program.body.filter(n => n.type === 'ImportDeclaration');
-
-                // for (const decl of decls) {
-                //     const value = decl['source'].value;
-                //     if (value.endsWith('.css')) {
-                //         console.log('[importCSSPlugin]', babelGenerate(decl) );
-                //         cssPaths.push(value);
-                //         // decl.type = 'killme';
-                //     }
-                // }
-
                 let found = false;
                 ast.program.body = ast.program.body.filter( node => {
                     if( node.type !== 'ImportDeclaration' ){
@@ -50,8 +37,9 @@ export function importCSSPlugin() {
         if( cssPaths.length > 0 ){
             let cssNode = {
                 type: 'export',
-                value: `export const _inlineCSS = [ ${cssPaths.map(c => `'${c}'`).join(',')} ]`
+                value: `export const cssLinks = [ ${cssPaths.map(c => `'${c}'`).join(',')} ]`
             };
+            // console.log('[importCSSPlugin]', cssNode );
             tree.children.unshift(cssNode);
         }
     }

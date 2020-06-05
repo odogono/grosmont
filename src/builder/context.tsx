@@ -82,9 +82,14 @@ export class BuildContext {
     dstPath: string;
     pages: Dir[] = [];
 
-    constructor(rootPath: string, dstPath: string) {
-        this.rootPath = rootPath;
-        this.dstPath = dstPath;
+    constructor(rootPath: string|BuildContext, dstPath?: string) {
+        if( rootPath instanceof BuildContext ){
+            this.rootPath = (rootPath as BuildContext).rootPath;
+            this.dstPath = (rootPath as BuildContext).dstPath;
+        } else {
+            this.rootPath = rootPath;
+            this.dstPath = dstPath;
+        }
     }
 
     use(fn: Function, ...args: any[]) {
@@ -140,8 +145,12 @@ export function pageSrcPath(ctx: BuildContext, page:Dir):string {
 }
 
 export function hasPage(ctx:BuildContext, pagePath:string):boolean {
+    return getPage(ctx,pagePath) !== undefined;
+}
+
+export function getPage(ctx:BuildContext, pagePath:string):Dir {
     pagePath = removeExtension(pagePath);
-    return ctx.pages.find( p => p.path === pagePath ) !== undefined;
+    return ctx.pages.find( p => p.path === pagePath );
 }
 
 export async function findPagePath(ctx:BuildContext, pagePath:string): Promise<string> {
@@ -161,7 +170,7 @@ export async function findPagePath(ctx:BuildContext, pagePath:string): Promise<s
 }
 
 export function pageDstPath(ctx: BuildContext, page:Dir):string {
-    return Path.join(ctx.dstPath, page.dstPath);
+    return page.dstPath !== undefined ? Path.join(ctx.dstPath, page.dstPath) : undefined;
 }
 
 
@@ -185,6 +194,7 @@ export function isPageRenderable(page:Dir){
 
 
 export function parentDir(ctx: BuildContext, page: Dir, useDst: boolean = false) {
+    // console.log('[parentDir]', page.isRenderable, page.dstPath);
     const fullPath = useDst ? Path.join(ctx.dstPath, page.dstPath) : Path.join(ctx.rootPath, page.path);
     const dir = Path.resolve(fullPath, '..');// dirnameExtra(fullPath);
     return dir;
@@ -205,10 +215,11 @@ export function getPageLayout(ctx: BuildContext, page: Dir) {
     if (page === undefined) {
         return undefined;
     }
-    const layoutPath = page.meta.layout ?? undefined;
-    return layoutPath === undefined ? 
-        undefined 
-        : ctx.pages.find(d => layoutPath === d.path);
+    if( page.meta.layout === undefined ){
+        return undefined;
+    }
+    // console.log('[getPageLayout]', page.path, page.meta.layout, ctx.pages.map(p=>p.path))
+    return ctx.pages.find(d => page.meta.layout === d.path);
 }
 
 export function getPageMeta(ctx: BuildContext, page: Dir): PageMeta {
@@ -221,13 +232,35 @@ export function getPageMeta(ctx: BuildContext, page: Dir): PageMeta {
 }
 
 
-export function resolvePaths(ctx:BuildContext, paths:string[]): string[] {
+export async function resolvePaths(ctx:BuildContext, paths:string[]): Promise<string[]> {
     let result = [];
     for( const path of paths ){
-        result.push( Path.relative(ctx.rootPath, path) );
+        if( await Fs.pathExists(path) ){
+            result.push( Path.relative(ctx.rootPath, path) );
+        } else {
+            // console.log('[resolvePaths]', path);
+            let fullPath = Path.join(ctx.rootPath, path);
+            if( await Fs.pathExists(fullPath) ){
+                result.push( Path.relative(ctx.rootPath, fullPath) );
+            }
+        }
     }
 
     return result;
+}
+
+export async function resolveRelativePath(basePath:string, path:string): Promise<string> {
+    if( await Fs.pathExists(path) ){
+        return path;
+    }
+
+    // console.log('[resolveRelativePath]', basePath, path );
+
+    const dir = Path.resolve(basePath, '..');
+
+    // console.log('[resolveRelativePath]', Path.resolve(dir, path) );
+
+    return Path.resolve(dir, path);
 }
 
 export function removeExtension(path:string){
