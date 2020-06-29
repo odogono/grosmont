@@ -23,16 +23,16 @@ describe('Pipeline', () => {
         const path = Path.resolve(root, 'pages');
         let outPath = Path.resolve( root, 'dist' );
         // const filename = 'misc/2018/jan.mdx';
-        const filename = 'styles/master.css';
+        // const filename = 'styles/master.css';
         // const filename = 'styles/layout.css';
-        // const filename = 'index.mdx';
+        const filename = 'index.mdx';
 
         let ctx = new BuildContext(path, outPath);
 
         ctx = await processPages( path, outPath, filename );
-        // ctx = await processPages( path, outPath );
+        ctx = await processPages( path, outPath );
 
-        debug(ctx);
+        // debug(ctx);
     })
 
     // it.only('gets parent directory', () => {

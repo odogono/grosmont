@@ -175,7 +175,7 @@ export function pageDstPath(ctx: BuildContext, page:Dir):string {
 
 
 export function dirPath(ctx: BuildContext, page: Dir) {
-    let path = isDir(page) ? Path.join(ctx.dstPath, page.dstPath) : parentDir(ctx, page, true) + '/';
+    let path = isDir(page) ? Path.join(ctx.dstPath, page.dstPath) : parentDir(ctx, page, true) + Path.sep;
     return path;
 }
 
@@ -265,4 +265,15 @@ export async function resolveRelativePath(basePath:string, path:string): Promise
 
 export function removeExtension(path:string){
     return path.replace(/\.[^/.]+$/, "");
+}
+
+
+/**
+ * Returns the path without the extension, and the extension
+ * @param path 
+ */
+export function splitPathExtension(path:string){
+    const ext = Path.extname(path).substring(1);
+    const bare = ext.length > 0 ? path.substring(0, path.length-ext.length -1 ) : path;
+    return [bare,ext];
 }

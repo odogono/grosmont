@@ -17,3 +17,4 @@ export function isDate(value:any): boolean {
 export function isString(value:any): boolean {
     return getClass.call(value) === '[object String]';
 }
+

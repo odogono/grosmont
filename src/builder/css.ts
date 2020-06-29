@@ -8,7 +8,6 @@ import CSSNano from 'cssnano';
 
 import { BuildContext, Page, pageSrcPath, pageDstPath } from "./context";
 
-
 export interface TransformCSSOptions {
     minify?: boolean;
 }

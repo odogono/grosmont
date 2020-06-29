@@ -7,3 +7,4 @@ public
 .intermediate-representation/
 .cache/
 yarn.lock
+.vscode/STORED_TEST

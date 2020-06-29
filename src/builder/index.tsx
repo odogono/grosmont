@@ -87,8 +87,6 @@ export async function processPages(rootPath: string, dstPath: string, targetPage
 
 async function resolveDependencies(ctx: BuildContext): Promise<BuildContext> {
 
-
-
     let resolved = false;
 
     while (!resolved) {
@@ -105,7 +103,6 @@ async function resolveDependencies(ctx: BuildContext): Promise<BuildContext> {
             // ctx = await resolveDest(ctx);
         }
     }
-
 
     // console.log('[resolveDependencies]', 'pre', ctx.pages.map(p=>p.path) );
     // for (const page of ctx.pages) {
@@ -334,7 +331,7 @@ async function renderPage(ctx: BuildContext, page: Page): Promise<Page> {
 
     try {
         // const unpick = ({code,component,html,jsx}:any) => ({code,component,html,jsx});
-        // console.log('[renderPage]', path );
+        console.log('[renderPage]', path, 'links', links, {meta} );
         let result = await transpile({ path, links, meta }, { forceRender: true });
 
         const layoutPage = getPageLayout(ctx, page);
@@ -663,7 +660,7 @@ async function writeHTML(path: string, html: string, options: WriteHTMLOptions =
     writeFile(path, html);
 }
 
-async function readDirMeta(path: string): Promise<PageMeta> {
+export async function readDirMeta(path: string): Promise<PageMeta> {
     let metaPath = Path.join(path, 'meta.yaml');
     if (await Fs.pathExists(metaPath) === false) {
         return undefined; //createMeta({isRenderable:false});
