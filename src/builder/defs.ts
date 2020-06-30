@@ -47,12 +47,12 @@ export const defs = [
             { name: 'requires', type: 'json' }
         ]
     },
-    {
-        uri: '/component/build',
-        properties: [
-            {name: 'isResolved', type:'boolean' }
-        ]
-    },
+    // {
+    //     uri: '/component/build',
+    //     properties: [
+    //         {name: 'isResolved', type:'boolean' }
+    //     ]
+    // },
     {
         uri: '/component/enabled',
         properties: []

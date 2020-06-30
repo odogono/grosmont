@@ -116,9 +116,9 @@ describe('ECS', () => {
 const querySelectMdx = `[ 
     // selects entities which have /component/mdx
     /component/file#ext !ca mdx ==
-    [ /component/title /component/meta /component/file ] !bf
+    // [ /component/title /component/meta /component/file ] !bf
     // selects all components from the entities selected
-    // all 
+    all 
     @c
     ] select`;
 

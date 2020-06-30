@@ -57,6 +57,7 @@ export interface TranspileProps {
     meta?: PageMeta;
     children?: any;
     links?: PageLinks;
+    css?: string;
     cssLinks?: string[];
 }
 
@@ -81,7 +82,7 @@ export interface TranspileOptions {
 }
 
 export async function transpile(props: TranspileProps, options: TranspileOptions = {}): Promise<TranspileResult> {
-    let { children, path, meta, links: applyLinks, cssLinks } = props;
+    let { children, path, meta, links: applyLinks, css, cssLinks } = props;
     const forceRender = options.forceRender ?? false;
     const doRender = forceRender || (options.render ?? false);
 
@@ -90,7 +91,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     const components = {
         Head,
         InlineCSS: (props) => {
-            return <style dangerouslySetInnerHTML={{__html:meta.css}} />;
+            return <style dangerouslySetInnerHTML={{__html:css}} />;
         }
         // Layout,
         // a: (props) => {
