@@ -297,8 +297,8 @@ async function writePages(ctx: BuildContext, options: WritePagesOptions = {}): P
         }
         else {
             // console.log('[writePages]', page.path, page.meta );
-            const src = pageSrcPath(ctx, page);// Path.join(ctx.rootPath, page.path + `.${ext}`);
-            const dst = pageDstPath(ctx, page);// Path.join(ctx.dstPath,dstPath);
+            const src = pageSrcPath(ctx, page);
+            const dst = pageDstPath(ctx, page);
             await Fs.ensureDir(Path.dirname(dst));
             await Fs.copyFile(src, dst);
         }

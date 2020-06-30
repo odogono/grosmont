@@ -29,10 +29,8 @@ import mdx from 'remark-mdx';
 import mdxjs from 'remark-mdxjs';
 import squeeze from 'remark-squeeze-paragraphs';
 import mdxAstToMdxHast from '@mdx-js/mdx/mdx-ast-to-mdx-hast';
-// import mdxHastToJsx from '@mdx-js/mdx/mdx-hast-to-jsx';
 import mdxHastToJsx from './mdx-hast-to-jsx';
 import { PageContext, PageLinks, PageLink, PageMeta, resolveRelativePath } from './context';
-import { deepExtend } from '../util/deep_extend';
 import { importCSSPlugin } from './unified/plugin/import_css';
 import { linkProc } from './unified/plugin/link';
 import { configPlugin } from './unified/plugin/config';
@@ -59,6 +57,7 @@ export interface TranspileProps {
     meta?: PageMeta;
     children?: any;
     links?: PageLinks;
+    cssLinks?: string[];
 }
 
 
@@ -82,7 +81,7 @@ export interface TranspileOptions {
 }
 
 export async function transpile(props: TranspileProps, options: TranspileOptions = {}): Promise<TranspileResult> {
-    let { children, path, meta, links: applyLinks } = props;
+    let { children, path, meta, links: applyLinks, cssLinks } = props;
     const forceRender = options.forceRender ?? false;
     const doRender = forceRender || (options.render ?? false);
 
@@ -103,13 +102,16 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
         // }
     }
 
+    
     const mdxResult = await parseMdx(path, meta, applyLinks);
+    
     const { component, frontMatter,
         code, jsx, ast, page, default: d, requires, links,
         pageProps, ...rest } = mdxResult;
 
     meta = { ...pageProps, ...rest };
 
+    
     // let depends:string[] = await Promise.all( requires.map( r => {
     //     resolveRelativePath(path, isObject(r) ? r.path : r )
     // }))
@@ -121,8 +123,8 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
         depends.push(r);
     }
 
-    if( 'cssLinks' in meta ){
-        let cssLinks:string[] = meta['cssLinks'];
+    if( cssLinks ){
+        // let cssLinks:string[] = meta['cssLinks'];
         // console.log('[transpile]', path, 'but also', cssLinks );
         
         // resolve these to absolute
@@ -177,18 +179,25 @@ function renderHTML({ components, component: Component, children, ...rest }) {
 function parseMdx(path: string, pageProps: object, applyLinks?: PageLinks) {
     let content = Fs.readFileSync(path, 'utf8');
 
-    let [jsx, links, ast] = processMdx(content, pageProps, applyLinks);
+    try {
+        let [jsx, links, ast] = processMdx(content, pageProps, applyLinks);
+        // if( path.includes('index.mdx') )
+        // console.log('🦉jsx', jsx);
+        // console.log('🦉jsxOG', jsxOG);
+    
+        // console.log('code', code);
+        
+        let code = transformJSX(jsx);
+        let el = evalCode(code, path);
+    
+        return { ...el, code, jsx, ast, links };
 
-    // if( path.includes('index.mdx') )
-    // console.log('🦉jsx', jsx);
-    // console.log('🦉jsxOG', jsxOG);
+    } catch( err ){
+        console.warn('[parseMdx]', `failed to process mdx ${path}`, err.message, err.stack );
+        console.log('[parseMdx]', content);
+        throw err;
+    }
 
-    // console.log('code', code);
-
-    let code = transformJSX(jsx);
-    let el = evalCode(code, path);
-
-    return { ...el, code, jsx, ast, links };
 }
 
 
@@ -197,10 +206,14 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
     let links = new Map<string, any>();
     let ast;
 
-    // return new Promise( (res,rej) => {
+    // remark-mdx has a really bad time with html comments even
+    // if they are removed with the removeCommentPlugin, so a brute
+    // force replace is neccesary here until i can figure it out
+    content = content.replace( /<!--(.*?)-->/, '' );
+
     let output = unified()
-        .use(parse)
         // .use(() => console.dir)
+        .use(parse)
         .use(stringify)
         .use(frontmatter)
         .use(emoji)
@@ -208,6 +221,7 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
         .use(removeCommentPlugin)
         .use(linkProc, { links, applyLinks })
         .use( () => tree => {ast = JSON.stringify(tree,null,'\t')} )
+        // .use( () => tree => console.log('HERE', tree) )
         .use(mdx)
         .use(mdxjs)
         .use(importCSSPlugin)
@@ -215,6 +229,7 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
+        // .use( () => console.log('💦doh') )
         .processSync(content);
     // console.log(output);
 

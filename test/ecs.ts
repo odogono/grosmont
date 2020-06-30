@@ -55,29 +55,33 @@ describe('ECS', () => {
 
         await Fs.emptyDir(outPath);
 
-        await gatherPages(ctx,'misc/2018/jan.mdx');
-        // await gatherPages(ctx,'index.mdx');
+        
+        // await gatherPages(ctx,'misc/2018/jan.mdx');
+        await gatherPages(ctx,'index.mdx');
+        // await gatherPages(ctx,'static/static.html');
+        // await gatherPages(ctx,'blog/about.mdx');
         // await gatherPages(ctx);
 
         // console.log('post gatherPages:');
         // printAll(ctx);
 
         await resolveMeta(ctx);
-
+        
         await resolveDependencies(ctx);
-
+        
         await resolvePageLinks(ctx);
-
+        
         await resolveLayout(ctx);
-
+        
         await resolveDest(ctx);
-
+        
         await processCSS(ctx);
-
+        
         await resolveCssLinks(ctx);
-
+        
         await resolveLinks(ctx);
-
+        
+        
         await renderPages(ctx);
 
         await writePages(ctx, { beautify: true, writeCode: false, writeJSX: false })
@@ -95,8 +99,8 @@ describe('ECS', () => {
         // console.log('Files:');
         // await printQuery(ctx,querySelectFiles);
 
-        console.log('E:');
-        printAll(ctx);
+        // console.log('E:');
+        // printAll(ctx);
         
         // console.log( 'hell', result.map(e => [e.File?.path, e.File?.ext]) );
         // console.log( 'hell', result[0] );
@@ -112,9 +116,10 @@ describe('ECS', () => {
 const querySelectMdx = `[ 
     // selects entities which have /component/mdx
     /component/file#ext !ca mdx ==
-    // [ /component/mdx ] !bf @e
+    [ /component/title /component/meta /component/file ] !bf
     // selects all components from the entities selected
-    all @c
+    // all 
+    @c
     ] select`;
 
 const querySelectCss = `[

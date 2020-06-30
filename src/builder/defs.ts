@@ -94,10 +94,9 @@ export const defs = [
         ]
     },
     {
-        uri: '/component/html',
-        properties: [
-
-        ]
+        // a static file which gets copied from src to dst
+        uri: '/component/static',
+        properties: []
     },
     {
         uri: '/component/tags',
