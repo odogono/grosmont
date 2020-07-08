@@ -36,6 +36,7 @@ import { linkProc } from './unified/plugin/link';
 import { configPlugin } from './unified/plugin/config';
 import { removeCommentPlugin } from './unified/plugin/remove_comment';
 import { isObject } from 'util';
+import { titlePlugin } from './unified/plugin/title';
 
 
 const presets = [
@@ -51,6 +52,7 @@ const presets = [
 
 export interface TranspileProps {
     path: string;
+    data?: string;
     render?: boolean;
     forceRender?: boolean;
     wrapper?: JSX.Element;
@@ -61,18 +63,18 @@ export interface TranspileProps {
     cssLinks?: string[];
 }
 
-
-
-
 export interface TranspileResult {
+    path: string;
     html?: string;
     component?: any;
     meta: PageMeta;
+    additional: object;
     code?: string;
     ast?: any;
     jsx?: string;
     links?: PageLinks;
-    requires: string[];
+    requires?: string[];
+    cssLinks?: string[];
 }
 
 
@@ -82,7 +84,7 @@ export interface TranspileOptions {
 }
 
 export async function transpile(props: TranspileProps, options: TranspileOptions = {}): Promise<TranspileResult> {
-    let { children, path, meta, links: applyLinks, css, cssLinks } = props;
+    let { children, path, data, meta, links: applyLinks, css } = props;
     const forceRender = options.forceRender ?? false;
     const doRender = forceRender || (options.render ?? false);
 
@@ -102,20 +104,24 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
         //     return <a {...props}></a>
         // }
     }
+    if( path !== undefined ){
+        data = await Fs.readFile(path, 'utf8');
+    }
 
-    
-    const mdxResult = await parseMdx(path, meta, applyLinks);
+    const inPageProps = { ...meta, css, cssLinks:props.cssLinks };
+    const mdxResult = await parseMdx(data, path, inPageProps, applyLinks);
     
     const { component, frontMatter,
-        code, jsx, ast, page, default: d, requires, links,
+        code, jsx, ast, page, default: d, 
+        requires, links, cssLinks,
         pageProps, ...rest } = mdxResult;
+        
+    meta = { ...pageProps };
 
-    meta = { ...pageProps, ...rest };
+    let result:TranspileResult = {
+        path, code, jsx, ast, component, links, meta, additional:rest
+    };
 
-    
-    // let depends:string[] = await Promise.all( requires.map( r => {
-    //     resolveRelativePath(path, isObject(r) ? r.path : r )
-    // }))
 
     let depends = [];
     for( let r of requires ){
@@ -123,39 +129,27 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
         r = await resolveRelativePath(path, r);
         depends.push(r);
     }
+    result.requires = depends;
 
     if( cssLinks ){
-        // let cssLinks:string[] = meta['cssLinks'];
-        // console.log('[transpile]', path, 'but also', cssLinks );
-        
         // resolve these to absolute
-        cssLinks = await Promise.all( cssLinks.map( link => resolveRelativePath(path,link)) );
-        
-        meta = { ...(meta as any), cssLinks };
-
+        result.cssLinks = await Promise.all( cssLinks.map( link => resolveRelativePath(path,link)) );
     }
     
-    // console.log('[transpile]', path, 'and now', meta );
+    // console.log('[transpile]', path, 'and now', rest );
     if (!forceRender && (frontMatter !== undefined && frontMatter.enabled === false)) {
-        return { code, jsx, ast, meta, component, requires:depends, links, ...rest };
+        return result;
+        // return { code, jsx, ast, meta, component, requires:depends, links, ...rest };
+    }
+
+    if( doRender ){
+        result.html = renderHTML({ components, component, children });
     }
     
-
-    const html = doRender ?
-        renderHTML({ components, component, children, ...rest })
-        : undefined;
-
-    return {
-        code, jsx, meta, ast,
-        component,
-        requires:depends,
-        html,
-        links,
-        ...rest
-    }
+    return result;
 }
 
-function renderHTML({ components, component: Component, children, ...rest }) {
+function renderHTML({ components, component: Component, children }) {
 
     const ctxValue = {
         status: 'ready to go',
@@ -177,11 +171,12 @@ function renderHTML({ components, component: Component, children, ...rest }) {
 }
 
 
-function parseMdx(path: string, pageProps: object, applyLinks?: PageLinks) {
-    let content = Fs.readFileSync(path, 'utf8');
+function parseMdx(data: string, path:string, pageProps: object, applyLinks?: PageLinks) {
+    // let content = Fs.readFileSync(path, 'utf8');
 
     try {
-        let [jsx, links, ast] = processMdx(content, pageProps, applyLinks);
+        // console.log('code', data);
+        let [jsx, links, ast] = processMdx(data, pageProps, applyLinks);
         // if( path.includes('index.mdx') )
         // console.log('🦉jsx', jsx);
         // console.log('🦉jsxOG', jsxOG);
@@ -195,7 +190,7 @@ function parseMdx(path: string, pageProps: object, applyLinks?: PageLinks) {
 
     } catch( err ){
         console.warn('[parseMdx]', `failed to process mdx ${path}`, err.message, err.stack );
-        console.log('[parseMdx]', content);
+        console.log('[parseMdx]', data);
         throw err;
     }
 
@@ -207,6 +202,7 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
     let links = new Map<string, any>();
     let ast;
 
+    // console.log('[processMdx]', 'wat', content );
     // remark-mdx has a really bad time with html comments even
     // if they are removed with the removeCommentPlugin, so a brute
     // force replace is neccesary here until i can figure it out
@@ -218,15 +214,18 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
         .use(stringify)
         .use(frontmatter)
         .use(emoji)
+        
         .use(configPlugin, { page: pageProps })
         .use(removeCommentPlugin)
+        
         .use(linkProc, { links, applyLinks })
+        // take a snap of the AST
         .use( () => tree => {ast = JSON.stringify(tree,null,'\t')} )
-        // .use( () => tree => console.log('HERE', tree) )
         .use(mdx)
         .use(mdxjs)
+        .use(titlePlugin)
         .use(importCSSPlugin)
-        
+        // .use( () => tree => console.log('HERE', tree) )
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
@@ -260,7 +259,8 @@ function evalCode(code: string, path: string) {
         
         if (Fs.existsSync(extPath) && extPath.endsWith('.mdx')) {
             requires.push({path:extPath});
-            const out = parseMdx(extPath, {});
+            const data = Fs.readFileSync(path, 'utf8');
+            const out = parseMdx(data, extPath, {});
             // console.log('[require]', requirePath, Object.keys(out), out);
             out.__esModule = true;
 

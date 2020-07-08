@@ -1,0 +1,36 @@
+# CMS build process
+
+- pages are read from the root directory or from a designated start path (within the root). entries for directories are also created, as they can contain meta information which.
+
+- meta information for each page is resolved against directories and by reading frontmatter from mdx pages
+
+- any dependencies that are found from the previous stage are resolved - dependencies include links to css or other pages that were not under the original scope. meta information for these dependencies are also resolved. this is recursive, and completes when no more dependencies are found.
+
+- links within pages are converted to entities - both local and external
+
+- pages which reference a layout have those resolved into references
+
+- the target path for each page is resolved. this is often just 1:1 with the src, but meta can redirect the output
+
+- found CSS is processed using PostCSS
+
+- page links to css are resolved into references
+
+- mdx pages are rendered to html. inline css is included at this point
+
+- pages are written to the target - this includes mdx, css and static.
+
+
+
+initially the entire src is read into an ES.
+
+re-reading a page - its mtime is checked, if it differs, then it is marked as being changed and is re-processed
+
+other page references to this page are found and marked for update
+
+
+pageA references cssA
+
+cssA is modified as being changed. because pageA references, it is also marked for change
+
+this is done by adding a component to the changed entity

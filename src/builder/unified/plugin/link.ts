@@ -1,5 +1,7 @@
 import unistVisit from 'unist-util-visit';
 import { PageLinks, PageLink } from "../../context";
+import {select,selectAll} from 'unist-util-select';
+
 
 export interface LinkProcProps {
     links: PageLinks;
@@ -7,10 +9,12 @@ export interface LinkProcProps {
 }
 
 export function linkProc({ links, applyLinks }: LinkProcProps) {
-    // console.log('[linkProc]', options);
-
+    
     return (tree, file, ...args) => {
         // let links =  {};
+        // console.log('[linkProc]', tree);
+
+        // selectAll('linkReference', tree);
 
         unistVisit(tree, ['link', 'linkReference'], visitor);
 
@@ -19,6 +23,13 @@ export function linkProc({ links, applyLinks }: LinkProcProps) {
             const ctx = node;
             if (!ctx) return;
 
+            const text = select('text', node);
+            const url = node.url;
+
+            if( url === undefined ){
+                return;
+            }
+
             if (applyLinks !== undefined) {
                 let applyLink = applyLinks.get(ctx.url);
                 if (applyLink !== undefined) {
@@ -26,10 +37,11 @@ export function linkProc({ links, applyLinks }: LinkProcProps) {
                 }
             }
 
+            console.log('[linkProc]', text?.value, url );
             // console.log('[linkProc]', args, ctx);
             let child = ctx.children[0];
-            let link: PageLink = { url: ctx.url, child: child.type === 'text' ? child.value : ctx.url };
-            links.set(ctx.url, link);
+            let link: PageLink = { url: url, child: text?.value ?? url };
+            links.set(url, link);
         }
     }
 }

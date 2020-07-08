@@ -2,7 +2,10 @@ import Yaml from 'yaml';
 import unistVisit from 'unist-util-visit';
 import unistRemove from 'unist-util-remove';
 
-
+/**
+ * 
+ * @param options 
+ */
 export function configPlugin(options) {
     return (tree, file, ...rest) => {
         unistVisit(tree, { type: 'yaml' }, (node, index, parent) => {
@@ -26,7 +29,6 @@ export function configPlugin(options) {
                 console.error("Parsing error on line " + e.line + ", column " + e.column +
                     ": " + e.message);
             }
-
         })
         unistRemove(tree, 'frontMatter');
     }

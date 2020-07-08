@@ -47,18 +47,20 @@ describe('ECS', () => {
         const root = Path.resolve(__dirname, "../");
         const path = Path.resolve(root, 'pages');
         let outPath = Path.resolve(root, 'dist');
+        
+        await Fs.emptyDir(outPath);
 
         let ctx = new SiteContext(path, outPath);
         await ctx.init();
 
         let { es } = ctx;
 
-        await Fs.emptyDir(outPath);
 
         
         // await gatherPages(ctx,'misc/2018/jan.mdx');
-        await gatherPages(ctx,'index.mdx');
+        // await gatherPages(ctx,'index.mdx');
         // await gatherPages(ctx,'static/static.html');
+        await gatherPages(ctx,'blog/about.mdx');
         // await gatherPages(ctx,'blog/about.mdx');
         // await gatherPages(ctx);
 
@@ -67,7 +69,8 @@ describe('ECS', () => {
 
         await resolveMeta(ctx);
         
-        await resolveDependencies(ctx);
+        // await resolveDependencies(ctx);
+        if( false ){
         
         await resolvePageLinks(ctx);
         
@@ -81,10 +84,12 @@ describe('ECS', () => {
         
         await resolveLinks(ctx);
         
-        
         await renderPages(ctx);
 
         await writePages(ctx, { beautify: true, writeCode: false, writeJSX: false })
+        }
+
+        // await ctx.persistentEs.add( ctx.es );
 
         // console.log('MDX:')
         // await printQuery(ctx,querySelectMdx);
@@ -99,8 +104,8 @@ describe('ECS', () => {
         // console.log('Files:');
         // await printQuery(ctx,querySelectFiles);
 
-        // console.log('E:');
-        // printAll(ctx);
+        console.log('E:');
+        printAll(ctx);
         
         // console.log( 'hell', result.map(e => [e.File?.path, e.File?.ext]) );
         // console.log( 'hell', result[0] );
@@ -109,9 +114,85 @@ describe('ECS', () => {
 
     });
 
+    it.only('creates a page', async () => {
+        const root = Path.resolve(__dirname, "../");
+        const path = Path.resolve(root, 'pages');
+        let outPath = Path.resolve(root, 'dist');
+        
+        await Fs.emptyDir(outPath);
+
+        let ctx = new SiteContext(path, outPath);
+        await ctx.init();
+
+        let { es } = ctx;
+
+        let page = es.createEntity();
+
+        // ---
+        // title: Testing Da Src
+        // ---
+        const data = `
+
+export const facts = {
+    water: 'cold',
+    fire: 'hot'
+};
+        export const exampleVar = false;
+
+        ## Mistake
+
+        nothing here
+
+        # Testing Source
+        this is a test of the source
+
+        ## References
+
+        [0] nothing to see
+
+        # Lower Title
+
+        ??
+        `;
+
+        page.Source = { data };
+        page.Mdx = {};
+        page.Target = { path:'/misc', writeJS:true };
+        page.Enabled = {}
+        page.Renderable = {}
+
+        await ctx.add( page );
+
+        await ctx.processPages();
+
+        console.log('E:');
+        printAll(ctx);
+
+    });
+
 });
 
-
+// {
+//     type: 'root',
+//     children: [
+//       {
+//         type: 'export',
+//         value: 'export const page = {"title":"Testing Da Src"};',
+//         position: [Position]
+//       },
+//       {
+//         type: 'heading',
+//         depth: 1,
+//         children: [Array],
+//         position: [Position]
+//       },
+//       { type: 'paragraph', children: [Array], position: [Position] }
+//     ],
+//     position: {
+//       start: { line: 1, column: 1, offset: 0 },
+//       end: { line: 7, column: 9, offset: 101 }
+//     }
+//   }
 
 const querySelectMdx = `[ 
     // selects entities which have /component/mdx

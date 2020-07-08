@@ -5,15 +5,27 @@ export const defs = [
         uri: '/component/file',
         properties: [
             { name: 'path', type: 'string' },
-            { name: 'ext', type: 'string' },
+            { name: 'ext', type: 'string' }
+        ]
+    },
+    {
+        uri: '/component/stat',
+        properties: [
             { name: 'createdAt', type: 'datetime' },
             { name: 'modifiedAt', type: 'datetime' },
+        ]
+    },
+    {
+        uri: '/component/source',
+        properties: [
+            { name: 'data', type:'string' },
         ]
     },
     {
         uri: '/component/target',
         properties: [
             {name:'path', type:'string'},
+            {name:'filename', type:'string'},
             {name:'content', type:'string', persist:false},
             {name:'minify', type:'boolean'},
             {name:'writeJS', type:'boolean'},
@@ -31,7 +43,7 @@ export const defs = [
     {
         uri: '/component/meta',
         properties: [
-            { name: 'data', type: 'json' }
+            { name: 'meta', type: 'json' }
         ]
     },
     {
@@ -74,7 +86,6 @@ export const defs = [
         uri: '/component/css',
         properties: [
             {name:'css', type:'string'}
-            
         ]
     },
     {
@@ -139,6 +150,5 @@ export const defs = [
             {name:'link', type:'entity', descr:'references the entity which the url points to'}
         ]
     }
-
 ];
 

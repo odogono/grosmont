@@ -97,6 +97,7 @@ export class BuildContext {
         this._stages.push([fn, args]);
         return this;
     }
+    
     async process() {
         for (const [fn, args] of this._stages) {
             await fn(this, ...args);

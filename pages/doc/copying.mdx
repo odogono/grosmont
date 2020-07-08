@@ -1,0 +1,17 @@
+# Copying the contents of an EntitySet into another
+
+There are two stages to the the operation - reconciling the respective component defs, and the copying of components.
+
+
+### ComponentDef Reconciliation
+
+If the recipient ES has no component defs, then this step is straightforward - the defs are sent as is into the recipient.
+
+The more likely case is that the recipient already has a number of Defs defined, so as well as registering new Defs, the components that are sent will also have to be mapped from the Senders DiDs to the Recipients DiDs.
+
+- register all defs with recipient
+
+- create a map of sender def ids to recipient def ids
+
+- add the components - rewriting the assigned def id on each one
+
