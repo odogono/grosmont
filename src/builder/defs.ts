@@ -4,20 +4,29 @@ export const defs = [
     {
         uri: '/component/file',
         properties: [
+            { name: 'uri', type: 'string' },
             { name: 'path', type: 'string' },
             { name: 'ext', type: 'string' }
         ]
     },
     {
+        uri: '/component/dir',
+        properties: [
+            { name: 'uri', type: 'string' },
+            { name: 'path', type: 'string' }
+        ]
+    },
+    {
         uri: '/component/stat',
         properties: [
-            { name: 'createdAt', type: 'datetime' },
-            { name: 'modifiedAt', type: 'datetime' },
+            { name: 'ctime', type: 'datetime' },
+            { name: 'mtime', type: 'datetime' },
         ]
     },
     {
         uri: '/component/source',
         properties: [
+            { name: 'uri', type:'string' },
             { name: 'data', type:'string' },
         ]
     },
@@ -27,10 +36,7 @@ export const defs = [
             {name:'path', type:'string'},
             {name:'filename', type:'string'},
             {name:'content', type:'string', persist:false},
-            {name:'minify', type:'boolean'},
-            {name:'writeJS', type:'boolean'},
-            {name:'writeAST', type:'boolean'},
-            {name:'writeJSX', type:'boolean'},
+            {name:'minify', type:'boolean'}
         ]
     },
     {
@@ -79,6 +85,9 @@ export const defs = [
             {name:'jsx', type:'string'},
             {name:'code', type:'string'},
             {name:'component', type:'any', persist:false},
+            {name:'writeJS', type:'boolean'},
+            {name:'writeAST', type:'boolean'},
+            {name:'writeJSX', type:'boolean'},
         ]
     },
     {
@@ -92,7 +101,7 @@ export const defs = [
         uri: '/component/css_links',
         properties: [
             // list of eids for /component/css
-            {name:'links', type:'json'},
+            {name:'eids', type:'json'},
             // list of css paths to be resolved late
             {name:'paths', type:'json'},
         ]
@@ -148,6 +157,41 @@ export const defs = [
             {name:'type', type:'string', enum:['ext','css','page']},
             // {name:'link', type:'entity'},
             {name:'link', type:'entity', descr:'references the entity which the url points to'}
+        ]
+    },
+
+
+    {
+        uri: '/component/dependency',
+        properties: [
+            // src/dependent entity
+            {name: 'src', type:'entity'},
+            // dst/dependency entity 
+            {name: 'dst', type:'entity'},
+            // the type of dependency - page/link/image/etc
+            {name: 'type', type:'string'}
+        ]
+    },
+
+
+    {
+        // 
+        uri: '/component/site',
+        properties: [
+            {name: 'name', type:'string' }
+        ]
+    },
+    {
+        uri: '/component/site_ref',
+        properties: [
+            {name: 'ref', type:'entity'}
+        ]
+    },
+    {
+        uri: '/component/patterns',
+        properties: [
+            {name: 'include', type:'json'},
+            {name: 'exclude', type:'json'}
         ]
     }
 ];

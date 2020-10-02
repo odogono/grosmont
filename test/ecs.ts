@@ -1,3 +1,4 @@
+import { suite } from 'uvu';
 import { assert } from 'chai';
 import Path from 'path';
 import Fs from 'fs-extra';
@@ -17,7 +18,9 @@ import {
     writePages,
     selectAll,
     printAll,
-    printQuery
+    printQuery,
+    selectEntityBySource,
+    getPageMeta
 } from '../src/builder/ecs';
 import { Entity } from 'odgn-entity/src/entity';
 // import {
@@ -31,107 +34,90 @@ import { Entity } from 'odgn-entity/src/entity';
 // import { create } from 'odgn-entity/dist/esm/sql';
 // import { create as createSQLES } from 'odgn-entity/dist/cjs/sql';
 
-describe('ECS', () => {
 
-    // it.only('remove ext', () => {
-    //     // let path = '/com.opendoorgonorth/pages/main.mdx';
-    //     let path = 'main';
-
-    //     const ext = Path.extname(path).substring(1);
-    //     const bare = ext.length > 0 ? path.substring(0, path.length-ext.length -1 ) : path;
-
-    //     console.log('=', bare, ext, Path.basename(path) );
-    // });
-
-    it('does stuff', async () => {
-        const root = Path.resolve(__dirname, "../");
-        const path = Path.resolve(root, 'pages');
-        let outPath = Path.resolve(root, 'dist');
-        
-        await Fs.emptyDir(outPath);
-
-        let ctx = new SiteContext(path, outPath);
-        await ctx.init();
-
-        let { es } = ctx;
+const test = suite('ECS');
 
 
-        
-        // await gatherPages(ctx,'misc/2018/jan.mdx');
-        // await gatherPages(ctx,'index.mdx');
-        // await gatherPages(ctx,'static/static.html');
-        await gatherPages(ctx,'blog/about.mdx');
-        // await gatherPages(ctx,'blog/about.mdx');
-        // await gatherPages(ctx);
+test('does stuff', async () => {
+    const root = Path.resolve(__dirname, "../");
+    const path = Path.resolve(root, 'pages');
+    let outPath = Path.resolve(root, 'dist');
 
-        // console.log('post gatherPages:');
-        // printAll(ctx);
+    await Fs.emptyDir(outPath);
 
-        await resolveMeta(ctx);
-        
-        // await resolveDependencies(ctx);
-        if( false ){
-        
+    let ctx = new SiteContext(path, outPath);
+    await ctx.init();
+
+    let { es } = ctx;
+
+
+
+    // await gatherPages(ctx,'misc/2018/jan.mdx');
+    await gatherPages(ctx, 'misc/2018/feb.mdx');
+    // await gatherPages(ctx,'index.mdx');
+    // await gatherPages(ctx,'static/static.html');
+    // await gatherPages(ctx,'blog/about.mdx');
+    // await gatherPages(ctx,'blog/about.mdx');
+    // await gatherPages(ctx);
+
+    // console.log('post gatherPages:');
+    // printAll(ctx);
+
+    await resolveMeta(ctx);
+
+    // await resolveDependencies(ctx);
+    if (false) {
+
         await resolvePageLinks(ctx);
-        
+
         await resolveLayout(ctx);
-        
+
         await resolveDest(ctx);
-        
+
         await processCSS(ctx);
-        
+
         await resolveCssLinks(ctx);
-        
+
         await resolveLinks(ctx);
-        
+
         await renderPages(ctx);
 
         await writePages(ctx, { beautify: true, writeCode: false, writeJSX: false })
-        }
+    }
 
-        // await ctx.persistentEs.add( ctx.es );
+    // await ctx.persistentEs.add( ctx.es );
 
-        // console.log('MDX:')
-        // await printQuery(ctx,querySelectMdx);
+    // console.log('MDX:')
+    // await printQuery(ctx,querySelectMdx);
 
-        // console.log('CSS:')
-        // await printQuery(ctx,querySelectCss);
-        // await printQuery(ctx,querySelectPageCss);
+    // console.log('CSS:')
+    // await printQuery(ctx,querySelectCss);
+    // await printQuery(ctx,querySelectPageCss);
 
-        // console.log('Links:');
-        // await printQuery(ctx,querySelectPageLinks);
-        
-        // console.log('Files:');
-        // await printQuery(ctx,querySelectFiles);
+    // console.log('Links:');
+    // await printQuery(ctx,querySelectPageLinks);
 
-        console.log('E:');
-        printAll(ctx);
-        
-        // console.log( 'hell', result.map(e => [e.File?.path, e.File?.ext]) );
-        // console.log( 'hell', result[0] );
-        // printEntity(ctx,result[0]);
-        // const stack = createStdLibStack();
+    // console.log('Files:');
+    // await printQuery(ctx,querySelectFiles);
 
-    });
+    console.log('E:');
+    printAll(ctx.es);
 
-    it.only('creates a page', async () => {
-        const root = Path.resolve(__dirname, "../");
-        const path = Path.resolve(root, 'pages');
-        let outPath = Path.resolve(root, 'dist');
-        
-        await Fs.emptyDir(outPath);
+    // console.log( 'hell', result.map(e => [e.File?.path, e.File?.ext]) );
+    // console.log( 'hell', result[0] );
+    // printEntity(ctx,result[0]);
+    // const stack = createStdLibStack();
 
-        let ctx = new SiteContext(path, outPath);
-        await ctx.init();
+});
 
-        let { es } = ctx;
+test('creates a page', async () => {
+    const ctx = await setupContext();
+    let page = ctx.createMdxEntity();
 
-        let page = es.createEntity();
-
-        // ---
-        // title: Testing Da Src
-        // ---
-        const data = `
+    // ---
+    // title: Testing Da Src
+    // ---
+    const data = `
 
 export const facts = {
     water: 'cold',
@@ -152,25 +138,105 @@ export const facts = {
 
         # Lower Title
 
-        ??
-        `;
+        ??`;
 
-        page.Source = { data };
-        page.Mdx = {};
-        page.Target = { path:'/misc', writeJS:true };
-        page.Enabled = {}
-        page.Renderable = {}
+    page.Source = { data };
+    page.Target = { path: '/misc', writeJS: false };
 
-        await ctx.add( page );
+    await ctx.add(page);
 
-        await ctx.processPages();
+    await ctx.processPages();
 
-        console.log('E:');
-        printAll(ctx);
-
-    });
+    console.log('E:');
+    printAll(ctx.es);
 
 });
+
+test('inlines css', async () => {
+    const ctx = await setupContext();
+    const { es } = ctx;
+
+    let page = ctx.createCssEntity();
+
+    let data = `
+        $font-stack:    Helvetica, sans-serif;
+        $primary-color: #333;
+
+        body {
+        font: 100% $font-stack;
+        color: $primary-color;
+        }`;
+    page.Source = { data, uri: 'css:/test.css' };
+
+    // removing target means it wont manifest
+    page.Target = undefined;
+    await ctx.add(page);
+
+    // note - important that import has no leading space
+    data = `
+import 'css:/test.css';
+
+        <InlineCSS />
+
+        # Importing CSS using a target uri
+        
+        the target uri lets us reference the css using its target path
+        `;
+
+    page = ctx.createMdxEntity();
+    page.Source = { data, uri: 'mdx:/page/test' };
+    page.Target = {};
+    await ctx.add(page);
+
+    await ctx.processPages();
+
+    console.log('E:');
+    printAll(ctx.es);
+});
+
+
+test.only('file', async () => {
+    const ctx = await setupContext();
+    
+    
+    await ctx.processPages('file://misc/2018/feb.mdx');
+
+    // await gatherPages(ctx, 'file://misc/2018/feb.mdx');
+
+
+    // await resolveMeta(ctx);
+    // await resolveDependencies(ctx);
+    // await resolvePageLinks(ctx);
+    
+    console.log('E:');
+    printAll(ctx);
+    
+    // const page = selectEntityBySource(ctx, 'file:/styles/misc.css' );
+    // // const page = selectEntityBySource(ctx, 'file:/misc/2018/feb.mdx' );
+    // const meta = getPageMeta(ctx, page);
+    // const dst = ctx.pageDstPath(page, false);
+    // console.log('meta:', meta);
+    // console.log('dst', dst);
+});
+
+
+test.run();
+
+
+
+
+
+async function setupContext(): Promise<SiteContext> {
+    const root = Path.resolve(__dirname, "../");
+    const path = Path.resolve(root, 'pages');
+    let outPath = Path.resolve(root, 'dist');
+
+    await Fs.emptyDir(outPath);
+
+    let ctx = new SiteContext(path, outPath);
+    await ctx.init();
+    return ctx;
+}
 
 // {
 //     type: 'root',
@@ -223,3 +289,4 @@ const querySelectFiles = `[
     // selects entities which have /component/mdx
     [ /component/file ] !bf @c
     ] select`;
+

@@ -16,6 +16,7 @@ export function importCSSPlugin() {
                     if( node.type !== 'ImportDeclaration' ){
                         return true;
                     }
+                    
                     if( node.source.value.endsWith('.css') ){
                         cssPaths.push(node.source.value);
                         found = true;
@@ -34,13 +35,19 @@ export function importCSSPlugin() {
             }
         });
 
+        
         if( cssPaths.length > 0 ){
             let cssNode = {
                 type: 'export',
                 value: `export const cssLinks = [ ${cssPaths.map(c => `'${c}'`).join(',')} ]`
             };
-            // console.log('[importCSSPlugin]', cssNode );
+            // log( cssNode );
             tree.children.unshift(cssNode);
         }
     }
+}
+
+
+function log(...args){
+    console.log('[importCSSPlugin]', ...args);
 }

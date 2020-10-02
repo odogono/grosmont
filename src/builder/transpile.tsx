@@ -94,6 +94,13 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
         Head,
         InlineCSS: (props) => {
             return <style dangerouslySetInnerHTML={{__html:css}} />;
+        },
+        CSSLinks: () => {
+            // log('[transpile][CSSLinks]',props.cssLinks);
+            // { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)}
+            return <>
+                {props.cssLinks.map( c => <link key={c} rel="stylesheet" href={c} />)}
+            </>
         }
         // Layout,
         // a: (props) => {
@@ -119,22 +126,24 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     meta = { ...pageProps };
 
     let result:TranspileResult = {
-        path, code, jsx, ast, component, links, meta, additional:rest
+        path, code, jsx, ast, component, links, meta, cssLinks, additional:rest
     };
 
+    // log('[transpile]', 'requires', requires);
+    // log('[transpile]', 'cssLinks', cssLinks);
 
     let depends = [];
     for( let r of requires ){
         r = isObject(r) ? r.path : r;
-        r = await resolveRelativePath(path, r);
+        // r = await resolveRelativePath(path, r);
         depends.push(r);
     }
     result.requires = depends;
 
-    if( cssLinks ){
-        // resolve these to absolute
-        result.cssLinks = await Promise.all( cssLinks.map( link => resolveRelativePath(path,link)) );
-    }
+    // if( cssLinks ){
+    //     // resolve these to absolute
+    //     result.cssLinks = await Promise.all( cssLinks.map( link => resolveRelativePath(path,link)) );
+    // }
     
     // console.log('[transpile]', path, 'and now', rest );
     if (!forceRender && (frontMatter !== undefined && frontMatter.enabled === false)) {
@@ -175,13 +184,7 @@ function parseMdx(data: string, path:string, pageProps: object, applyLinks?: Pag
     // let content = Fs.readFileSync(path, 'utf8');
 
     try {
-        // console.log('code', data);
         let [jsx, links, ast] = processMdx(data, pageProps, applyLinks);
-        // if( path.includes('index.mdx') )
-        // console.log('🦉jsx', jsx);
-        // console.log('🦉jsxOG', jsxOG);
-    
-        // console.log('code', code);
         
         let code = transformJSX(jsx);
         let el = evalCode(code, path);
@@ -189,8 +192,8 @@ function parseMdx(data: string, path:string, pageProps: object, applyLinks?: Pag
         return { ...el, code, jsx, ast, links };
 
     } catch( err ){
-        console.warn('[parseMdx]', `failed to process mdx ${path}`, err.message, err.stack );
-        console.log('[parseMdx]', data);
+        log('[parseMdx]', `failed to process mdx ${path}`, err.message );
+        log('[parseMdx]', data);
         throw err;
     }
 
@@ -202,7 +205,7 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
     let links = new Map<string, any>();
     let ast;
 
-    // console.log('[processMdx]', 'wat', content );
+    // log('[processMdx]', 'content:', content );
     // remark-mdx has a really bad time with html comments even
     // if they are removed with the removeCommentPlugin, so a brute
     // force replace is neccesary here until i can figure it out
@@ -214,7 +217,7 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
         .use(stringify)
         .use(frontmatter)
         .use(emoji)
-        
+
         .use(configPlugin, { page: pageProps })
         .use(removeCommentPlugin)
         
@@ -225,13 +228,13 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
         .use(mdxjs)
         .use(titlePlugin)
         .use(importCSSPlugin)
-        // .use( () => tree => console.log('HERE', tree) )
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
+        // .use( () => tree => console.log('HERE', tree) )
         // .use( () => console.log('💦doh') )
         .processSync(content);
-    // console.log(output);
+    // console.log(output.toString());
 
     return ['/* @jsx mdx */\n' + output.toString(), links, ast];
 }
@@ -253,6 +256,7 @@ function transformJSX(jsx: string) {
 function evalCode(code: string, path: string) {
     let requires = [];
     const requireManual = (requirePath) => {
+        // log('[evalCode][requireManual]', requirePath);
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
         
         let extPath = findFileWithExt(fullPath, ['mdx'] );
@@ -288,16 +292,10 @@ function evalCode(code: string, path: string) {
         require: requireManual,
         console: console
     });
-    const component = out['default'];
-    const pageProps = out['page'];
     
-    let {cssLinks} = out;
-    if( cssLinks !== undefined ){
-        requires = [...requires,...cssLinks];
-    }
-    // console.log('[evalCode]', requires);
+    const {default:component, page:pageProps, ...rest} = out;
 
-    return { ...out, pageProps, requires, component };
+    return { ...rest, pageProps, requires, component };
 }
 
 function findFileWithExt( path:string, exts:string[] ){
@@ -312,3 +310,6 @@ function findFileWithExt( path:string, exts:string[] ){
 }
 
 
+function log(...args){
+    console.log('[Transpile]', ...args);
+}

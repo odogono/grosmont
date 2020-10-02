@@ -1,6 +1,11 @@
 import Fs, { linkSync } from 'fs-extra';
 import Path from 'path';
 import Klaw from 'klaw';
+import Util from 'util';
+
+import GlobCb from 'glob';
+const Glob = Util.promisify( GlobCb );
+
 import Yaml from 'yaml';
 
 import PostCSS from 'postcss';
@@ -25,7 +30,7 @@ import { defs } from './defs';
 // } from 'odgn-entity/dist/cjs/index';
 
 import {
-    Entity, EntityId
+    Entity, EntityId, isEntity
 } from 'odgn-entity/src/entity';
 
 import {
@@ -35,15 +40,29 @@ import {
     EntitySetSQL
 } from 'odgn-entity/src/entity_set_sql';
 
+
 import { TranspileOptions, transpile } from './transpile';
-import { getComponentEntityId, Component, toComponentId } from 'odgn-entity/src/component';
+import { getComponentEntityId, Component, toComponentId, getComponentDefId } from 'odgn-entity/src/component';
 import { isEmpty } from 'odgn-entity/src/util/is';
-import { TYPE_OR } from 'odgn-entity/src/util/bitfield';
+import { TYPE_OR, BitField, get as bfGet } from 'odgn-entity/src/util/bitfield';
 import { slugify } from '../util/string';
+import { parseUri } from '../util/parse_uri';
 
 
 
+export class Site {
+    es: EntitySetMem;
 
+    constructor(){
+        this.es = new EntitySetMem();
+    }
+
+    async init() {
+        for (const def of defs) {
+            await this.es.register(def);
+        }
+    }
+}
 
 
 
@@ -74,6 +93,14 @@ export class SiteContext extends BuildContext {
         }
     }
 
+    filePath(uri:string){
+        if( !uri.startsWith('file:') ){
+            return undefined;
+        }
+        const path = uri.substring( 'file:/'.length );
+        return Path.join( this.rootPath , path );
+    }
+
     pageSrcPath(page: Entity): string {
         if( page.File === undefined ){
             return undefined;
@@ -82,16 +109,48 @@ export class SiteContext extends BuildContext {
         return Path.join(this.rootPath, path) + `.${ext}`;
     }
 
-    pageDstPath(page: Entity): string {
-        let { filename, path } = page.Target ?? {};
-        let result = this.dstPath;
-        if( path !== undefined ){
-            result = Path.join( result, path );
+    pageDstPath(e: Entity|EntityId, asAbsolute:boolean = true ): string {
+        let page:Entity;
+        if( isEntity(e) ){
+            page = e as Entity;
+        } else {
+            page = this.es.getEntityMem(e as EntityId, true);
         }
-        if( filename !== undefined ){
-            result = Path.join(result,filename);
+
+        let filename = '';
+        let path = '';
+        let ext = '';
+
+        // derive initial filename and path from src
+        const uri = page.Source?.uri;
+        if( uri !== undefined ){
+            const {file,directory} = parseUri(uri);
+            filename = file; path = directory;
         }
-        return result;
+
+        const meta = getPageMeta(this,page);
+
+        filename = meta.filename ?? filename;
+
+        if( meta.title !== undefined ){
+            filename = slugify(meta.title);
+        }
+
+        path = meta.dst ?? meta.dstPath ?? path;
+        
+        ext = Path.extname(filename);
+        
+        if( page.Mdx ){
+            ext = 'html';
+        } else if( page.Css ){
+            ext = 'css';
+        }
+
+        filename = removeExtension(filename) + '.' + ext;
+
+        return asAbsolute ?
+            Path.join( this.dstPath, path, filename )
+            : Path.join(path,filename);
     }
 
     isPathDisabled(relativePath: string) {
@@ -99,12 +158,38 @@ export class SiteContext extends BuildContext {
     }
 
     addDependencies(page: Entity, dependencies: string[]) {
-        dependencies = dependencies.map(path => Path.isAbsolute(path) ? Path.relative(this.rootPath, path) : path);
+        dependencies = dependencies.map(path => {
+            let relPath = Path.isAbsolute(path) ? Path.relative(this.rootPath, path) : path;
+            return relPath;
+        });
         this.depends = [...new Set([...this.depends, ...dependencies])];
+    }
+
+    createPageEntity():Entity {
+        let page = this.es.createEntity();
+        page.Renderable = {};
+        page.Enabled = {};
+        return page;
+    }
+
+    createMdxEntity():Entity {
+        let page = this.createPageEntity();
+        page.Mdx = {};
+        return page;
+    }
+    createCssEntity():Entity {
+        let page = this.createPageEntity();
+        page.Css = {};
+        return page;
     }
 
     async add(entitiesOrComponents: any) {
         await this.es.add(entitiesOrComponents);
+    }
+
+    getAdded(): EntityId[] {
+        return Array.from( this.es.entChanges.added );
+        // log('[add]', this.es.entChanges.added );
     }
 
     async processPages( targetPath?:string ):Promise<SiteContext> {
@@ -125,7 +210,7 @@ export class SiteContext extends BuildContext {
         
         await processCSS(this);
         
-        await resolveCssLinks(this);
+        // await resolveCssLinks(this);
         
         await resolveLinks(this);
         
@@ -160,9 +245,16 @@ export async function gatherPages(ctx: SiteContext, targetPath: string): Promise
     // console.log('[gatherPages]', {targetPath}, ctx.pages.map(p=>p.path) );
     // console.log('ctx pages', );
 
+    if( targetPath.startsWith('file:') ){
+        targetPath = targetPath.substring( 'file:/'.length );
+    }
+
     let rootPath = targetPath !== undefined ? Path.join(ctx.rootPath, targetPath) : ctx.rootPath;
 
+    log('[gatherPages]', targetPath, rootPath);
+
     rootPath = await checkPagePath(ctx, rootPath);
+
 
     if (rootPath === undefined) {
         console.log('[gatherPages]', 'page not found', rootPath);
@@ -186,8 +278,9 @@ export async function gatherPages(ctx: SiteContext, targetPath: string): Promise
 
         let dirEntities = await createParentDirEntities(ctx, path);
         await ctx.add(dirEntities);
-
-        // console.log('[gatherPages]', 'added', dirEntities.length, 'dir entities');
+        let eids = ctx.getAdded();
+        
+        // log('[gatherPages]', relativePath, 'added', dirEntities.length, 'dir entities', eids );
 
         let isEnabled = !ctx.isPathDisabled(relativePath);
         // if (ctx.isPathDisabled(relativePath)) {
@@ -197,6 +290,10 @@ export async function gatherPages(ctx: SiteContext, targetPath: string): Promise
 
         let e = createFileEntity(ctx, relativePath, stats, { isEnabled });
         if (e !== undefined) {
+            // log('[gatherPages]', 'set meta deps', eids);
+            let meta = e.Meta || {};
+            meta.eids = eids;
+            e.Meta = meta;
             await ctx.add(e);
         }
 
@@ -232,12 +329,38 @@ export async function gatherPages(ctx: SiteContext, targetPath: string): Promise
     return ctx;
 }
 
+
+
+async function gatherPath( ctx:SiteContext, path:string )  {
+    if( path.startsWith('file:') ){
+        path = path.substring( 'file:/'.length );
+    }
+
+    // does the path exist as is?
+
+    
+    const absPath = Path.join( ctx.rootPath, path );
+    const matches = await Glob(`${absPath}*`);
+
+    log('[gatherPath]', absPath, matches );
+
+
+    // scan this path
+    // Fs.readdir( )
+
+}
+
+
+/**
+ * Applies the created and modified time to source entities
+ * @param ctx 
+ */
 export async function applyStat(ctx:SiteContext): Promise<SiteContext> {
     const pages = selectSource(ctx);
     let apply:Entity[] = [];
     for( const page of pages ){
         if( page.Stat === undefined ){
-            page.Stat = { createdAt:Date.now(), modifiedAt:Date.now() };
+            page.Stat = { ctime:Date.now(), mtime:Date.now() };
             apply.push(page);
         }
     }
@@ -264,37 +387,45 @@ export async function resolveMeta(ctx: SiteContext, path?: string): Promise<Site
     }
 
     if (pages.length === 0) {
-        console.log('[resolveMeta]', 'no pages', path);
+        log('[resolveMeta]', 'no pages', path);
         
         // printAll(ctx,pages);
-        // printAll(ctx);
-        // throw 'stop';
+        printAll(ctx.es);
+        throw new Error('stop');
         return ctx;
     }
 
-    // console.log('[resolveMeta]', pages.map(e => e.File.path) );
+    // console.log('[resolveMeta]', pages.map(e => e) );
 
-    let pagesMeta = [];
-    for (const page of pages) {
-        if( page.File === undefined ){ continue; }
-        const { path } = page.File;
-        // console.log('getting dir meta for', path );
-        let dirMeta = getDirMeta(ctx, path);
-        page.Meta = { meta: { ...dirMeta, ...page.Meta?.meta } };
-        // console.log('updated', page.id);
-        pagesMeta.push(page.Meta);
-    }
-    await ctx.add(pagesMeta);
+    // let pagesMeta = [];
+    // for (const page of pages) {
+    //     if( page.File === undefined ){ continue; }
+    //     const { path } = page.File;
+    //     log('getting dir meta for', path );
+    //     let dirMeta = getDirMeta(ctx, path);
+    //     page.Meta = { meta: { ...dirMeta, ...page.Meta?.meta } };
+    //     log('updated', page.id, page.Meta);
+    //     pagesMeta.push(page.Meta);
+    // }
+
+    // // log('[resolveMeta]', 'pagesMeta', pagesMeta.map(e => e) );
+
+    // await ctx.add(pagesMeta);
+
+
 
     // non MDX pages initial target resolution
-    const css = pages.filter(p => p.File?.ext !== 'mdx');
-    for (let page of css) {
-        let meta = page.Meta?.meta ?? {};
-        // console.log('ok go', page);
-        [page, meta] = applyTarget(ctx, page, meta);
-        page.Meta = { meta };
-    }
-    await ctx.add(css);
+    // const css = pages.filter(p => p.File?.ext !== 'mdx');
+
+    // log('[resolveMeta]', 'css', css );
+
+    // for (let page of css) {
+    //     let meta = page.Meta?.meta ?? {};
+    //     // console.log('ok go', meta);
+    //     [page, meta] = applyTarget(ctx, page, meta);
+    //     page.Meta = { meta };
+    // }
+    // await ctx.add(css);
 
 
     // for (const page of pages) {
@@ -306,6 +437,8 @@ export async function resolveMeta(ctx: SiteContext, path?: string): Promise<Site
     const mdx = selectMdxPages(ctx);
 
     for (const page of mdx) {
+        // log('transpiling');
+        // printEntity(ctx,page);
         await transpileWith(ctx, page);
     }
     // console.log('updating', pages.length, 'pages', ctx.es.entChanges );
@@ -322,34 +455,60 @@ export async function resolveMeta(ctx: SiteContext, path?: string): Promise<Site
  */
 export async function resolveDependencies(ctx: SiteContext): Promise<SiteContext> {
     let resolved = false;
+    let count = 0;
 
     while (!resolved) {
         let deps = [];
 
-        // first ensure each of the deps is resolved to an actual file
-        deps = (await Promise.all(ctx.depends.map(
-            async (dep) => {
-                let absPath = Path.join(ctx.rootPath, dep);
-                absPath = await checkPagePath(ctx, absPath);
-                return absPath !== undefined ? Path.relative(ctx.rootPath, absPath) : undefined;
+        // log('[resolveDependencies]', ctx.depends );
+
+        // remove dependencies that we already have
+        for( const dep of ctx.depends ){
+            if( selectSourceByPath(ctx, dep, false) === undefined ){
+                // log('[resolveDependencies]', 'missing', dep);
+                deps.push( dep );
             }
-        ))).filter(Boolean);
-
-        // only interested in pages we haven't seen yet
-        deps = deps.map(
-            dep => selectPageByPath(ctx, dep) === undefined ? dep : undefined
-        ).filter(Boolean);
-
-        // console.log('[resolveDependencies]', 'b', deps );
-
-        for (const dep of deps) {
-            // console.log('[resolveDependencies]', 'dep', dep);
-            await gatherPages(ctx, dep);
-            // console.log('[resolveDependencies]', 'dep meta', dep);
-            await resolveMeta(ctx, dep);
         }
 
+        for( const dep of deps ){
+            log('[resolveDependencies]', dep);
+            await gatherPages(ctx,dep);
+            await resolveMeta(ctx,dep);
+        }
+
+        // resolve any CssLink.paths
+        resolveCssLinks(ctx);
+
         resolved = deps.length === 0;
+
+        if( (++count) > 10 ){
+            throw new Error('[resolveDependencies] out of bounds');
+        }
+
+        // // first ensure each of the deps is resolved to an actual file
+        // deps = (await Promise.all(ctx.depends.map(
+        //     async (dep) => {
+        //         let absPath = Path.join(ctx.rootPath, dep);
+        //         absPath = await checkPagePath(ctx, absPath);
+        //         return absPath !== undefined ? Path.relative(ctx.rootPath, absPath) : undefined;
+        //     }
+        // ))).filter(Boolean);
+
+        // // only interested in pages we haven't seen yet
+        // deps = deps.map(
+        //     dep => selectPageByPath(ctx, dep) === undefined ? dep : undefined
+        // ).filter(Boolean);
+
+        // // console.log('[resolveDependencies]', 'b', deps );
+
+        // for (const dep of deps) {
+        //     // console.log('[resolveDependencies]', 'dep', dep);
+        //     await gatherPages(ctx, dep);
+        //     // console.log('[resolveDependencies]', 'dep meta', dep);
+        //     await resolveMeta(ctx, dep);
+        // }
+
+        // resolved = deps.length === 0;
 
         // console.log('[resolveDependencies]', 'done', deps );
     }
@@ -400,11 +559,13 @@ export async function resolvePageLinks(ctx: SiteContext): Promise<SiteContext> {
             e.Enabled = {};
             // console.log('[resolvePageLinks]', 'ext', link);
         } else {
-            let absPath = Path.join(ctx.rootPath, link.url || link.page_url);
-            absPath = await checkPagePath(ctx, absPath);
+
+            // let absPath = Path.join(ctx.rootPath, link.url || link.page_url);
+            // absPath = await checkPagePath(ctx, absPath);
 
             // console.log('[resolvePageLinks]', absPath, link);
-            const linkE = selectPageByPath(ctx, absPath);
+            const linkE = selectPageByPath(ctx, link.url );
+            // log('[resolvePageLinks]', link.url, linkE );
 
             if (linkE !== undefined) {
                 e.PageLink = { ...link, e: linkE.id };
@@ -469,7 +630,13 @@ export async function processCSS(ctx: SiteContext): Promise<SiteContext> {
         const minify = page.Target.minify ?? true;
         const from = ctx.pageSrcPath(page);
         const to = ctx.pageDstPath(page) ?? from;// pageDstPath(ctx, page) || from;
-        const css = await Fs.readFile(from, 'utf8');
+
+        let css = page.Source?.data;
+        if( from !== undefined ){
+            css = await Fs.readFile(from, 'utf8');
+        }
+
+        // const css = await Fs.readFile(from, 'utf8');
 
         const plugins = [
             PreCSS,
@@ -501,12 +668,16 @@ export async function processCSS(ctx: SiteContext): Promise<SiteContext> {
 export async function resolveCssLinks(ctx: SiteContext): Promise<SiteContext> {
     let links = selectCssLinks(ctx);
 
+    if( links === undefined ){
+        return ctx;
+    }
+
     // console.log('[resolveCssLinks]');
     // console.log( links );
     links = links.map(com => {
         const { paths, ...rest } = com;
-        const links = paths.map(p => selectEntityIdByPath(ctx, p, { ext: 'css' })).filter(Boolean);
-        return { ...rest, links };
+        const eids = paths?.map(p => selectEntityIdByPath(ctx, p, { ext: 'css' })).filter(Boolean) ?? [];
+        return { ...rest, eids };
     });
     // console.log(links);
 
@@ -549,7 +720,15 @@ export async function renderPages(ctx: SiteContext): Promise<SiteContext> {
         let result = await transpile({ path, data, links, meta, ...inCss }, { forceRender: true });
         let { code, component, jsx, html: content } = result;
 
-        page.Mdx = { ...page.Mdx, code, component, jsx };
+        let mdx = {...page.Mdx };
+        if( mdx.writeJS ){
+            mdx.code = code;
+        }
+        if( mdx.writeJSX ){
+            mdx.jsx = jsx;
+        }
+
+        page.Mdx = mdx; //{ ...page.Mdx, code, component, jsx };
         page.Target = { ...page.Target, content };
 
         if (page.Layout !== undefined) {
@@ -599,17 +778,13 @@ export async function writePages(ctx: SiteContext, options: WritePagesOptions = 
     for (const e of ents) {
         const path = ctx.pageDstPath(e);
         let content = e.Target.content ?? e.Source?.data;
-        // let { content } = e.Target;
-        let writeJS = e.Target.writeJS ?? doWriteCode;
 
-        // console.log('[writePages]', path, e.Target );
-
-        // const { content } = (page as Page);
-        // const outPath = pageDstPath(ctx, page);
-
+        
+        
         if (e.Mdx) {
-            writeHTML(path, content, options);
-
+            // log('[writePages]', path, e.Source.uri, content );
+            await writeHTML(path, content, options);
+            let writeJS = e.Mdx.writeJS ?? doWriteCode;
             if (writeJS) await writeFile(path + '.js', e.Mdx.code);
         }
         else if (e.Static) {
@@ -619,14 +794,9 @@ export async function writePages(ctx: SiteContext, options: WritePagesOptions = 
             await Fs.copyFile(src, dst);
         }
         else {
-            writeFile(path, content);
+            await writeFile(path, content);
         }
-
-        
-        // await Fs.ensureDir(Path.dirname(path));
-        // await Fs.writeFile(path, content);
     }
-
 
     return ctx;
 }
@@ -641,16 +811,28 @@ async function writeFile(path: string, content: string) {
 
 async function writeHTML(path: string, html: string, options: WriteHTMLOptions = {}) {
     html = (options.beautify ?? false) ? Beautify.html(html) : html;
-    writeFile(path, html);
+    await writeFile(path, html);
 }
 
 
-function getPageMeta(ctx: SiteContext, page: Entity, options: { debug?: boolean } = {}) {
+export function getPageMeta(ctx: SiteContext, page: Entity, options: { debug?: boolean } = {}) {
     const debug = options.debug ?? false;
 
-    // const path = ctx.pageSrcPath(page);
-
     let meta: any = {};
+
+    const {es} = ctx;
+    const refs = page.Meta?.eids || [];
+    const did = es.resolveComponentDefId('/component/meta');
+
+    for( let ii=refs.length-1; ii >= 0; ii-- ){
+        const eid = refs[ii];
+        const com = es.getComponentMem( toComponentId(eid,did) );
+        if( com !== undefined ){
+            meta = {...meta, ...com['meta']};
+        }
+    }
+
+    
     if (page.Meta !== undefined) {
         meta = { ...meta, ...page.Meta.meta };
     }
@@ -658,10 +840,6 @@ function getPageMeta(ctx: SiteContext, page: Entity, options: { debug?: boolean 
         const {title,description} = page.Title;
         meta = { ...meta, title,description };
     }
-
-
-
-    // get css
 
     return meta;
 }
@@ -673,13 +851,29 @@ function getPageCss(ctx: SiteContext, page: Entity, { css, cssLinks }: { css?: s
 
     if (page.CssLinks !== undefined) {
         const { es } = ctx;
+        const eids:EntityId[] = page.CssLinks.eids;
+
+        if( eids === undefined ){
+            return result;
+        }
+
+        // get target components which contain the css code
         const did = es.resolveComponentDefId('/component/target');
-
-        let coms = page.CssLinks.links.map(eid => es.getComponentMem(toComponentId(eid, did)));
-
-        // console.log('[getPageCss]', page.File.path, 'umm', coms);
-        result.cssLinks = [...cssLinks, ...coms.map(c => c['path'])];
+        let coms = eids.map(eid => es.getComponentMem(toComponentId(eid, did))).filter(Boolean);
+        
         result.css = css + coms.map(c => c['content']).join(' ');
+
+        const pagePath = ctx.pageDstPath(page);
+        result.cssLinks = eids.map( eid => {
+            // const css = es.getEntityMem(eid,true);
+            const cssPath = ctx.pageDstPath(eid, true);
+            // log('[getPageCss]', 'link to', Path.relative(Path.dirname(pagePath), cssPath) );
+            return Path.relative( Path.dirname(pagePath), cssPath);
+        });
+        
+        
+        // log('[getPageCss]', 'umm', result);
+        // result.cssLinks = [...cssLinks, ...coms.map(c => c['path'])];
         // if( debug ) console.log('[getPageMeta]', coms );
     }
     return result;
@@ -688,11 +882,12 @@ function getPageCss(ctx: SiteContext, page: Entity, { css, cssLinks }: { css?: s
 function getPageLinks(ctx: SiteContext, page: Entity) {
     const links = selectLinks(ctx, page);
     let result = new Map<string, PageLink>();
-    // console.log('[toPageLinks]', links);
+    const {es} = ctx;
+    // log('[toPageLinks]', links);
     for (const link of links) {
         const { url, page_url, e, text } = link.PageLink;
         // let pageUrl = url;
-        const linkPage = ctx.es.getEntityMem(e, true);
+        const linkPage = es.getEntityMem(e, true);
         if (linkPage) {
             // page_url = linkPage.Target.path
             // console.log('[toPageLinks]', url, page_url );
@@ -713,11 +908,18 @@ async function transpileWith(ctx: SiteContext, page: Entity, options?: Transpile
     
     // console.log('[transpileWith]', page.File.path, page.Meta.meta, inMeta );
     // console.log('[transpileWith]', props );
-
+    // log('[transpileWith]', page.Source.uri, inCss );
+    
     const props = { path, data, meta: inMeta, links: inLinks, ...inCss };
-
+    
     let { path:absPath, meta, links, additional, requires, cssLinks } = await transpile(props, options);
-
+    
+    
+    requires = requires.map( r => {
+        let path = Path.isAbsolute(r) ? Path.relative(ctx.rootPath,r) : r;
+        return 'file:/' + path;
+    })
+    // log('[transpileWith]', requires );
     // note the required files, so that they will be resolved after
     ctx.addDependencies(page, requires);
 
@@ -728,7 +930,7 @@ async function transpileWith(ctx: SiteContext, page: Entity, options?: Transpile
     page = await applyLinks(ctx, page, links);
     [page, meta] = applyTarget(ctx, page, meta);
     
-    page.Meta = {meta};
+    page.Meta = {...page.Meta, meta};
     // printEntity(ctx,page);
     // console.log('---');
 
@@ -798,17 +1000,39 @@ async function applyCSSLinks(ctx: SiteContext, page: Entity, cssLinks: string[])
         return page;
     }
 
+    // log('[applyCSSLinks]', 'with', cssLinks );
+    // log('[applyCSSLinks]', 'for', page.Source );
+
+    const srcUri = page.Source?.uri;
+
+    if( srcUri === undefined ){
+        throw new Error(`page uri not defined`);
+    }
+
+    // printAll(ctx);
+
     let paths = [];
+    let eids = [];
     for (const path of cssLinks) {
-        let resPath = await findPagePath(ctx, page, path);
-        // console.log('[applyCSSLinks]', 'found', resPath);
-        paths.push(resPath);
+        // let eid = selectTargetByPath( ctx, path );
+        let eid = selectSourceByPath( ctx, path ); 
+        if( eid !== undefined ){
+            eids.push( eid );
+        }
+        else {
+            let resUri = resolveRelative(ctx, srcUri, path);
+            // let resPath = await findPagePath(ctx, page, path);
+            paths.push(resUri);
+        }
     }
     // let paths = await resolvePagePaths(ctx, cssLinks);
+    // log('[applyCSSLinks]', page.Source.uri, cssLinks, paths);
 
-    // console.log('[applyCSSLinks]', page.File.path, cssLinks, paths);
+    if( paths.length > 0 ){
+        ctx.addDependencies( page, paths );
+    }
 
-    page.CssLinks = { paths };
+    page.CssLinks = { paths, eids };
 
     return page;
 }
@@ -842,19 +1066,33 @@ async function applyLinks(ctx: SiteContext, page: Entity, pageLinks: PageLinks):
         let type = 'page';
         let page_url = url;
         if (url.startsWith('http://') || url.startsWith('https://')) {
-            type = 'ext';
+            type = 'ext'; //external link
         }
         // check if this is a relative link to a local file - ./blog/about
         if (type === 'page') {
             // resolve the url
             url = Path.relative(ctx.rootPath, Path.resolve(dirPath, url));
-            // console.log('[applyLinks]', pagePath, url, page_url );
+            let foundPath = await checkPagePath(ctx, Path.join(ctx.rootPath, url));
+            if( foundPath !== undefined ){
+                url = Path.relative(ctx.rootPath, foundPath);
+            }
+            // log('[applyLinks]', url, page_url );
+            log('[applyLinks]', '=', url );
+
+            url = `file://${url}`;
+            // create or select an entity to this page
+
+            // printAll(ctx,undefined, ['/component/source']);
+            // printAll(ctx);
+            // throw 'stop';
 
             // important that the original url is retained, as this is the unique
             // key which we will use to rewrite it later
 
             ctx.addDependencies(page, [url]);
         }
+
+
         const linkE = await selectOrCreatePageLink(ctx, { page_url, url, type, text: child });
 
         // retain the original url so that we can rewrite it in the page
@@ -869,22 +1107,31 @@ async function applyLinks(ctx: SiteContext, page: Entity, pageLinks: PageLinks):
 }
 
 function applyTarget(ctx: SiteContext, page: Entity, data: PageMeta = {}): [Entity, PageMeta] {
-    const { dstPath,
+    const { dstPath, dst,
         writeJS, writeJSX, writeAST, 
         isEnabled, isRenderable, minify, 
         ...rest } = data as any;
 
-    
+    // log('[applyTarget]', page );
 
     let target: any = page.Target ?? {};
-    if (writeJS) { target.writeJS = true }
-    if (writeJSX) { target.writeJSX = true }
-    if (writeAST) { target.writeAST = true }
-    target.minify = minify ?? true;
+    
+    if( page.Mdx ){
+        let mdx: any = page.Mdx;
+        if (writeJS) { mdx.writeJS = true }
+        if (writeJSX) { mdx.writeJSX = true }
+        if (writeAST) { mdx.writeAST = true }
+        page.Mdx = mdx;
+    }
+
+    // target.minify = minify ?? true;
     
 
     if (dstPath !== undefined) {
         target.path = dstPath;
+    }
+    if (dst !== undefined) {
+        target.path = dst;
     }
 
     if( target.filename === undefined ){
@@ -954,10 +1201,9 @@ async function createParentDirEntities(ctx: SiteContext, path: string) {
 
 async function createDirEntity(ctx: SiteContext, relativePath: string, stats?: Fs.Stats, options: CreateEntityOptions = {}) {
 
-    // let debug = relativePath === '/';
-
     relativePath = relativePath.endsWith(Path.sep) ? relativePath : relativePath + Path.sep;
     const fullPath = Path.join(ctx.rootPath, relativePath);
+    const uri = 'file:' + (relativePath.startsWith('/') ? relativePath : '/' + relativePath);
 
     if (stats == undefined) {
         stats = await Fs.stat(fullPath);
@@ -965,6 +1211,7 @@ async function createDirEntity(ctx: SiteContext, relativePath: string, stats?: F
 
     const { ctime, mtime } = stats;
 
+    // log('[createDirEntity]', relativePath, Path.normalize(relativePath) );
     // if( debug ) console.log('[createDirEntity]', relativePath, Path.normalize(relativePath) );
 
     // look for existing
@@ -993,12 +1240,14 @@ async function createDirEntity(ctx: SiteContext, relativePath: string, stats?: F
 
     e = ctx.es.createEntity();
 
-    e.File = { 
-        path: relativePath,
-    };
+    // e.File = { 
+    //     path: relativePath,
+    // };
+    e.Dir = { path: relativePath };
+    // e.Source = {uri};
     e.Stat = {
-        createdAt: ctime,
-        modifiedAt: mtime
+        ctime,
+        mtime
     }
 
     e.Meta = { meta };
@@ -1024,14 +1273,17 @@ function createFileEntity(ctx: SiteContext, relativePath: string, stats: Fs.Stat
     }
 
     const { ctime, mtime } = stats;
+    const uri = 'file://' + relativePath;
     relativePath = removeExtension(relativePath);
 
     // console.log('[createFileEntity]', relativePath, ext);
 
-    const existing = selectPageByPath(ctx, relativePath, {ext});
+    // const existing = selectPageByPath(ctx, relativePath, {ext});
+    const existing = selectEntityBySource(ctx, uri);
 
     if( existing !== undefined ){
         console.log('[createFileEntity]', relativePath, 'existing', existing.id );
+        // printEntity(ctx, existing);
 
         // compare modified times to determine whether this is an update
         if( existing.Stat?.modifiedAt > mtime ){
@@ -1041,15 +1293,17 @@ function createFileEntity(ctx: SiteContext, relativePath: string, stats: Fs.Stat
         }
     }
 
-
     let e = ctx.es.createEntity();
     e.File = {
         path: relativePath,
         ext
     };
+    e.Source = {
+        uri
+    }
     e.Stat = {
-        createdAt: ctime,
-        modifiedAt: mtime
+        ctime,
+        mtime
     }
     // e.Build = { isResolved: false };
 
@@ -1081,7 +1335,7 @@ function createFileEntity(ctx: SiteContext, relativePath: string, stats: Fs.Stat
 function getDirMeta(ctx: SiteContext, path: string) {
     const paths = getParentPaths(ctx, path);
     let result: PageMeta = {};
-    // console.log('[getDirMeta]', paths);
+    // log('[getDirMeta]', paths);
     for (const dir of paths) {
         const parent = selectPageByPath(ctx, dir);
         if (parent === undefined) { continue; }
@@ -1098,20 +1352,42 @@ function getDirMeta(ctx: SiteContext, path: string) {
 function getParentPaths(ctx: SiteContext, path: string, absolute: boolean = false): string[] {
     let result = [];
 
+    if( path === '' || path === Path.sep ){
+        return result;
+    }
+
+    // log('[getParentPaths]', path, Path.isAbsolute(path));
     path = Path.isAbsolute(path) ? path : Path.join(ctx.rootPath, path);
     let relativePath = path;
-    // let count = 0;
+    let count = 0;
 
-    // console.log('[getParentPaths]', path, Path.isAbsolute(path));
 
     while (relativePath) {
         path = Path.dirname(path);
         relativePath = Path.relative(ctx.rootPath, path);
+        // log('[getParentPaths]', ctx.rootPath, path, relativePath);
         result.push(relativePath + Path.sep);
-        // if( ++count > 5 ) break;
+        if( ++count > 10 ) break;
     }
 
     return result;
+}
+
+function resolveRelative(ctx:SiteContext, srcUri:string, path:string ){
+    // create full path from uri
+    let srcPath = ctx.filePath( srcUri );
+    if( !srcPath.endsWith(Path.sep) ){
+        srcPath = Path.dirname( srcPath );
+    }
+
+    let absPath = Path.resolve( srcPath, path );
+
+    let relative = Path.relative( ctx.rootPath, absPath );
+
+    // log('[resolveRelative]', absPath, relative );
+
+    return 'file://' + relative;
+
 }
 
 /**
@@ -1185,6 +1461,7 @@ async function checkPagePath(ctx: SiteContext, path: string) {
     // try with extensions
     for (const ext of ctx.validExtensions) {
         let extPath = path + '.' + ext;
+        log('[checkPagePath]', extPath);
         if (await Fs.pathExists(extPath)) {
             return extPath;
         }
@@ -1244,6 +1521,75 @@ function selectMdxPages(ctx: SiteContext): Entity[] {
     // return ctx.es.queryEntities(query);
 }
 
+export function selectEntityBySource(ctx:SiteContext, path:string):Entity {
+    let eid = selectSourceByPath(ctx,path);
+    return eid !== undefined ? ctx.es.getEntityMem(eid, true) : undefined;
+}
+
+
+function selectSourceByPath(ctx:SiteContext, path:string, enabled:boolean = true ):EntityId {
+    const {es} = ctx;
+    const sourceDid = es.resolveComponentDefId('/component/source');
+    const dids = es.resolveComponentDefIds([
+        enabled ? '/component/enabled':'', '/component/source'
+    ]);
+
+    // log('[selectSourceByPath]', path);
+    const com = es.findComponent(dids, (com) => {
+        if( getComponentDefId(com) !== sourceDid ){
+            return false;
+        }
+        if( com['uri'] === path ){
+            return true;
+        }
+        // if( path.startsWith('source:') ){
+        //     let src = path.substring( 'source:'.length );
+        //     if( com['uri'] === src ){
+        //         return true;
+        //     }
+        // }
+    });
+    return com !== undefined ? getComponentEntityId(com) : undefined;
+}
+
+function selectTargetByPath(ctx:SiteContext, path:string ):EntityId {
+    const {es} = ctx;
+    const targetDid = es.resolveComponentDefId('/component/target');
+    const dids = es.resolveComponentDefIds([
+        '/component/enabled', '/component/target'
+    ]);
+
+    
+
+    // const ents = es.getEntitiesMem(dids, { populate: true });
+    const com = es.findComponent(dids, (com) => {
+        if( getComponentDefId(com) !== targetDid ){
+            return false;
+        }
+        // log('[selectTargetByPath]', com);
+
+        if( path.startsWith('target:') ){
+            let target = path.substring( 'target:/'.length );
+            if( com['filename'] === target ){
+                return true;
+            }
+            // log('[applyCSSLinks]', 'finding', target);
+            // selectTargetByPath(ctx, target);
+        }
+
+        // const matchPath = com['path'] === bare;
+        // const matchExt = ext === '' ? com['ext'] === undefined : com['ext'] === ext;
+
+        // // const match = com['path'] === bare && (
+        // //     ext === '' ? com['ext'] === undefined : com['ext'] === ext
+        // // );
+        // if (debug && matchPath) { console.log('[find]', path, ext, matchPath, matchExt) }
+        // // return com['path'] === bare && com['ext'] == ext;
+        // // return com['path'] === bare &&  
+        // return matchPath && matchExt;
+    });
+    return com !== undefined ? getComponentEntityId(com) : undefined;
+}
 
 /**
  * Returns entities which are both enabled and renderable
@@ -1308,6 +1654,20 @@ function selectEntityIdByPath(ctx: SiteContext, path: string, options?: SelectOp
 }
 
 function selectEntityByPath(ctx: SiteContext, path: string, { debug, returnEid, ...options }: SelectOptions = {}): Entity | EntityId {
+    
+    const { es } = ctx;
+
+    if( path.startsWith('file:') ){
+        let e = selectSourceByPath(ctx, path, false);
+
+        // log('[selectEntityByPath]', e, returnEid );
+
+        if( e !== undefined ){
+            return returnEid ? e : es.getEntityMem(e);
+        }
+    }
+    
+    
     if (path.startsWith(ctx.rootPath) && Path.isAbsolute(path)) {
         path = Path.relative(ctx.rootPath, path);
     }
@@ -1315,7 +1675,7 @@ function selectEntityByPath(ctx: SiteContext, path: string, { debug, returnEid, 
     let [bare, ext] = splitPathExtension(path);
     ext = options.ext ?? ext;
 
-    const { es } = ctx;
+    
 
     // debug = debug && path === '/';
 
@@ -1360,8 +1720,11 @@ function selectEntityByPath(ctx: SiteContext, path: string, { debug, returnEid, 
  * Returns all entities populated with components
  * @param ctx 
  */
-export function selectAll(ctx: SiteContext): Entity[] {
-    return ctx.es.getEntitiesByIdMem(true, { populate: true });
+export function selectAll(es: EntitySet): Entity[] {
+    if( es instanceof EntitySetMem ){
+        return es.getEntitiesByIdMem(true, { populate: true });
+    }
+    return [];
 }
 
 export async function selectTagByName(ctx: SiteContext, name: string): Promise<Entity> {
@@ -1437,26 +1800,35 @@ async function selectCSSLinks(ctx: SiteContext): Promise<Entity[]> {
 }
 
 
-export async function printAll(ctx: SiteContext, ents?: Entity[]) {
-    let result = ents || selectAll(ctx);
+export function printAll(es: EntitySet, ents?: Entity[], dids?:string[]) {
+    let result = ents || selectAll(es);
     for (const e of result) {
-        printEntity(ctx, e);
+        printEntity(es, e, dids);
     }
 }
 
 export async function printQuery(ctx: SiteContext, q: string) {
     let result = await ctx.es.queryEntities(q);
     for (const e of result) {
-        printEntity(ctx, e);
+        printEntity(ctx.es, e);
     }
 }
 
-export function printEntity(ctx: SiteContext, e: Entity) {
-    const { es } = ctx;
+export function printEntity(es: EntitySet, e: Entity, dids?:string[]) {
+    let bf:BitField;
+    if( es === undefined || e === undefined ){
+        console.log('(undefined e)');
+        return;
+    }
+    if( dids !== undefined ){
+        bf = es.resolveComponentDefIds(dids);
+    }
     console.log(`- e(${e.id})`);
     for (const [did, com] of e.components) {
-        const { '@e': eid, '@d': did, ...rest } = com;
-        // const did = com['@d'];
+        if( bf && bfGet(bf,did) === false ){
+            continue;
+        }
+        const { '@e': eid, '@d': _did, ...rest } = com;
         const def = es.getByDefId(did);
         console.log(`   ${def.name}`, JSON.stringify(rest));
     }
