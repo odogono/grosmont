@@ -4,7 +4,7 @@
 		{
 			"label": "Test Current File",
 			"type": "process",
-			"command": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"command": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
 			"args": [  "${file}" ],
 			"presentation": {
                 "clear": true,
@@ -21,7 +21,7 @@
 		{
 			"label": "Run all",
 			"type": "process",
-			"command": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"command": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
 			"group": "test"
 		},
 		,
