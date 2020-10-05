@@ -7,6 +7,7 @@
 import Fs, { linkSync } from 'fs-extra';
 import Path from 'path';
 import Klaw from 'klaw';
+import Process from 'process';
 import Through2 from 'through2';
 import Globrex from 'globrex';
 import Globalyzer from 'globalyzer';
@@ -18,6 +19,7 @@ import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { printAll } from "../ecs";
 import { parseUri } from '../../util/parse_uri';
 import { getComponentEntityId } from 'odgn-entity/src/component';
+import { Result } from 'postcss';
 
 
 
@@ -48,7 +50,12 @@ export async function process(es: EntitySetMem) {
  * @param site 
  */
 async function gather(es: EntitySetMem, site: Entity) {
-    const { path: rootPath } = parseUri(site.Dir.path);
+    let rootPath = Process.cwd();
+    if (site.Dir !== undefined) {
+        const { path } = parseUri(site.Dir.uri);
+        rootPath = path;
+    }
+
     let include = [];
     let exclude = [];
 
@@ -58,93 +65,108 @@ async function gather(es: EntitySetMem, site: Entity) {
         if (exc !== undefined) { exclude = [...exclude, ...exc]; }
     }
 
-
-    
-    include = include.map( p => {
-        return Globalyzer(p).isGlob ? Globrex(p) : {pattern:p};
+    include = include.map(p => {
+        return Globalyzer(p).isGlob ? { glob: p } : { name: p };
     });
-    exclude = exclude.map( p => {
-        return Globalyzer(p).isGlob ? Globrex(p) : {pattern:p};
+    exclude = exclude.map(p => {
+        return Globalyzer(p).isGlob ? { glob: p } : { name: p };
     });
 
-    // log('[crawlSite]', rootPath, { include, exclude });
+    // log('[crawlSite]', __dirname, Process.cwd() );
+    log('[crawlSite]', rootPath, { include, exclude });
 
-    if (!await Fs.pathExists(rootPath)) {
-        log('[crawlSite]', 'not exist', rootPath);
-        return es;
-    }
+    // if (!await Fs.pathExists(rootPath)) {
+    //     log('[crawlSite]', 'not exist', rootPath);
+    //     return es;
+    // }
 
-    let stats = await Fs.stat(rootPath);
+    // let stats = await Fs.stat(rootPath);
 
     let files: Entity[] = [];
 
-    if (stats.isFile()) {
 
-    }
-    else if (stats.isDirectory()) {
+    /**
+     * Filter that applies include and exclude glob patterns to the visited files
+     */
+    const globFilter = Through2.obj(function (item, enc, next) {
 
-        
-
-        const globFilter = Through2.obj(function (item, enc, next) {
-
-            const relativePath = Path.relative(rootPath, item.path);
-            for( const {regex,pattern} of include ){
-                if( regex && regex.test(relativePath) === false ){
-                    log('nope regex', regex, relativePath);
-                    return next();
-                } else if( pattern !== undefined && pattern != Path.basename(relativePath) ){
-                    log('nope pattern', relativePath);
-                    return next();
-                }
+        const relativePath = Path.relative(rootPath, item.path);
+        for (const { glob, name } of include) {
+            if (glob && Micromatch.isMatch(relativePath, glob) === false) {
+                // log('nope regex', glob, relativePath);
+                return next();
+            } else if (name !== undefined && name != Path.basename(relativePath)) {
+                // log('nope pattern', relativePath);
+                return next();
             }
-
-            for( const {regex,pattern} of exclude ){
-                if( regex && regex.test(item.path) ){
-                    // log('glob exclude', item.path);
-                    return next();
-                } else if( pattern == Path.basename(item.path) ){
-                    // log('um,', Path.basename(item.path));
-                    return next();
-                }
-            }
-            this.push(item);
-            next();
-        })
-
-        const matches:any[] = await new Promise((res, rej) => {
-            let items = [];
-            Klaw(rootPath)
-                .pipe(globFilter)
-                .on('data', item => items.push(item))
-                .on('end', () => {
-                    res(items);
-                })
-        });
-
-        // log('klaw push', files);
-
-        for ( const file of matches ){
-        // for await (const file of Klaw(rootPath)) {
-            // log( 'file', file );
-
-            let relativePath = Path.relative(rootPath, file.path);
-            const uri = `file:///${relativePath}`;
-            const { ctime, mtime } = file.stats;
-
-
-            let e: Entity;
-
-            if (file.stats.isDirectory()) {
-                e = selectDirByUri(es, uri, { createIfNotFound: true }) as Entity;
-            } else {
-                e = selectFileByUri(es, uri, { createIfNotFound: true }) as Entity;
-            }
-
-            e.Stat = { ctime, mtime };
-            e.SiteRef = { ref: site.id };
-
-            files.push(e);
         }
+
+        for (const { glob, name } of exclude) {
+            if (glob && Micromatch.isMatch(item.path, glob)) {
+                // log('glob exclude', item.path);
+                return next();
+            } else if (name == Path.basename(item.path)) {
+                // log('um,', Path.basename(item.path));
+                return next();
+            }
+        }
+        this.push(item);
+        next();
+    });
+
+    // gather the files/dirs
+    let matches: any[] = await new Promise((res, rej) => {
+        let items = [];
+        Klaw(rootPath)
+            .pipe(globFilter)
+            .on('data', item => items.push(item))
+            .on('end', () => {
+                res(items);
+            })
+    });
+
+    // ensure all matches have a directory - this may be missed
+    // if a glob include was used
+    matches = matches.reduce((result, { path, stats }) => {
+        if (stats.isFile()) {
+            const dirPath = Path.dirname(path);
+            const existsL = result.find(m => m.path === dirPath) !== undefined;
+            const exists = matches.find(m => m.path === dirPath) !== undefined;
+            // const exists = matches.indexOf( m => m.path === dirPath ) !== -1;
+            // log('file parent?', dirPath, existsL, result.map( ({path}) => path ) );
+            if (!existsL && !exists) {
+                const dirStats = Fs.statSync(dirPath);
+                log('add', dirPath);
+                result.push({ path: dirPath, stats: dirStats });
+            }
+        }
+        result.push({ path, stats });
+        return result;
+    }, []);
+
+    // log('matches', matches.map( ({path}) => path ));
+
+    for (const file of matches) {
+        // for await (const file of Klaw(rootPath)) {
+        // log( 'file', file );
+
+        let relativePath = Path.relative(rootPath, file.path);
+        const uri = `file:///${relativePath}`;
+        const { ctime, mtime } = file.stats;
+
+
+        let e: Entity;
+
+        if (file.stats.isDirectory()) {
+            e = selectDirByUri(es, uri, { createIfNotFound: true }) as Entity;
+        } else {
+            e = selectFileByUri(es, uri, { createIfNotFound: true }) as Entity;
+        }
+
+        e.Stat = { ctime, mtime };
+        e.SiteRef = { ref: site.id };
+
+        files.push(e);
     }
 
     // log('[crawlSite]', 'adding', files );
@@ -159,8 +181,8 @@ async function gather(es: EntitySetMem, site: Entity) {
  * @param es 
  */
 function selectSites(es: EntitySetMem): Entity[] {
-    const dids: BitField = es.resolveComponentDefIds(['/component/site', '/component/dir']);
-    let ents: Entity[];
+    const dids: BitField = es.resolveComponentDefIds(['/component/site']);
+    // let ents: Entity[];
 
     return es.getEntitiesMem(dids, { populate: true });
 }

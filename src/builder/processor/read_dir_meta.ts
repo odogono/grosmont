@@ -26,13 +26,19 @@ export async function process( es:EntitySetMem ){
     // look for meta.yaml files
     let metaEntities:Entity[] = await selectMetaYaml( es );
 
-    printAll( es, metaEntities );
+    // printAll( es, metaEntities );
+
     let modified:Entity[] = [];
     
     for( const me of metaEntities ){
         // find the parent directory entity
         const parentUri = getParentDirectory(me.File.uri);
         const pe = await selectByDirUri(es, parentUri);
+
+        if( pe === undefined ){
+            log('[process]', 'could not find parent dir', parentUri);
+            continue;
+        }
 
         // select site root
         const rootPath = await selectSitePath( es, me.SiteRef.ref );
@@ -50,7 +56,7 @@ export async function process( es:EntitySetMem ){
 
     await es.add(modified);
 
-    // printAll( es, meta );
+    // printAll( es, modified );
 
 
     return es;
@@ -82,7 +88,7 @@ async function selectByDirUri( es:EntitySetMem, uri:string ): Promise<Entity> {
 async function selectSitePath( es:EntitySetMem, siteEid:EntityId ){
     const did = es.resolveComponentDefId('/component/dir');
     const com = await es.getComponent( toComponentId(siteEid,did) );
-    return com.path;
+    return com.uri;
 }
 
 
