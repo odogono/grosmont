@@ -34,7 +34,7 @@ import {
 } from 'odgn-entity/src/entity';
 
 import {
-    EntitySetMem, EntitySet
+    EntitySetMem, EntitySet, EntitySetOptions
 } from 'odgn-entity/src/entity_set';
 import {
     EntitySetSQL
@@ -53,8 +53,8 @@ import { parseUri } from '../util/parse_uri';
 export class Site {
     es: EntitySetMem;
 
-    constructor(){
-        this.es = new EntitySetMem();
+    constructor(options:EntitySetOptions = {}){
+        this.es = new EntitySetMem(undefined, options);
     }
 
     async init() {

@@ -136,7 +136,7 @@ async function gather(es: EntitySetMem, site: Entity) {
             // log('file parent?', dirPath, existsL, result.map( ({path}) => path ) );
             if (!existsL && !exists) {
                 const dirStats = Fs.statSync(dirPath);
-                log('add', dirPath);
+                // log('add', dirPath);
                 result.push({ path: dirPath, stats: dirStats });
             }
         }
@@ -203,7 +203,7 @@ interface SelectOptions {
  * @param uri 
  * @param options 
  */
-function selectDirByUri(es: EntitySetMem, uri: string, options: SelectOptions = {}): (Entity | EntityId) {
+export function selectDirByUri(es: EntitySetMem, uri: string, options: SelectOptions = {}): (Entity | EntityId) {
     const bf = es.resolveComponentDefIds('/component/dir');
 
     const com = es.findComponent(bf, (com) => {

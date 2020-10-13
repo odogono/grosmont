@@ -162,13 +162,16 @@ export const defs = [
 
 
     {
-        uri: '/component/dependency',
+        // dependency
+        uri: '/component/dep',
         properties: [
             // src/dependent entity
             {name: 'src', type:'entity'},
             // dst/dependency entity 
             {name: 'dst', type:'entity'},
+
             // the type of dependency - page/link/image/etc
+            // a dir dependency means that the src belongs to the parent dir
             {name: 'type', type:'string'}
         ]
     },

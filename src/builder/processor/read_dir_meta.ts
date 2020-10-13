@@ -63,9 +63,17 @@ export async function process( es:EntitySetMem ){
 }
 
 
+export async function selectMetaDisabled( es:EntitySet ): Promise<EntityId[]> {
+    const stmt = es.prepare(`[
+        /component/meta#/meta/isEnabled !ca false ==
+        @eid
+    ] select`);
+
+    return await stmt.getValue();
+}
 
 
-async function selectMetaYaml( es:EntitySetMem ): Promise<Entity[]> {
+async function selectMetaYaml( es:EntitySet ): Promise<Entity[]> {
     const query = `[
         /component/file#uri !ca ~r/meta.yaml$/ ==
         @c
@@ -75,7 +83,7 @@ async function selectMetaYaml( es:EntitySetMem ): Promise<Entity[]> {
 }
 
 
-async function selectByDirUri( es:EntitySetMem, uri:string ): Promise<Entity> {
+async function selectByDirUri( es:EntitySet, uri:string ): Promise<Entity> {
     const query = `[
         /component/dir#uri !ca "${uri}" ==
         @c

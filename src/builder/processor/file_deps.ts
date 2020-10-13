@@ -4,40 +4,176 @@ import Yaml from 'yaml';
 
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
-import { getComponentEntityId, toComponentId } from 'odgn-entity/src/component';
-import { BitField } from 'odgn-entity/src/util/bitfield';
+import { Component, getComponentEntityId, toComponentId } from 'odgn-entity/src/component';
+import { BitField, TYPE_OR } from 'odgn-entity/src/util/bitfield';
 import { parseUri } from '../../util/parse_uri';
+import { ComponentDefId } from 'odgn-entity/src/component_def';
+import { printAll } from '../ecs';
 
 
 
 /**
- * Creates dependency entities for files to their parent directories
+ * Creates dependency entities for files and dirs to their parent directories
  * 
  * @param es 
  */
-export async function process( es:EntitySetMem ){
-    let files:Entity[] = selectFiles( es );
+export async function process(es: EntitySetMem) {
+    let files: Entity[] = selectFilesAndDirs(es);
 
-    let deps:Entity[] = [];
+    let deps: Entity[] = [];
 
-    for( const file of files ){
-        const { path:filePath } = parseUri(file.File.uri);
-        const parentUri = getParentDirectory(file.File.uri);
+    // printAll(es, files);
+
+    for (const file of files) {
+        const uri = file.File?.uri ?? file.Dir?.uri;
+        // const { path:filePath } = parseUri(file.File.uri);
+        const parentUri = getParentDirectory(uri);
         const pe = await selectByDirUri(es, parentUri);
 
-        log('file', filePath, 'dep', pe.id);
+        if (pe === undefined) {
+            continue;
+        }
+        
+        // check for existing
+        let existing = await selectDependency(es, file.id, pe.id, 'dir');
+        // log('file', uri, 'dep', pe?.id);
+        // log('existing', existing);
+        if (existing.length > 0) {
+            continue;
+        }
 
         let e = es.createEntity();
-        e.Dependency = { src:file.id, dst:pe.id, type:'dir' };
+        e.Dep = { src: file.id, dst: pe.id, type: 'dir' };
         deps.push(e);
     }
 
     await es.add(deps);
 
+
+    // const e = deps[0];
+    // printAll(es,deps);
+    // const {src,dst, type} = e.Dependency;
+    // if( deps.length === 3 ){
+    // let existing = await selectDependency(es, undefined, undefined, undefined );
+    // }
+
     return es;
 }
 
+/**
+ * Selects a dependency entity
+ */
+export async function selectDependency(es: EntitySetMem, src?: EntityId, dst?: EntityId, type?: string, asEntity: boolean = false) {
+    // const did:ComponentDefId = es.resolveComponentDefId('/component/dep');
 
+    let conds = [];
+    if (src !== undefined) {
+        conds.push(`/component/dep#src !ca ${src} ==`);
+    }
+    if (dst !== undefined) {
+        conds.push(`/component/dep#dst !ca ${dst} ==`);
+    }
+    if (conds.length === 2) { conds.push('and'); }
+    if (type !== undefined) {
+        conds.push(`/component/dep#type !ca ${type} ==`);
+    }
+    if (conds.length >= 2) { conds.push('and'); }
+
+    if (asEntity) {
+        let query = `[
+            /component/dep !bf
+            ${conds.join('\n')}
+            @c
+        ] select`;
+        let stack = await es.query(query);
+        return stack.popValue() as unknown as Component[];
+    }
+
+    let query = `[
+        /component/dep !bf
+        ${conds.join('\n')}
+        @c
+    ] select`;
+
+    let out = await es.queryEntities(query);
+
+    return out;
+}
+
+/**
+ * Removes dir entities and children specified by the eids
+ * 
+ * @param es 
+ * @param eids 
+ */
+// export async function removeDirDependencies(es: EntitySetMem, eids:EntityId[] ){
+//     const stmt = es.prepare(`$eids -`);
+// }
+
+export async function selectDirDependencies(es: EntitySet, dir: EntityId|EntityId[]): Promise<EntityId[]> {
+
+    const query = `
+        [
+            dstId let
+            [
+                /component/dep !bf
+                /component/dep#dst !ca $dstId ==
+                /component/dep#type !ca dir ==
+                and
+                @c
+            ] select
+            // /src pluck
+        ] selectDeps define
+
+        [
+            [] result let // result array
+            [
+                selectDeps
+                /src pluck
+                dup 
+                $result concat result !
+                dup size
+                // continue if the last results
+                // came back non-empty
+                true $result rot 0 == iif
+            ] loop
+
+            // lose the last result
+            swap drop    
+        ] selectDepsRecursive define
+
+        $dirEid selectDepsRecursive
+        `;
+    
+    const stmt = es.prepare(query);
+    return stmt.getValue({dirEid:dir});
+
+    // return stack.popValue() as unknown as EntityId[];
+    // let out = await es.queryEntities(query);
+
+    // return out;
+    // return selectDependency(es, undefined, dir, 'dir', true);
+}
+
+export async function selectDependencies(es:EntitySet, eids:EntityId[] ) {
+    const query = `
+        [
+            /component/dep#src !ca $eids ==
+            /component/dep#dst !ca $eids ==
+            or
+            @eid
+        ] select
+    `;
+
+    const stmt = es.prepare(query);
+    return stmt.getValue({eids});
+}
+
+function selectFilesAndDirs(es: EntitySetMem): Entity[] {
+    const dids: BitField = es.resolveComponentDefIds(['/component/file', '/component/dir']);
+    dids.type = TYPE_OR;
+    return es.getEntitiesMem(dids, { populate: true });
+}
 
 function selectFiles(es: EntitySetMem): Entity[] {
     const dids: BitField = es.resolveComponentDefIds(['/component/file']);
@@ -45,11 +181,11 @@ function selectFiles(es: EntitySetMem): Entity[] {
 }
 
 
-function getParentDirectory( uri:string ){
+function getParentDirectory(uri: string) {
     return uri.substring(0, uri.lastIndexOf('/'));
 }
 
-async function selectByDirUri( es:EntitySetMem, uri:string ): Promise<Entity> {
+async function selectByDirUri(es: EntitySetMem, uri: string): Promise<Entity> {
     const query = `[
         /component/dir#uri !ca "${uri}" ==
         @c

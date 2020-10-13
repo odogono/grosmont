@@ -2,17 +2,30 @@ import { suite } from 'uvu';
 import Path from 'path';
 import Process from 'process';
 import Fs from 'fs-extra';
-import { printAll, Site } from '../../src/builder/ecs';
-import { process as scanFiles } from '../../src/builder/processor/file';
-import { process as resolveFileDeps } from '../../src/builder/processor/file_deps';
-import { process as readDirMeta } from '../../src/builder/processor/read_dir_meta';
+import { printAll, printEntity, Site } from '../../src/builder/ecs';
+import { 
+    process as scanFiles,
+    selectDirByUri 
+} from '../../src/builder/processor/file';
+import { process as resolveFileDeps, 
+    selectDependencies,
+    selectDirDependencies 
+} from '../../src/builder/processor/file_deps';
+import { process as readDirMeta, selectMetaDisabled } from '../../src/builder/processor/read_dir_meta';
+import { process as removeMetaDisabled } from '../../src/builder/processor/remove_disabled';
+import { Entity, EntityId } from 'odgn-entity/src/entity';
 
+const log = (...args) => console.log('[TestProcSite]', ...args);
 
 const rootPath = Path.resolve(__dirname, "../../");
 const test = suite('processor/file');
 
 test('scans', async () => {
-    let ctx = new Site();
+    
+    let id = 1000;
+    const idgen = () => ++id;
+
+    let ctx = new Site({idgen});
 
     await ctx.init();
 
@@ -37,18 +50,18 @@ test('scans', async () => {
     
     // add dependencies for files to directories
     await resolveFileDeps( ctx.es );
+    // await resolveFileDeps( ctx.es );
     
     // reads directory meta
-    // await readDirMeta( ctx.es );
+    await readDirMeta( ctx.es );
     
-    // read any metadata files in said directories
+    // remove disabled
+    await removeMetaDisabled( ctx.es );
+
+    
     
     printAll( ctx.es );
-
-
-    // dependency
-    // src -> dst
-
+    // printAll( ctx.es, await ctx.es.queryEntities('[/component/dep !bf @c] select') );
 });
 
 
