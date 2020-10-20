@@ -122,7 +122,6 @@ export async function selectDirDependencies(es: EntitySet, dir: EntityId|EntityI
                 and
                 @c
             ] select
-            // /src pluck
         ] selectDeps define
 
         [
@@ -146,7 +145,7 @@ export async function selectDirDependencies(es: EntitySet, dir: EntityId|EntityI
         `;
     
     const stmt = es.prepare(query);
-    return stmt.getValue({dirEid:dir});
+    return stmt.getResult({dirEid:dir});
 
     // return stack.popValue() as unknown as EntityId[];
     // let out = await es.queryEntities(query);
@@ -166,7 +165,7 @@ export async function selectDependencies(es:EntitySet, eids:EntityId[] ) {
     `;
 
     const stmt = es.prepare(query);
-    return stmt.getValue({eids});
+    return stmt.getResult({eids});
 }
 
 function selectFilesAndDirs(es: EntitySetMem): Entity[] {

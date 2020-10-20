@@ -254,6 +254,30 @@ function selectFileByUri(es: EntitySetMem, uri: string, options: SelectOptions =
 }
 
 
+export async function writeFile(path: string, content: string) {
+    if (content === undefined) {
+        throw new Error(`${path} content is undefined`);
+    }
+    await Fs.ensureDir(Path.dirname(path));
+    await Fs.writeFile(path, content);
+}
+
+
+export function joinPaths( a:string, b:string ){
+    a = uriToPath(a);
+    b = uriToPath(b);
+    return Path.join( a, b );
+}
+
+export function uriToPath( uri:string ){
+    return uri.startsWith('file://') ? uri.substring('file://'.length) : uri;
+}
+
+export function pathToUri( path:string ){
+    return path.startsWith('file://') ? path : 'file://' + path;
+}
+
+
 function log(...args) {
     console.log('[SiteProcessor]', ...args);
 }

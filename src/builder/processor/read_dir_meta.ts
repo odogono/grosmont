@@ -8,6 +8,7 @@ import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { printAll, printEntity } from "../ecs";
 import { parseUri } from '../../util/parse_uri';
 import { getComponentEntityId, toComponentId } from 'odgn-entity/src/component';
+import { joinPaths, pathToUri } from './file';
 
 
 
@@ -34,6 +35,7 @@ export async function process( es:EntitySetMem ){
         // find the parent directory entity
         const parentUri = getParentDirectory(me.File.uri);
         const pe = await selectByDirUri(es, parentUri);
+        const targetPath = await selectSiteTarget( es, me.SiteRef.ref );
 
         if( pe === undefined ){
             log('[process]', 'could not find parent dir', parentUri);
@@ -41,12 +43,24 @@ export async function process( es:EntitySetMem ){
         }
 
         // select site root
-        const rootPath = await selectSitePath( es, me.SiteRef.ref );
-        const metaPath = joinPaths(rootPath, me.File.uri);
+        // const rootPath = await selectSitePath( es, me.SiteRef.ref );
+        // const metaPath = joinPaths(rootPath, me.File.uri);
+
+        const metaPath = await fileUriToAbsolute( es, me );
         
         // read the meta data
         let content = await Fs.readFile(metaPath, 'utf8');
         let meta = Yaml.parse(content);// as PageMeta;
+
+        let {isEnabled, dstPath} = meta;
+
+        if( isEnabled !== undefined ){
+            pe.Enabled = { is:isEnabled };
+        }
+        if( dstPath !== undefined ){
+            pe.Target = { uri:pathToUri(dstPath) };
+            // pe.Target = { uri:joinPaths(targetPath,dstPath) };
+        }
 
         // apply the Meta entity to the parent directory
         pe.Meta = { meta };
@@ -62,41 +76,71 @@ export async function process( es:EntitySetMem ){
     return es;
 }
 
+/**
+ * 
+ * @param es 
+ * @param e 
+ */
+export async function fileUriToAbsolute( es:EntitySet, e:Entity ){
+    const rootPath = await selectSitePath( es, e.SiteRef.ref );
+    return joinPaths(rootPath, e.File.uri);
+}
+
 
 export async function selectMetaDisabled( es:EntitySet ): Promise<EntityId[]> {
     const stmt = es.prepare(`[
-        /component/meta#/meta/isEnabled !ca false ==
+        /component/enabled#is !ca false ==
+        // /component/meta#/meta/isEnabled !ca false ==
         @eid
     ] select`);
 
-    return await stmt.getValue();
+    return await stmt.getResult();
 }
 
 
 async function selectMetaYaml( es:EntitySet ): Promise<Entity[]> {
-    const query = `[
+    const stmt = es.prepare(`[
         /component/file#uri !ca ~r/meta.yaml$/ ==
         @c
-    ] select`;
+    ] select`);
 
-    return await es.queryEntities(query);
+    return await stmt.getEntities();
 }
 
 
 async function selectByDirUri( es:EntitySet, uri:string ): Promise<Entity> {
-    const query = `[
-        /component/dir#uri !ca "${uri}" ==
+    const stmt = es.prepare(`[
+        /component/dir#uri !ca $uri ==
         @c
-    ] select`;
+    ] select`);
     // log('[selectByDirUri]', query);
-    const ents = await es.queryEntities(query);
+    const ents = await stmt.getEntities({uri});
     return ents.length > 0 ? ents[0] : undefined;
 }
 
-async function selectSitePath( es:EntitySetMem, siteEid:EntityId ){
+export async function selectSitePath( es:EntitySet, siteEid:EntityId ){
     const did = es.resolveComponentDefId('/component/dir');
     const com = await es.getComponent( toComponentId(siteEid,did) );
     return com.uri;
+}
+export async function selectSiteTarget( es:EntitySet, siteEid:EntityId ){
+    const did = es.resolveComponentDefId('/component/target');
+    const com = await es.getComponent( toComponentId(siteEid,did) );
+    return com.uri;
+}
+
+
+export async function selectSiteTargetUri( es:EntitySet, e:Entity ){
+    if( e.Site !== undefined ){
+        return e.Target !== undefined ? e.Target.uri : undefined;
+    }
+    if( e.SiteRef !== undefined ){
+        const eid = e.SiteRef.ref;
+        const did = es.resolveComponentDefId('/component/target');
+        const com = await es.getComponent( toComponentId(eid,did) );
+        return com !== undefined ? com.uri : undefined;
+    }
+    return undefined;
 }
 
 
@@ -104,15 +148,7 @@ function getParentDirectory( uri:string ){
     return uri.substring(0, uri.lastIndexOf('/'));
 }
 
-function joinPaths( a:string, b:string ){
-    if( a.startsWith('file://') ){
-        a = a.substring( 'file://'.length );
-    }
-    if( b.startsWith('file://') ){
-        b = b.substring( 'file://'.length );
-    }
-    return Path.join( a, b );
-}
+
 
 async function readDirMeta(path: string): Promise<any> {
     let metaPath = Path.join(path, 'meta.yaml');

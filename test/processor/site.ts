@@ -13,7 +13,11 @@ import { process as resolveFileDeps,
 } from '../../src/builder/processor/file_deps';
 import { process as readDirMeta, selectMetaDisabled } from '../../src/builder/processor/read_dir_meta';
 import { process as removeMetaDisabled } from '../../src/builder/processor/remove_disabled';
+import { process as readFileData } from '../../src/builder/processor/read_file_css';
+import { process as renderScss } from '../../src/builder/processor/scss';
+import { process as clearTargets } from '../../src/builder/processor/clear_target';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
+import { EntitySetMem } from 'odgn-entity/src/entity_set';
 
 const log = (...args) => console.log('[TestProcSite]', ...args);
 
@@ -35,7 +39,8 @@ test('scans', async () => {
 
     let e = ctx.es.createEntity();
     e.Site = { name:'test site' };
-    e.Dir = { uri: `file://${Process.cwd()}` };
+    e.Dir = { uri: `file://${Process.cwd()}/` };
+    e.Target = { uri: `file://${Process.cwd()}/dist/` };
     e.Patterns = {
         include: [ './test/fixtures/rootA/**/*' ],
         // include: [ 'static/**/*' ],
@@ -44,6 +49,7 @@ test('scans', async () => {
     
     await ctx.es.add( e );
 
+    
 
     // scan for file/dir entities
     await scanFiles( ctx.es );
@@ -56,11 +62,28 @@ test('scans', async () => {
     await readDirMeta( ctx.es );
     
     // remove disabled
-    await removeMetaDisabled( ctx.es );
+    ctx.es = await removeMetaDisabled( ctx.es ) as EntitySetMem;
+
+    // read css/scss/mdx/html files
+    await readFileData(ctx.es);
+
+    // parse mdx data into meta, links, ...
 
     
+    await clearTargets( ctx.es, e );
+
+
+    // process scss
+    await renderScss( ctx.es );
+
     
+    // copy static
+
+    
+    console.log('\n---\n');
     printAll( ctx.es );
+
+    // console.log( ctx.es.entities );
     // printAll( ctx.es, await ctx.es.queryEntities('[/component/dep !bf @c] select') );
 });
 

@@ -33,6 +33,7 @@ export const defs = [
     {
         uri: '/component/target',
         properties: [
+            {name:'uri', type:'string'},
             {name:'path', type:'string'},
             {name:'filename', type:'string'},
             {name:'content', type:'string', persist:false},
@@ -73,30 +74,15 @@ export const defs = [
     // },
     {
         uri: '/component/enabled',
-        properties: []
+        properties: [
+            { name: 'is', type: 'boolean'}
+        ]
     },
     {
         uri: '/component/renderable',
         properties: []
     },
-    {
-        uri: '/component/mdx',
-        properties: [
-            {name:'jsx', type:'string'},
-            {name:'code', type:'string'},
-            {name:'component', type:'any', persist:false},
-            {name:'writeJS', type:'boolean'},
-            {name:'writeAST', type:'boolean'},
-            {name:'writeJSX', type:'boolean'},
-        ]
-    },
-    {
-        // marks a page as being css
-        uri: '/component/css',
-        properties: [
-            {name:'css', type:'string'}
-        ]
-    },
+    
     {
         uri: '/component/css_links',
         properties: [
@@ -196,6 +182,34 @@ export const defs = [
             {name: 'include', type:'json'},
             {name: 'exclude', type:'json'}
         ]
-    }
+    },
+
+    {
+        // 
+        uri: '/component/scss',
+        properties: [
+            {name: 'data', type:'string' }
+        ]
+    },
+    {
+        uri: '/component/mdx',
+        properties: [
+            {name:'data', type:'string'},
+            {name:'jsx', type:'string'},
+            {name:'code', type:'string'},
+            {name:'component', type:'any', persist:false},
+            {name:'writeJS', type:'boolean'},
+            {name:'writeAST', type:'boolean'},
+            {name:'writeJSX', type:'boolean'},
+        ]
+    },
+    {
+        // marks a page as being css
+        uri: '/component/css',
+        properties: [
+            {name:'data', type:'string'},
+            {name:'css', type:'string'}
+        ]
+    },
 ];
 

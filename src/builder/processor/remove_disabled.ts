@@ -21,8 +21,15 @@ export async function process(es: EntitySet) {
 
     removeEids = Array.from(new Set([...removeEids,...removeDepEids]));
 
+    // log('removing A', es.uuid, (es as EntitySetMem).entities ); //entChanges.removed );
+
     // remove all the entities
     es = await es.removeEntity( removeEids );
 
+    // log('removing B', es.uuid, (es as EntitySetMem).entities ); //entChanges.removed );
+    // log('  added', es.entChanges.added );
+
     return es;
 }
+
+const log = (...args) => console.log('[RemoveDisabledProc]', ...args);
