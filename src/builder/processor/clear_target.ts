@@ -27,7 +27,7 @@ export async function process(es: EntitySet, e?: Entity) {
     
     for( const path of targetPaths ){
         log('clearing', path);
-        await Fs.emptyDir( uriToPath(path) );
+        // await Fs.emptyDir( uriToPath(path) );
     }
 
     return es;
@@ -125,11 +125,11 @@ export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Com
         // set eid to parent
         /dst pluck eid !
 
+        // keeps the loop looping
         true
     ] loop
     `);
 
-    // log('stack', stmt.stack );
     const dirCom = await stmt.getResult({ eid });
     return dirCom.length > 0 ? dirCom[0] : undefined;
 }

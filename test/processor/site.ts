@@ -47,6 +47,8 @@ test('scans', async () => {
         // exclude: [ '.DS_Store', '**/*.jpg' ]
     }
     
+    await Fs.emptyDir( Path.join( Process.cwd(), 'dist') );
+
     await ctx.es.add( e );
 
     
@@ -56,13 +58,15 @@ test('scans', async () => {
     
     // add dependencies for files to directories
     await resolveFileDeps( ctx.es );
-    // await resolveFileDeps( ctx.es );
     
     // reads directory meta
     await readDirMeta( ctx.es );
     
+    // console.log('\n---\n');
+    // printAll( ctx.es );
+
     // remove disabled
-    ctx.es = await removeMetaDisabled( ctx.es ) as EntitySetMem;
+    await removeMetaDisabled( ctx.es ) as EntitySetMem;
 
     // read css/scss/mdx/html files
     await readFileData(ctx.es);
@@ -70,18 +74,26 @@ test('scans', async () => {
     // parse mdx data into meta, links, ...
 
     
-    await clearTargets( ctx.es, e );
+    // await clearTargets( ctx.es, e );
 
 
     // process scss
     await renderScss( ctx.es );
 
-    
+
     // copy static
 
     
     console.log('\n---\n');
     printAll( ctx.es );
+
+
+    // get the dest dir for a given entity
+
+    // const deps = await selectDirDependencies( ctx.es, 1013 );
+
+    // log('deps', deps);
+    // const result = await getDestDir( 1013 );
 
     // console.log( ctx.es.entities );
     // printAll( ctx.es, await ctx.es.queryEntities('[/component/dep !bf @c] select') );

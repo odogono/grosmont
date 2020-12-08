@@ -8,14 +8,25 @@ Dogfooding odgn-ecs
 - PostCSS, with possibly Tailwind
 
 
+## How to Create a New Post
+
+TODO
+
+## Frontmatter Fields
+
+TODO
+
+
 ## Refs
 
-https://www.goatcounter.com
+[I Built My Own Shitty Static Site Generator](https://news.ycombinator.com/item?id=25227181)
 
-https://news.ycombinator.com/item?id=23228904
+[GoatCounter - Easy web analytics](https://www.goatcounter.com)
 
-https://leerob.io/blog/mdx
+[Tiny websites are great](https://news.ycombinator.com/item?id=23228904)
 
-https://preactjs.com/guide/v10/server-side-rendering
+[Improving My Next.js MDX Blog](https://leerob.io/blog/mdx)
 
-https://tachyons.io
+[Preact - Server-Side Rendering](https://preactjs.com/guide/v10/server-side-rendering)
+
+[Tachyons CSS framework](https://tachyons.io)

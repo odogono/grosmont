@@ -27,17 +27,188 @@ export async function process(es: EntitySet) {
 
     // log( ents );
 
-    // printAll(es, ents);
+    printAll(es, ents);
 
     for (const e of ents) {
 
-        const {css, srcPath, dstPath} = await renderScss( es, e );
+        const com = await selectTargetPath(es, e.id);
 
-        if( dstPath !== undefined && css !== undefined ){
-            await writeFile(dstPath, css);
-        }
+        log('targetPath', e.id, com);
+
+        // const {css, srcPath, dstPath} = await renderScss( es, e );
+
+        // if( dstPath !== undefined && css !== undefined ){
+        //     await writeFile(dstPath, css);
+        // }
     }
 
+}
+
+
+
+/**
+ * 
+ *  
+ */
+export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<Component | undefined> {
+    // select target from e
+    //   if the target is an absolute path, then return path
+    //   if the target is a relative path, push to result
+    //   if it is undefined, continue
+    // select parent dir
+    //   if no parent, then return
+    //   if parent, set eid and loop
+    
+
+    // 1013
+    // no /target component
+    // no /dir
+    // select parent
+    // 1009
+    // no /target component
+    // has dir, so add last part to result
+    // select parent
+    // 1005
+    // has /target uri /static/
+    // is absolute path, add to result
+    // is absolute path, finish
+    
+    const stmt = es.prepare(`
+    [] paths let
+
+    // ( str -- str|false )
+    [ ~r/^\/|file:\/\/\// eval ] selectAbsUri define
+
+    [ false true rot ~r/^\/|file:\/\/\// eval iif ] isAbsPath define
+
+
+    [ $paths + paths ! ] addToPaths define
+    
+    [
+        size! 0 == [ drop false @! ] swap if
+    ] returnFalseIfEmpty define
+
+
+    // ( es eid -- es str )
+    // gets the dir name from an entity
+    [
+        // move the es to the top and select /dir using
+        // the eid argument
+        swap 
+        [ *^$1 @eid /component/dir !bf @c ] select
+        
+        // if no /dir component exists, return undefined
+        // taking care to drop the empty result
+        returnFalseIfEmpty
+
+        // extract the uri
+        /uri pluck
+        // split the uri into path parts
+        ~r/(?!\/\/)\/(?=.*\/)/ split
+        pop! // pops the last item from an array
+        @>
+    ] selectDirName define
+
+    
+
+    // ( es eid -- es str|undefined )
+    // returns the target uri from an entity
+    [
+        swap [ *^$1 @eid /component/target !bf @c ] select
+        
+        // if no /target component exists, return undefined
+        // taking care to drop the empty result
+        returnFalseIfEmpty
+
+        /uri pluck
+
+        @> // restart exec after returnFalseIfEmpty
+    ] selectTarget define
+
+
+    // selects the parent dir entity, or 0 if none is found
+    // ( es eid -- es eid )
+    [
+        swap
+        [
+            /component/dep !bf
+            /component/dep#src !ca *^$1 ==
+            /component/dep#type !ca dir ==
+            and
+            @c
+        ] select
+
+        // if the size of the select result is 0, then return 0
+        size! 0 == [ drop false @! ] swap if
+        pop!
+        /dst pluck
+        @>
+    ] selectParentDir define
+
+    
+    // es eid -- es eid true|false
+    [
+        // to order eid es eid
+        dup rot rot
+        selectTarget
+        dup
+
+        // if no target exists, return false
+        [ drop swap false @! ] swap false == if
+        dup isAbsPath
+        // if abs path, add to result, return true
+        [ addToPaths swap true @! ] swap if
+        
+        // not abs
+        drop swap false
+        @>
+    ] handleTarget define
+
+    [
+        dup rot rot
+        selectDirName
+
+        dup [ drop swap false @! ] swap false == if
+        
+        addToPaths swap
+
+        true
+        @>
+    ] handleDir define
+    
+    [
+        selectParentDir
+        dup [ drop @! ] swap false == if
+
+    ] handleParentDir define
+
+    // 1001 handleTarget
+    // prints
+
+    $eid
+    [
+        handleTarget
+        [ drop @! ] swap true == if
+        
+        handleDir
+        drop // discard result of handleDir
+        
+        handleParentDir
+        // prints
+        
+        true
+    ] loop
+
+    // "!!! finished" .
+
+    $paths "" join
+
+    // prints
+    `);
+
+
+    const dirCom = await stmt.getResult({ eid });
+    return dirCom && dirCom.length > 0 ? dirCom : undefined;
 }
 
 
@@ -56,9 +227,9 @@ interface RenderScssResult {
  * @param es 
  * @param e 
  */
-export async function renderScss(es:EntitySet, e: Entity): Promise<RenderScssResult> {
-    if( e.Scss === undefined ){
-        return {css:undefined, srcPath:undefined, dstPath: undefined};
+export async function renderScss(es: EntitySet, e: Entity): Promise<RenderScssResult> {
+    if (e.Scss === undefined) {
+        return { css: undefined, srcPath: undefined, dstPath: undefined };
     }
 
     // const siteTargetUri = await selectSiteTarget(es, e.SiteRef.ref);

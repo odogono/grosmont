@@ -14,7 +14,7 @@ export async function process(es: EntitySet) {
     let contents = await selectDirDependencies( es, disabled );
 
 
-    let removeEids = Array.from(new Set([...disabled,...contents]));
+    let removeEids = Array.from(new Set([...disabled, ...contents]));
 
     // select dependency entities which feature any of the removed entities
     const removeDepEids = await selectDependencies(es, removeEids);

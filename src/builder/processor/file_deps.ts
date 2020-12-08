@@ -25,18 +25,28 @@ export async function process(es: EntitySetMem) {
     // printAll(es, files);
 
     for (const file of files) {
+        if (file.Site !== undefined) {
+            // site will have no dir dependency
+            continue;
+        }
         const uri = file.File?.uri ?? file.Dir?.uri;
         // const { path:filePath } = parseUri(file.File.uri);
         const parentUri = getParentDirectory(uri);
         const pe = await selectByDirUri(es, parentUri);
 
+
         if (pe === undefined) {
             continue;
         }
-        
+
+        if (file.id === pe.id) {
+            log('file', uri, 'dep', pe?.id, 'parent', parentUri);
+            throw new Error('selected same uri');
+        }
+
         // check for existing
         let existing = await selectDependency(es, file.id, pe.id, 'dir');
-        // log('file', uri, 'dep', pe?.id);
+
         // log('existing', existing);
         if (existing.length > 0) {
             continue;
@@ -110,7 +120,9 @@ export async function selectDependency(es: EntitySetMem, src?: EntityId, dst?: E
 //     const stmt = es.prepare(`$eids -`);
 // }
 
-export async function selectDirDependencies(es: EntitySet, dir: EntityId|EntityId[]): Promise<EntityId[]> {
+export async function selectDirDependencies(es: EntitySet, dir: EntityId | EntityId[]): Promise<EntityId[]> {
+
+    log('[selectDirDependencies]', dir);
 
     const query = `
         [
@@ -118,6 +130,8 @@ export async function selectDirDependencies(es: EntitySet, dir: EntityId|EntityI
             [
                 /component/dep !bf
                 /component/dep#dst !ca $dstId ==
+                /component/dep#src !ca $dstId !=
+                and
                 /component/dep#type !ca dir ==
                 and
                 @c
@@ -131,21 +145,23 @@ export async function selectDirDependencies(es: EntitySet, dir: EntityId|EntityI
                 /src pluck
                 dup 
                 $result concat result !
-                dup size
+                size!
+                
                 // continue if the last results
                 // came back non-empty
-                true $result rot 0 == iif
+                true [$result] rot 0 == iif
             ] loop
-
+            
             // lose the last result
             swap drop    
         ] selectDepsRecursive define
 
         $dirEid selectDepsRecursive
+        
         `;
-    
+
     const stmt = es.prepare(query);
-    return stmt.getResult({dirEid:dir});
+    return stmt.getResult({ dirEid: dir });
 
     // return stack.popValue() as unknown as EntityId[];
     // let out = await es.queryEntities(query);
@@ -154,7 +170,7 @@ export async function selectDirDependencies(es: EntitySet, dir: EntityId|EntityI
     // return selectDependency(es, undefined, dir, 'dir', true);
 }
 
-export async function selectDependencies(es:EntitySet, eids:EntityId[] ) {
+export async function selectDependencies(es: EntitySet, eids: EntityId[]) {
     const query = `
         [
             /component/dep#src !ca $eids ==
@@ -165,7 +181,7 @@ export async function selectDependencies(es:EntitySet, eids:EntityId[] ) {
     `;
 
     const stmt = es.prepare(query);
-    return stmt.getResult({eids});
+    return stmt.getResult({ eids });
 }
 
 function selectFilesAndDirs(es: EntitySetMem): Entity[] {
@@ -180,17 +196,19 @@ function selectFiles(es: EntitySetMem): Entity[] {
 }
 
 
-function getParentDirectory(uri: string) {
-    return uri.substring(0, uri.lastIndexOf('/'));
+export function getParentDirectory(uri: string) {
+    const result = Path.dirname(uri);
+    return result.endsWith(Path.sep) ? result : result + Path.sep;
 }
 
 async function selectByDirUri(es: EntitySetMem, uri: string): Promise<Entity> {
     const query = `[
-        /component/dir#uri !ca "${uri}" ==
+        /component/dir#uri !ca $uri ==
         @c
     ] select`;
-    // log('[selectByDirUri]', query);
-    const ents = await es.queryEntities(query);
+    // log('[selectByDirUri]', query, uri);
+    const stmt = es.prepare(query);
+    const ents = await stmt.getEntities({ uri });
     return ents.length > 0 ? ents[0] : undefined;
 }
 

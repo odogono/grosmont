@@ -158,6 +158,7 @@ async function gather(es: EntitySetMem, site: Entity) {
         let e: Entity;
 
         if (file.stats.isDirectory()) {
+            
             e = selectDirByUri(es, uri, { createIfNotFound: true }) as Entity;
         } else {
             e = selectFileByUri(es, uri, { createIfNotFound: true }) as Entity;
@@ -204,12 +205,12 @@ interface SelectOptions {
  * @param options 
  */
 export function selectDirByUri(es: EntitySetMem, uri: string, options: SelectOptions = {}): (Entity | EntityId) {
+    if( !uri.endsWith('/') ){
+        uri = uri + '/';
+    }
     const bf = es.resolveComponentDefIds('/component/dir');
-
-    const com = es.findComponent(bf, (com) => {
-        return com['uri'] === uri;
-    });
-
+    const com = es.findComponent(bf, (com) => com['uri'] === uri );
+    
     if (com === undefined) {
         if (options.createIfNotFound) {
             let e = es.createEntity();

@@ -9,6 +9,7 @@ import { printAll, printEntity } from "../ecs";
 import { parseUri } from '../../util/parse_uri';
 import { getComponentEntityId, toComponentId } from 'odgn-entity/src/component';
 import { joinPaths, pathToUri } from './file';
+import { getParentDirectory } from './file_deps';
 
 
 
@@ -58,7 +59,7 @@ export async function process( es:EntitySetMem ){
             pe.Enabled = { is:isEnabled };
         }
         if( dstPath !== undefined ){
-            pe.Target = { uri:pathToUri(dstPath) };
+            pe.Target = { uri:dstPath };
             // pe.Target = { uri:joinPaths(targetPath,dstPath) };
         }
 
@@ -142,12 +143,6 @@ export async function selectSiteTargetUri( es:EntitySet, e:Entity ){
     }
     return undefined;
 }
-
-
-function getParentDirectory( uri:string ){
-    return uri.substring(0, uri.lastIndexOf('/'));
-}
-
 
 
 async function readDirMeta(path: string): Promise<any> {
