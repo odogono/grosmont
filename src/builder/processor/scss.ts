@@ -31,9 +31,10 @@ export async function process(es: EntitySet) {
 
     for (const e of ents) {
 
-        const com = await selectTargetPath(es, e.id);
+        const path = await selectTargetPath(es, e.id);
+        // const filename = await selectTargetFilename(es, e.id);
 
-        log('targetPath', e.id, com);
+        log('targetPath', e.id, path);
 
         // const {css, srcPath, dstPath} = await renderScss( es, e );
 
@@ -47,31 +48,18 @@ export async function process(es: EntitySet) {
 
 
 /**
- * 
+ * loop
+        select /target
+            if exists
+                if is absolute path, return and finish
+                add to result
+        select /dir
+            if exists, add to result
+        select parent using /dep
+            if no parent exists, finish
  *  
  */
-export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<Component | undefined> {
-    // select target from e
-    //   if the target is an absolute path, then return path
-    //   if the target is a relative path, push to result
-    //   if it is undefined, continue
-    // select parent dir
-    //   if no parent, then return
-    //   if parent, set eid and loop
-    
-
-    // 1013
-    // no /target component
-    // no /dir
-    // select parent
-    // 1009
-    // no /target component
-    // has dir, so add last part to result
-    // select parent
-    // 1005
-    // has /target uri /static/
-    // is absolute path, add to result
-    // is absolute path, finish
+export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<string | undefined> {
     
     const stmt = es.prepare(`
     [] paths let
@@ -103,8 +91,10 @@ export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<Co
 
         // extract the uri
         /uri pluck
+
         // split the uri into path parts
         ~r/(?!\/\/)\/(?=.*\/)/ split
+        
         pop! // pops the last item from an array
         @>
     ] selectDirName define
@@ -178,12 +168,11 @@ export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<Co
     
     [
         selectParentDir
+
+        // if no parent, stop execution
         dup [ drop @! ] swap false == if
 
     ] handleParentDir define
-
-    // 1001 handleTarget
-    // prints
 
     $eid
     [
@@ -194,18 +183,15 @@ export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<Co
         drop // discard result of handleDir
         
         handleParentDir
-        // prints
         
-        true
+        true // loop only continues while true
     ] loop
 
-    // "!!! finished" .
+    // TODO - determine the filename
+    // take from /file or from /target ?
 
     $paths "" join
-
-    // prints
     `);
-
 
     const dirCom = await stmt.getResult({ eid });
     return dirCom && dirCom.length > 0 ? dirCom : undefined;
