@@ -211,5 +211,12 @@ export const defs = [
             {name:'css', type:'string'}
         ]
     },
+    {
+        uri: '/component/text',
+        properties: [
+            {name: 'data', type:'string'},
+            {name: 'mime', type:'string'}
+        ]
+    }
 ];
 

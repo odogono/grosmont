@@ -190,10 +190,7 @@ function selectFilesAndDirs(es: EntitySetMem): Entity[] {
     return es.getEntitiesMem(dids, { populate: true });
 }
 
-function selectFiles(es: EntitySetMem): Entity[] {
-    const dids: BitField = es.resolveComponentDefIds(['/component/file']);
-    return es.getEntitiesMem(dids, { populate: true });
-}
+
 
 
 export function getParentDirectory(uri: string) {

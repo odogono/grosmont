@@ -1,27 +1,14 @@
 import { suite } from 'uvu';
 import Path from 'path';
-import Process from 'process';
-import Fs from 'fs-extra';
-import { printAll, printEntity, Site } from '../../src/builder/ecs';
+import { printAll, Site } from '../../src/builder/ecs';
 import { 
-    process as scanFiles,
-    selectDirByUri 
-} from '../../src/builder/processor/file';
-import { process as resolveFileDeps, 
-    selectDependencies,
-    selectDirDependencies 
+    process as resolveFileDeps, 
 } from '../../src/builder/processor/file_deps';
-import { process as readDirMeta, selectMetaDisabled } from '../../src/builder/processor/read_dir_meta';
-import { process as removeMetaDisabled } from '../../src/builder/processor/remove_disabled';
-import { process as readFileData } from '../../src/builder/processor/read_file_css';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as resolveTargetPath, selectTargetPath } from '../../src/builder/processor/target_path';
-import { process as clearTargets } from '../../src/builder/processor/clear_target';
-import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { EntitySetMem } from 'odgn-entity/src/entity_set';
 import assert from 'uvu/assert';
 
-const log = (...args) => console.log('[TestProcSite]', ...args);
+const log = (...args) => console.log('[TestProcTargetPath]', ...args);
 
 const rootPath = Path.resolve(__dirname, "../../");
 const test = suite('processor/target_path');

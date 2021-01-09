@@ -56,8 +56,10 @@ export async function resolveTarget(es: EntitySet, e: Entity) {
         return siteTargetUri;
     }
 
+    
     // determine target using dir deps
     const targetCom = await selectDirTarget(es, e.id);
+    
     if (targetCom === undefined) {
         return undefined;
     }
@@ -97,14 +99,14 @@ export async function selectTarget(es: EntitySet): Promise<Entity[]> {
  * @param eid 
  */
 export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Component | undefined> {
-
+    log('[selectDirTarget]', eid);
     const stmt = es.prepare(`
     [
         // ["💥 eid is" $eid] to_str! .
         [ $eid @eid /component/target !bf @c ] select
 
         // if we have a result, then exit
-        dup **leave rot size 0 < if
+        dup [ @! ] rot size 0 < if
 
         // remove the empty result
         // es now on top
@@ -120,7 +122,9 @@ export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Com
         ] select
 
         // if there is no parent, then exit
-        dup **leave rot size 0 == if
+        dup [ @! ] rot size 0 == if
+
+        // prints
 
         // set eid to parent
         /dst pluck eid !

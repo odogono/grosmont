@@ -183,8 +183,6 @@ async function gather(es: EntitySetMem, site: Entity) {
  */
 function selectSites(es: EntitySetMem): Entity[] {
     const dids: BitField = es.resolveComponentDefIds(['/component/site']);
-    // let ents: Entity[];
-
     return es.getEntitiesMem(dids, { populate: true });
 }
 
@@ -215,6 +213,9 @@ export function selectDirByUri(es: EntitySetMem, uri: string, options: SelectOpt
         if (options.createIfNotFound) {
             let e = es.createEntity();
             e.Dir = { uri };
+            let ctime = new Date().toISOString();
+            let mtime = ctime;
+            e.Stat = { ctime, mtime };
             return e;
         }
         return undefined;
@@ -232,7 +233,7 @@ export function selectDirByUri(es: EntitySetMem, uri: string, options: SelectOpt
  * @param uri 
  * @param options 
  */
-function selectFileByUri(es: EntitySetMem, uri: string, options: SelectOptions = {}): (Entity | EntityId) {
+export function selectFileByUri(es: EntitySetMem, uri: string, options: SelectOptions = {}): (Entity | EntityId) {
     const bf = es.resolveComponentDefIds('/component/file');
 
     const com = es.findComponent(bf, (com) => {
@@ -243,6 +244,9 @@ function selectFileByUri(es: EntitySetMem, uri: string, options: SelectOptions =
         if (options.createIfNotFound) {
             let e = es.createEntity();
             e.File = { uri };
+            let ctime = new Date().toISOString();
+            let mtime = ctime;
+            e.Stat = { ctime, mtime };
             return e;
         }
         return undefined;
@@ -271,10 +275,16 @@ export function joinPaths( a:string, b:string ){
 }
 
 export function uriToPath( uri:string ){
+    if( uri === undefined ){
+        return '';
+    }
     return uri.startsWith('file://') ? uri.substring('file://'.length) : uri;
 }
 
 export function pathToUri( path:string ){
+    if( path === undefined ){
+        return undefined;
+    }
     return path.startsWith('file://') ? path : 'file://' + path;
 }
 
