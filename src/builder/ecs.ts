@@ -47,20 +47,100 @@ import { isEmpty } from 'odgn-entity/src/util/is';
 import { TYPE_OR, BitField, get as bfGet } from 'odgn-entity/src/util/bitfield';
 import { slugify } from '../util/string';
 import { parseUri } from '../util/parse_uri';
+import { createMdxAstCompiler } from '@mdx-js/mdx';
+import { selectDirByUri, selectFileByUri } from './processor/file';
 
+
+
+export interface SiteOptions extends EntitySetOptions {
+    name?: string;
+    target?: string;
+    dir?: string;
+}
 
 
 export class Site {
     es: EntitySetMem;
+    options: SiteOptions;
 
-    constructor(options:EntitySetOptions = {}){
-        this.es = new EntitySetMem(undefined, options);
+    constructor(options:SiteOptions = {}){
+        this.options = options;
     }
-
-    async init() {
+    
+    async init(options:SiteOptions = undefined) {
+        options = options ?? this.options;
+        this.es = new EntitySetMem(undefined, options);
+        
         for (const def of defs) {
             await this.es.register(def);
         }
+        
+        await this.parseOptions(options);
+    }
+
+    async run( script:string ){
+        const stmt = this.es.prepare(script);
+        await stmt.run();
+        return true;
+    }
+
+    async parseOptions( options:SiteOptions = {} ){
+        const {name,target,dir} = options;
+        let e = this.es.createEntity();
+        if( name !== undefined ){
+            e.Site = { name };
+        }
+        if( dir !== undefined ){
+            e.Dir = { uri:dir };
+        }
+        if( target !== undefined ){
+            e.Target = { uri:target };
+        }
+        if( e.size > 0 ){
+            await this.es.add( e );
+        }
+    }
+
+
+    /**
+     * Returns the site entity
+     */
+    getSite() {
+        const dids: BitField = this.es.resolveComponentDefIds(['/component/site']);
+        let e = this.es.getEntitiesMem(dids, { populate: true });
+        return e.length === 1 ? e[0] : undefined;
+    }
+
+
+    async addDir( siteE, uri ): Promise<Entity> {
+        let e = selectDirByUri(this.es, uri, { createIfNotFound: true }) as Entity;
+        e.SiteRef = { ref: siteE.id };
+
+        await this.es.add( e );
+
+        let eid = this.es.getUpdatedEntities()[0];
+        return this.es.getEntityMem(eid);
+    }
+
+
+    async addFile( siteE, uri ): Promise<Entity> {
+        let e = selectFileByUri(this.es, uri, { createIfNotFound: true }) as Entity;
+        e.SiteRef = { ref: siteE.id };
+
+        await this.es.add( e );
+
+        let eid = this.es.getUpdatedEntities()[0];
+
+        // log('[addFile]', this.es.getUpdatedEntities() );
+
+        return this.es.getEntityMem(eid);
+
+        // return this.es.entChanges.added[0];
+    }
+
+
+    async update( e:Entity ){
+        return await this.es.add( e );
     }
 }
 
