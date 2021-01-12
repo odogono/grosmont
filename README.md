@@ -74,7 +74,9 @@ using file extensions, type Components are assigned
 
 ### Process MDX
 
-- process meta
+- process meta 
+  - if the mdx has dir deps, then meta is inherited
+- apply title
 - resolve links to css
 - resolve page links
 - resolve layout

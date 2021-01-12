@@ -50,6 +50,13 @@ import { parseUri } from '../util/parse_uri';
 import { createMdxAstCompiler } from '@mdx-js/mdx';
 import { selectDirByUri, selectFileByUri } from './processor/file';
 
+interface SelectOptions {
+    debug?: boolean;
+    returnEid?: boolean;
+    createIfNotFound?: boolean;
+    ext?: string;
+}
+
 
 
 export interface SiteOptions extends EntitySetOptions {
@@ -124,18 +131,24 @@ export class Site {
 
 
     async addFile( siteE, uri ): Promise<Entity> {
-        let e = selectFileByUri(this.es, uri, { createIfNotFound: true }) as Entity;
-        e.SiteRef = { ref: siteE.id };
+        let e = await selectSiteFileByUri( this.es, siteE, uri, {createIfNotFound: true }) as Entity;
+        return e;
+        // let e = selectFileByUri(this.es, uri, { createIfNotFound: true }) as Entity;
+        // e.SiteRef = { ref: siteE.id };
 
-        await this.es.add( e );
+        // await this.es.add( e );
 
-        let eid = this.es.getUpdatedEntities()[0];
+        // let eid = this.es.getUpdatedEntities()[0];
 
         // log('[addFile]', this.es.getUpdatedEntities() );
 
-        return this.es.getEntityMem(eid);
+        // return this.es.getEntityMem(eid);
 
         // return this.es.entChanges.added[0];
+    }
+
+    async getFile( siteE:Entity, uri ): Promise<Entity> {
+        return selectSiteFileByUri( this.es, siteE, uri) as Promise<Entity>;
     }
 
 
@@ -144,6 +157,32 @@ export class Site {
     }
 }
 
+
+async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, options: SelectOptions = {} ){
+    const stmt = es.prepare(`[
+        /component/file#uri !ca $uri ==
+        /component/site_ref#ref !ca $ref ==
+        and
+        @e
+    ] select`);
+    
+    const ents = await stmt.getEntities({uri, ref:siteE.id});
+    if( ents && ents.length > 0 ){
+        let e = ents[0];
+        return options.returnEid === true ? e.id : e;
+    }
+
+    if (options.createIfNotFound) {
+        let e = es.createEntity();
+        e.File = { uri };
+        let ctime = new Date().toISOString();
+        let mtime = ctime;
+        e.Stat = { ctime, mtime };
+        e.SiteRef = { ref:siteE.id };
+        return e;
+    }
+    return undefined;
+}
 
 
 export class SiteContext extends BuildContext {
@@ -1719,11 +1758,6 @@ function selectLinks(ctx: SiteContext, page?: Entity) {
 }
 
 
-interface SelectOptions {
-    debug?: boolean;
-    returnEid?: boolean;
-    ext?: string;
-}
 
 
 function selectPageByPath(ctx: SiteContext, path: string, options?: SelectOptions): Entity {

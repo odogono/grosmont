@@ -1,5 +1,16 @@
 
 
+12 Jan 21
+
+- move from the File component to the Url component. Its not Uri because it typically shows where the entity is located. The trick now of course is that the ability to quickly id files (when matching to dirs) is lost. Well not lost, but it becomes tricker because the component attribute needs to be looked at to check whether its a file. meh.
+
+
+
+
+
+
+
+
 - [x] allow output path to be set from page meta
 
 - [x] read page meta from directory config file - pages still override

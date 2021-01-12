@@ -122,7 +122,7 @@ export async function selectDependency(es: EntitySetMem, src?: EntityId, dst?: E
 
 export async function selectDirDependencies(es: EntitySet, dir: EntityId | EntityId[]): Promise<EntityId[]> {
 
-    log('[selectDirDependencies]', dir);
+    // log('[selectDirDependencies]', dir);
 
     const query = `
         [

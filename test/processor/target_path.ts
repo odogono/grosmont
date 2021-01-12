@@ -44,7 +44,7 @@ test('target path for file', async (tcx) => {
 
     let path = await selectTargetPath( es, 1002 );
 
-    assert.equal( path, 'file:///Users/alex/work/odgn/cms/dist/content/pages/test.html' );
+    assert.equal( path, '/content/pages/test.html' );
 
     // log('target path', path);
 
@@ -60,7 +60,7 @@ test('target path for file only', async (tcx) => {
     let e = await site.addFile( siteEntity, 'file:///content/style.scss' );
     let path = await selectTargetPath( es, e.id );
 
-    assert.equal( path, 'file:///Users/alex/work/odgn/cms/dist/content/style.scss' );
+    assert.equal( path, '/content/style.scss' );
 
     // console.log('\n\n---\n');
     // printAll( es );
@@ -75,7 +75,7 @@ test('target path for file with target', async (tcx) => {
     
     let path = await selectTargetPath( es, e.id );
 
-    assert.equal( path, 'file:///Users/alex/work/odgn/cms/dist/styles/style.scss' );
+    assert.equal( path, '/styles/style.scss' );
 
     // console.log('\n\n---\n');
     // printAll( es );
@@ -93,7 +93,7 @@ test('target path for file in directory', async (tcx) => {
 
     let path = await selectTargetPath( es, e.id );
 
-    assert.equal( path, 'file:///Users/alex/work/odgn/cms/dist/content/style.scss' );
+    assert.equal( path, '/content/style.scss' );
 
     // console.log('\n\n---\n');
     // printAll( es );
@@ -117,7 +117,7 @@ test('absolute target path for file in many directories', async (tcx) => {
     let path = await selectTargetPath( es, e.id );
 
     assert.equal( path, 
-        'file:///Users/alex/work/odgn/cms/dist/css/style.scss' );
+        '/css/style.scss' );
 
     // console.log('\n\n---\n');
     // printAll( es );
@@ -140,7 +140,7 @@ test('relative target path for file in many directories', async (tcx) => {
     let path = await selectTargetPath( es, e.id );
 
     assert.equal( path, 
-        'file:///Users/alex/work/odgn/cms/dist/content/alpha/css/style.scss' );
+        '/content/alpha/css/style.scss' );
 
     // console.log('\n\n---\n');
     // printAll( es );

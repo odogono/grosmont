@@ -1,6 +1,11 @@
 
 export const defs = [
-
+    {
+        uri: '/component/url',
+        properties: [
+            { name: 'url', type: 'string' },
+        ]
+    },
     {
         uri: '/component/file',
         properties: [

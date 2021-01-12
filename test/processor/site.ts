@@ -15,6 +15,7 @@ import { process as readDirMeta, selectMetaDisabled } from '../../src/builder/pr
 import { process as removeMetaDisabled } from '../../src/builder/processor/remove_disabled';
 import { process as readFileData } from '../../src/builder/processor/read_file_css';
 import { process as renderScss } from '../../src/builder/processor/scss';
+import { process as resolveTargetPath } from '../../src/builder/processor/target_path';
 import { process as clearTargets } from '../../src/builder/processor/clear_target';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { EntitySetMem } from 'odgn-entity/src/entity_set';
@@ -29,9 +30,9 @@ test('scans', async () => {
     let id = 1000;
     const idgen = () => ++id;
 
-    let ctx = new Site({idgen});
+    let ctx = new Site();
 
-    await ctx.init();
+    await ctx.init({idgen});
 
     
     const path = rootPath;
@@ -98,8 +99,6 @@ test('scans', async () => {
     // console.log( ctx.es.entities );
     // printAll( ctx.es, await ctx.es.queryEntities('[/component/dep !bf @c] select') );
 });
-
-
 
 
 
