@@ -59,14 +59,13 @@ test('target path for file only', async (tcx) => {
     
     let e = await site.addFile( siteEntity, 'file:///content/style.scss' );
     let path = await selectTargetPath( es, e.id );
-
-    assert.equal( path, '/content/style.scss' );
-
+    
     // console.log('\n\n---\n');
     // printAll( es );
+    assert.equal( path, '/content/style.scss' );
 });
 
-test('target path for file with target', async (tcx) => {
+test('target path for file with dir target', async (tcx) => {
     const {es, site, siteEntity} = tcx; 
     
     let e = await site.addFile( siteEntity, 'file:///content/style.scss' );
@@ -76,6 +75,21 @@ test('target path for file with target', async (tcx) => {
     let path = await selectTargetPath( es, e.id );
 
     assert.equal( path, '/styles/style.scss' );
+
+    // console.log('\n\n---\n');
+    // printAll( es );
+});
+
+test('target path for file with file target', async (tcx) => {
+    const {es, site, siteEntity} = tcx; 
+    
+    let e = await site.addFile( siteEntity, 'file:///content/style.scss' );
+    e.Target = { uri: 'main.css' };
+    await site.update( e );
+    
+    let path = await selectTargetPath( es, e.id );
+
+    assert.equal( path, '/content/main.css' );
 
     // console.log('\n\n---\n');
     // printAll( es );
@@ -94,6 +108,26 @@ test('target path for file in directory', async (tcx) => {
     let path = await selectTargetPath( es, e.id );
 
     assert.equal( path, '/content/style.scss' );
+
+    // console.log('\n\n---\n');
+    // printAll( es );
+});
+
+test('target path for file in directory 2', async (tcx) => {
+    const {es, site, siteEntity} = tcx; 
+    
+    let e = await site.addDir( siteEntity, `file:///content/` );
+    e.Target = { uri: 'main.css' };
+    await site.update( e );
+
+    e = await site.addFile( siteEntity, 'file:///content/style.scss' );
+
+    // important so that the file is linked to the dir
+    await resolveFileDeps( site.es );
+
+    let path = await selectTargetPath( es, e.id );
+
+    assert.equal( path, '/content/main.css' );
 
     // console.log('\n\n---\n');
     // printAll( es );

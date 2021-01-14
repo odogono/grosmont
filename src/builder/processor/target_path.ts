@@ -63,15 +63,25 @@ export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<st
 
     const stmt = es.prepare(`
     [] paths let
+    "" filename let
 
     // ( str -- str|false )
     [ ~r/^\/|file:\/\/\// eval ] selectAbsUri define
 
     [ false true rot ~r/^\/|file:\/\/\// eval iif ] isAbsPath define
 
+    [ false true rot ~r/^[^\/]*$/ eval iif ] isFilename define
+
     [ "" swap ~r/^\\/+/ replace ] removeLeadingSlash define
 
     [ "" swap ~r/\\/$/ replace ] removeTrailingSlash define
+
+    [
+        dup ~r/^\\// eval
+        
+        [["/" *^^$0] "" join ] swap false == if
+
+    ] ensureLeadingSlash define
 
     [ $paths + paths ! ] addToPaths define
     
@@ -104,6 +114,7 @@ export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<st
     // returns the target uri from an entity
     [
         swap [ *^$1 @eid /component/target#uri @ca ] select pop?
+        
         // swap [ *^$1 @eid /component/target !bf @c ] select
         
         // if no /target component exists, return undefined
@@ -145,16 +156,22 @@ export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<st
         dup rot rot
         selectTarget
         dup
-
+        
         // if no target exists, return false
         [ drop swap false @! ] swap false == if
+        
+        // if its a filename, return false
+        dup [ filename ! swap false @! ] swap isFilename if
+        
         dup isAbsPath
         // if abs path, add to result, return true
         [ addToPaths swap "abs" @! ] swap if
+
         
         // relative path
         addToPaths swap "rel"
         @>
+
     ] handleTarget define
 
     [
@@ -223,7 +240,7 @@ export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<st
         // examine the /component/target and add to the result
         // if it exists
         handleTarget
-
+        
         // if the target exists and is absolute, then we have
         // finished
         dup [ drop drop @! ] swap "abs" == if
@@ -238,22 +255,32 @@ export async function selectTargetPath(es: EntitySet, eid: EntityId): Promise<st
         true // loop only continues while true
     ] loop
 
-
+    
     // if no paths have been found, then select the dir
     // from /component/file
     [ $eid selectFileDir addToPaths ] $paths size 0 == if
     
+    // if a filename has not yet been set, use the incoming /file
+    [ $eid selectFilename filename ! ] $filename size 0 == if
+    
     // add the filename to the end of the paths
-    $eid selectFilename $paths swap + paths !
+    // $eid selectFilename $paths swap + paths !
 
     
+    // NOTE - full path disabled for now
     // add the site target last - this is the base url
-    $eid selectSiteTarget
+    // $eid selectSiteTarget
     
-    $paths "" join removeLeadingSlash
+    // $paths "" join removeLeadingSlash
     
     // join the site target and calculated path
-    join
+    // join
+
+    $paths "" join 
+    $filename swap +
+
+    ensureLeadingSlash
+    
     `);
 
     const dirCom = await stmt.getResult({ eid });
