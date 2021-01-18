@@ -78,27 +78,37 @@ using file extensions, type Components are assigned
   - if the mdx has dir deps, then meta is inherited
 - apply title
 - resolve links to css
+  - css can be included in one of several ways
+    - another entity can be imported into the mdx using import statements
+    - using the <InlineCSS /> tag - this inlines the css in the mdx page
+    - a css link tag can be built and populated using the pages css deps
 - resolve page links
 - resolve layout
 - render to html, creating a Text component
+
+import statements can occur within.
 
 
 ### Generate Target Path
 
 possibly a processor by itself? useful for a live server. 
 
-otherwise is done at the point of populating Target
+/component/target is used to specify the target path, and is set already
+
+result target path is generated on demand
 
 
 ### Clear target
 
 
-### Generate
+### Output
 
 runs over entities with Text, or Static components
 
 - target path is determined
 - files are copied to the Target
+
+
 
 
 

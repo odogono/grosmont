@@ -13,6 +13,7 @@ import { printAll } from "../ecs";
 import { selectSiteTarget } from './read_dir_meta';
 import { joinPaths, writeFile } from './file';
 import { resolveTarget, selectDirTarget } from './clear_target';
+import { applyMeta } from '../util';
 
 
 
@@ -26,7 +27,7 @@ export async function process(es: EntitySet) {
     // select scss entities
     const ents = await selectScss(es);
 
-    for (const e of ents) {
+    for (let e of ents) {
 
         // const path = await selectTargetPath(es, e.id);
         // log('targetPath', e.id, path);
@@ -93,7 +94,7 @@ export async function renderScss(es: EntitySet, e: Entity): Promise<RenderScssRe
     const srcPath = '/';
     const scss = e.Scss.data;
 
-    const css = await render(scss, srcPath, dstPath);
+    const css = await render(scss, srcPath, dstPath, true);
 
     return { css, srcPath, dstPath };
 }

@@ -46,7 +46,7 @@ import { getComponentEntityId, Component, toComponentId, getComponentDefId } fro
 import { isEmpty } from 'odgn-entity/src/util/is';
 import { TYPE_OR, BitField, get as bfGet } from 'odgn-entity/src/util/bitfield';
 import { slugify } from '../util/string';
-import { parseUri } from '../util/parse_uri';
+import { parseUri } from '../util/uri';
 import { createMdxAstCompiler } from '@mdx-js/mdx';
 import { selectDirByUri, selectFileByUri } from './processor/file';
 import { StatementArgs } from 'odgn-entity/src/query';
@@ -58,6 +58,13 @@ interface SelectOptions {
     ext?: string;
 }
 
+
+
+export interface SiteIndex {
+    query: string;
+    args: StatementArgs;
+    index: Map<any, any[]>;
+}
 
 
 export interface SiteOptions extends EntitySetOptions {
@@ -172,6 +179,7 @@ export class Site {
         let index:SiteIndex = { query, args, index: new Map<any,any[]>() };
         this.indexes.set( name, index );
         await this.buildIndexes( name );
+        return index;
     }
 
     getIndex( name:string ){
@@ -186,24 +194,29 @@ export class Site {
         for( const [name,idx] of this.indexes ){
             const {query,args,index} = idx;
 
-            const stmt = this.es.prepare(query);
-
-            const rows = await stmt.getResult(args);
-
             index.clear();
+            
+            const stmt = this.es.prepare(query);
+            
+            let rows = await stmt.getResult(args);
+
+            if( rows === undefined || rows.length === 0 ){
+                continue;
+            }
+
+            // the result may just be a single row, so ensure
+            // we have the right format
+            if( !Array.isArray(rows[0]) ){
+                rows = [rows];
+            }
+            
+            // log('[buildIndexes]', name, rows );
 
             for( const [key,eid,...rest] of rows ){
                 index.set(key, [eid, ...rest]);
             }
         }
     }
-}
-
-
-interface SiteIndex {
-    query: string;
-    args: StatementArgs;
-    index: Map<any, any[]>;
 }
 
 

@@ -46,15 +46,14 @@ const log = (...args) => console.log('[TranspileMDX]', ...args);
 export const PageContext = React.createContext({})
 
 
-export async function transpile(props: TranspileProps, options: TranspileOptions = {}): Promise<TranspileResult> {
+export async function transpile(props: TranspileProps, options: TranspileOptions): Promise<TranspileResult> {
     // let { children, path, data, meta, links: applyLinks, css } = props;
-    let css = '';
-    let inputCssLinks = [];
     let meta = props.meta ?? {};// { isRenderable:true };
     let applyLinks:PageLinks;
-    let {children} = props;
+    let {css, cssLinks:inputCssLinks, children} = props;
 
     let { data, path } = props;
+    const { resolveImport } = options;
     const forceRender = options.forceRender ?? false;
     const doRender = forceRender || (options.render ?? false);
 
@@ -86,7 +85,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     }
 
     const inPageProps = { ...meta, css, cssLinks:inputCssLinks };
-    const mdxResult = await parseMdx(data, path, inPageProps, applyLinks);
+    const mdxResult = await parseMdx(data, path, { pageProps:inPageProps,applyLinks, resolveImport } );
     
     const { component, frontMatter,
         code, jsx, ast, page, default: d, 
@@ -198,11 +197,11 @@ function renderHTML({ components, component: Component, children }) {
 
 
 
-function parseMdx(data: string, path:string, pageProps: object, applyLinks?: PageLinks) {
+function parseMdx(data: string, path:string, options:ProcessMDXOptions) {
     // let content = Fs.readFileSync(path, 'utf8');
 
     try {
-        let [jsx, links, ast] = processMdx(data, pageProps, applyLinks);
+        let [jsx, links, ast] = processMdx(data, options);
         
         let code = transformJSX(jsx);
         let el = evalCode(code, path);
@@ -210,7 +209,7 @@ function parseMdx(data: string, path:string, pageProps: object, applyLinks?: Pag
         return { ...el, code, jsx, ast, links };
 
     } catch( err ){
-        log('[parseMdx]', `failed to process mdx ${path}`, err.message );
+        log('[parseMdx]', `failed to process mdx ${path}`, err.stack );
         log('[parseMdx]', data);
         throw err;
     }
@@ -218,10 +217,24 @@ function parseMdx(data: string, path:string, pageProps: object, applyLinks?: Pag
 }
 
 
-export function processMdx(content: string, pageProps: object, applyLinks?: PageLinks): [string, PageLinks, any] {
+export type ProcessMDXOptions = {
+    pageProps?: any;
+    applyLinks?: PageLinks;
+    resolveImport?: (path) => string | undefined;
+}
 
+export type ProcessMDXResult = [ string, PageLinks, any];
+
+export function processMdx(content: string, options:ProcessMDXOptions): ProcessMDXResult {
+
+    const {  pageProps, applyLinks, resolveImport } = options;
     let links = new Map<string, any>();
     let ast;
+
+    // const resolveCSS = (path) => {
+    //     log('[resolveCSS]', path);
+    //     return true;
+    // }
 
     // log('[processMdx]', 'content:', content );
     // remark-mdx has a really bad time with html comments even
@@ -246,14 +259,14 @@ export function processMdx(content: string, pageProps: object, applyLinks?: Page
         .use(mdx)
         .use(mdxjs)
         .use(titlePlugin)
-        .use(importCSSPlugin)
+        .use(importCSSPlugin, {resolve: resolveImport})
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
-        
+        // .use(() => console.dir)
         // .use( () => console.log('💦doh') )
         .processSync(content);
-    // console.log(output.toString());
+    // console.log( output.toString());
 
     return ['/* @jsx mdx */\n' + output.toString(), links, ast];
 }
@@ -288,7 +301,7 @@ function transformJSX(jsx: string) {
 function evalCode(code: string, path: string) {
     let requires = [];
     const requireManual = (requirePath) => {
-        // log('[evalCode][requireManual]', requirePath);
+        log('[evalCode][requireManual]', requirePath);
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
         
         let extPath = findFileWithExt(fullPath, ['mdx'] );
@@ -311,6 +324,7 @@ function evalCode(code: string, path: string) {
             return evalCode(code, extPath);
         }
         
+        // the default behaviour - normal require
         const req = require(requirePath);
 
         requires.push({ exports: Object.keys(req).join(','), path: requirePath })

@@ -4,6 +4,7 @@ import { printAll, Site } from '../../src/builder/ecs';
 import { 
     process as resolveFileDeps, 
 } from '../../src/builder/processor/file_deps';
+import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as renderMdx } from '../../src/builder/processor/mdx';
 import { process as resolveTargetPath, selectTargetPath } from '../../src/builder/processor/target_path';
@@ -36,8 +37,8 @@ test.before.each( async (tcx) => {
 });
 
 
-test('target path for file', async (tcx) => {
-    const {es, site, siteEntity} = tcx; 
+test('target path for file', async ({es, site, siteEntity}) => {
+    
     let data = `
 ## Here's a Heading
 
@@ -209,6 +210,7 @@ isRenderable: false
     await site.update(e);
     
     
+    // TODO - allow chains of layouts. doesnt work yet
 //     data = `
 // ---
 // layout: /layout/main
@@ -240,15 +242,64 @@ Hello _world_
     assert.equal( e.Text.data, 
         `<html lang="en"><body><p>Hello <em>world</em></p></body></html>` );
 
-    // console.log('\n\n---\n');
-    // printAll( es );
+    
 })
 
+// test.only('lookup of url using regex', async ({es, site, siteEntity}) => {
+
+// })
 
 
+test('inlined css', async ({es, site, siteEntity}) => {
 
-test('inlined css', async (tcx) => {
+    /*
+    build an index of urls to entity ids and mime types
+    */
+
+    let e = await site.addFile( siteEntity, 'file:///pages/main.mdx' );
+
+    // note - important that import has no leading space
+    let data = `
+import 'file:///styles/main.scss';
+
+<InlineCSS />
+
+## Main page
+    `;
+    e.Mdx = {data};
+    await site.update( e );
+
+    e = await site.addFile( siteEntity, 'file:///styles/main.scss');
+    e.Scss = { data:`
+    h2 { color: blue; }
+    `};
+    await site.update(e);
+
+
+    await assignMime( site, es );
+    await renderScss( es );
+
+    await renderMdx( site, es );
+
+
+    e = await site.getFile( siteEntity, 'file:///pages/main.mdx' );
+
+    assert.equal( e.Text.data, 
+        `<style>h2{color:#00f}</style><h2>Main page</h2>` );
+
+    // BUT - how do links between pages get resolved?
+    // looks like rendering mdx will be two passes
+    // the first being parsing, second the actual render to text
+    // this does mean that the mime type will not be determined
+    // for mdx currently. 
+    // so maybe mime type becomes a component by itself OR
+    // that it is a property on Meta
+
+    // console.log('\n\n---\n');
+    // printAll( es );
 });
+
+
 
 test('inlined css with master page', async (tcx) => {
 });

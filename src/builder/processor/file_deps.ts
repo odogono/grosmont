@@ -6,7 +6,7 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { Component, getComponentEntityId, toComponentId } from 'odgn-entity/src/component';
 import { BitField, TYPE_OR } from 'odgn-entity/src/util/bitfield';
-import { parseUri } from '../../util/parse_uri';
+import { parseUri } from '../../util/uri';
 import { ComponentDefId } from 'odgn-entity/src/component_def';
 import { printAll } from '../ecs';
 

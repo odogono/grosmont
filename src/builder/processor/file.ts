@@ -17,7 +17,7 @@ import { BitField } from 'odgn-entity/src/util/bitfield';
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { printAll } from "../ecs";
-import { parseUri } from '../../util/parse_uri';
+import { parseUri } from '../../util/uri';
 import { getComponentEntityId } from 'odgn-entity/src/component';
 import { Result } from 'postcss';
 

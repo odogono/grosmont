@@ -3,40 +3,65 @@ import { parse as babelParser } from '@babel/parser';
 import babelGenerate from '@babel/generator';
 
 
-export function importCSSPlugin() {
+
+export interface ImportCSSPluginOptions {
+    resolve?: (path) => string | undefined;
+}
+
+/**
+ * 
+ * @param options 
+ */
+export function importCSSPlugin(options: ImportCSSPluginOptions = {}) {
     return (tree, file) => {
         let cssPaths = [];
         unistVisit(tree, ['import'], (node) => {
             const ast = babelParser(node.value as string, { sourceType: 'module' });
-            
-            if (ast.type === 'File' && ast.program?.sourceType === 'module'
-            ) {
+
+            if (ast.type === 'File' && ast.program?.sourceType === 'module') {
                 let found = false;
-                ast.program.body = ast.program.body.filter( node => {
-                    if( node.type !== 'ImportDeclaration' ){
+                ast.program.body = ast.program.body.filter(node => {
+                    if (node.type !== 'ImportDeclaration') {
                         return true;
                     }
-                    
-                    if( node.source.value.endsWith('.css') ){
-                        cssPaths.push(node.source.value);
-                        found = true;
-                        return false;
+                    const { value } = node.source;
+
+                    if (options.resolve) {
+                        let cssPath = options.resolve(value);
+                        if( cssPath !== undefined ){
+                            // log('adding cssPath', cssPath);
+                            cssPaths.push(cssPath);
+                            found = true;
+                            return false;
+                        }
+                        // if (options.resolve(value)) {
+                        //     cssPaths.push(value);
+                        //     found = true;
+                        //     return false;
+                        // }
                     }
+
+                    // log('found', node.source.value);
+
+                    // if (value.endsWith('.css')) {
+                    //     cssPaths.push(value);
+                    //     found = true;
+                    //     return false;
+                    // }
                     return true;
                 });
 
-                if( found ){
+                if (found) {
                     let generateResult = babelGenerate(ast);
-                    if( generateResult ){
+                    if (generateResult) {
                         node.value = generateResult.code;
                     }
                 }
-                // console.log( ast.program.body );
             }
         });
 
-        
-        if( cssPaths.length > 0 ){
+
+        if (cssPaths.length > 0) {
             let cssNode = {
                 type: 'export',
                 value: `export const cssLinks = [ ${cssPaths.map(c => `'${c}'`).join(',')} ]`
@@ -48,6 +73,6 @@ export function importCSSPlugin() {
 }
 
 
-function log(...args){
+function log(...args) {
     console.log('[importCSSPlugin]', ...args);
 }

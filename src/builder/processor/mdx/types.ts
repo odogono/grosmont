@@ -64,6 +64,7 @@ export interface TranspileMeta {
 export interface TranspileOptions {
     render?: boolean;
     forceRender?: boolean;
+    resolveImport: (path:string) => string | undefined;
 }
 
 

@@ -99,7 +99,6 @@ export async function selectTarget(es: EntitySet): Promise<Entity[]> {
  * @param eid 
  */
 export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Component | undefined> {
-    log('[selectDirTarget]', eid);
     const stmt = es.prepare(`
     [
         // ["💥 eid is" $eid] to_str! .

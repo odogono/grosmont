@@ -35,9 +35,9 @@ export async function process(es: EntitySet) {
 
 
 
-function selectFiles(es: EntitySetMem): Entity[] {
-    const dids: BitField = es.resolveComponentDefIds(['/component/file']);
-    return es.getEntitiesMem(dids, { populate: true });
+async function selectFiles(es: EntitySet): Promise<Entity[]> {
+    const stmt = es.prepare(`[ /component/file !bf @e ] select`);
+    return await stmt.getEntities();
 }
 
 

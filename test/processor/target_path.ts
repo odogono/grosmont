@@ -27,8 +27,11 @@ test.before.each( async (tcx) => {
 });
 
 
-test('target path for file', async (tcx) => {
-    const {es, site} = tcx; 
+test('entity without file', async ({es,site}) => {
+    
+});
+
+test('target path for file', async ({es,site}) => {
     let init = `
 
     // select the site eid
@@ -54,9 +57,7 @@ test('target path for file', async (tcx) => {
 
 
 
-test('target path for file only', async (tcx) => {
-    const {es, site, siteEntity} = tcx; 
-    
+test('target path for file only', async ({es, site, siteEntity}) => {
     let e = await site.addFile( siteEntity, 'file:///content/style.scss' );
     let path = await selectTargetPath( es, e.id );
     
@@ -65,9 +66,7 @@ test('target path for file only', async (tcx) => {
     assert.equal( path, '/content/style.scss' );
 });
 
-test('target path for file with dir target', async (tcx) => {
-    const {es, site, siteEntity} = tcx; 
-    
+test('target path for file with dir target', async ({es, site, siteEntity}) => {
     let e = await site.addFile( siteEntity, 'file:///content/style.scss' );
     e.Target = { uri: '/styles/' };
     await site.update( e );
