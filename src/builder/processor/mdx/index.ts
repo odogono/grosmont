@@ -4,7 +4,7 @@
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { PageLinks, TranspileMeta, TranspileProps, TranspileResult } from './types';
-import { Site } from '../../ecs';
+import { Site, SiteIndex } from '../../ecs';
 
 import { transpile } from './transpile';
 import { html } from "js-beautify";
@@ -16,7 +16,7 @@ const log = (...args) => console.log('[ProcMDX]', ...args);
 
 
 /**
- * Compiles .mdx to html
+ * Compiles .mdx
  * 
  * @param es 
  */
@@ -24,13 +24,16 @@ export async function process(site: Site, es: EntitySet = undefined) {
     es = es ?? site.es;
     const siteEntity = site.getSite();
 
+    // build an index of /file#uri
+    let fileIndex = await buildFileIndex(site);
+
     // select scss entities
     let ents = await selectMdx(es);
     let output: Entity[] = [];
 
     // first pass at parsing the mdx - pulling out links, local meta etc
     for (const e of ents) {
-        output.push(await preProcessMdx(es, e));
+        output.push(await preProcessMdx(es, e, {fileIndex}));
     }
     await es.add(output);
 
@@ -50,7 +53,7 @@ export async function process(site: Site, es: EntitySet = undefined) {
     output = [];
 
     for (const e of ents) {
-        output.push(await renderMdx(es, e));
+        output.push(await renderMdx(es, e, undefined, {fileIndex}));
     }
 
     await es.add(output);
@@ -69,17 +72,52 @@ function buildProps( e:Entity ){
     return props;
 }
 
+
+async function buildFileIndex(site: Site) {
+    // let es = site.es;
+    const siteEntity = site.getSite();
+
+    // let files = await selectFiles(es, siteEntity.id);
+
+    // select entities with /component/file AND /component/text (eg. have been rendered)
+    const query = `[
+        /component/site_ref#ref !ca $ref ==
+        [/component/file /component/text /component/meta] !bf
+        and
+        @e
+    ] select
+
+    [ /component/file#uri /id /component/meta#/meta/mime ] pluck
+
+    `;
+
+    return await site.addIndex( '/index/fileUri', query, {ref:siteEntity.id} );
+}
+
+
+interface ProcessOptions {
+    fileIndex: SiteIndex;
+}
+
 /**
  * Pulls data from and prepares the mdx for rendering
  * 
  * @param es 
  * @param e 
  */
-async function preProcessMdx(es: EntitySet, e: Entity) {
+async function preProcessMdx(es: EntitySet, e: Entity, options:ProcessOptions) {
+
+    const {fileIndex} = options;
+
+    function resolveImport( path:string ){
+        const [eid, mime] = fileIndex.index.get(path);
+        log('[resolveImport]', path, eid, mime);
+        return `e://${eid}/component/text#text`;
+    }
 
     try {
         let props = buildProps( e );
-        let result = await transpile(props, { render: false });
+        let result = await transpile(props, { render: false, resolveImport });
 
         const { meta } = result;
         // const { isEnabled } = meta;
@@ -107,11 +145,11 @@ async function preProcessMdx(es: EntitySet, e: Entity) {
 }
 
 
-async function renderMdx(es: EntitySet, e: Entity, child?: TranspileResult): Promise<Entity> {
+async function renderMdx(es: EntitySet, e: Entity, child: TranspileResult, options:ProcessOptions): Promise<Entity> {
 
 
     try {
-        let result = await renderEntity(es, e);
+        let result = await renderEntity(es, e, undefined, options);
 
         const { html, meta } = result;
         const { isEnabled, isRenderable } = meta;
@@ -123,7 +161,7 @@ async function renderMdx(es: EntitySet, e: Entity, child?: TranspileResult): Pro
         // log('[renderMdx]', e.File.uri, meta);
 
         // if( isRenderable !== false ){
-            e.Text = { data: html };
+            e.Text = { data: html, mime: 'text/html' };
         // }
 
     } catch (err) {
@@ -134,24 +172,31 @@ async function renderMdx(es: EntitySet, e: Entity, child?: TranspileResult): Pro
 }
 
 
-async function renderEntity(es: EntitySet, src: Entity, child?: TranspileResult) {
+async function renderEntity(es: EntitySet, src: Entity, child: TranspileResult, options:ProcessOptions) {
+    const {fileIndex} = options;
+
+    function resolveImport( path:string ){
+        const [eid, mime] = fileIndex.index.get(path);
+        log('[resolveImport]', path, eid, mime);
+        return `e://${eid}/component/text#text`;
+    }
+
     let props = buildProps( src );
 
     if (child !== undefined) {
         props.children = child.component;
     }
-
     
-    let result = await transpile(props, { render: true });
+    let result = await transpile(props, { render: true, resolveImport });
     
     // log('[renderEntity]', src.File.uri, result.meta );
 
-    result = await renderLayoutEntity(es, src, result);
+    result = await renderLayoutEntity(es, src, result, options);
 
     return result;
 }
 
-async function renderLayoutEntity(es: EntitySet, src: Entity, child: TranspileResult) {
+async function renderLayoutEntity(es: EntitySet, src: Entity, child: TranspileResult, options:ProcessOptions) {
     if (child === undefined || child.meta.layout === undefined) {
         return child;
     }
@@ -168,7 +213,7 @@ async function renderLayoutEntity(es: EntitySet, src: Entity, child: TranspileRe
 
     // log('[renderLayoutEntity]', layoutE);
 
-    return await renderEntity(es, layoutE, child);
+    return await renderEntity(es, layoutE, child, options);
 }
 
 

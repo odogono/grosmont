@@ -10,7 +10,7 @@ import { Site } from '../ecs';
 import { selectTargetPath } from "./target_path";
 import { applyMeta } from '../util';
 
-const log = (...args) => console.log('[ProcUrlIndex]', ...args);
+const log = (...args) => console.log('[ProcAssignMime]', ...args);
 
 
 /**
@@ -43,7 +43,7 @@ export async function process(site: Site, es: EntitySet = undefined) {
 
         let eu = applyMeta( e, {mime} );
 
-        log('lookup', uri, mime, eu.Meta );
+        // log('lookup', uri, mime, eu.Meta );
 
         updates.push(eu);
 

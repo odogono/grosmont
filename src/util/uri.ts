@@ -11,6 +11,10 @@
 //     };
 // }
 
+import { stringify } from "odgn-entity/src/util/json";
+import { isString } from "./is";
+import { toBoolean } from "./to";
+
 export interface UriStructure {
     source: string;
     protocol: string;
@@ -84,3 +88,63 @@ parseUri.options = {
     },
     strictMode: false,
 };
+
+
+
+
+
+export interface BuildUrlOptions {
+    ignoreEmptyValues?: boolean;
+}
+
+/**
+ * 
+ * @param {*} action 
+ * @param {*} qs 
+ */
+export function buildUrl(action:string, qs = {}, options:BuildUrlOptions = {}) : string {
+    const ignoreEmptyValues = toBoolean( options.ignoreEmptyValues );
+
+    const queryString = buildQueryString(qs, ignoreEmptyValues);
+
+    if (queryString) {
+        return `${action}?${queryString}`;
+    } else {
+        return action;
+    }
+}
+
+
+export function buildQueryString( qs = {}, ignoreEmptyValues:boolean = false ) : string {
+    // const esc = encodeURIComponent;
+
+    // let queryString = Object.keys(qs)
+    //     .map(k => `${esc(k)}=${esc(qs[k])}`)
+    //     .join('&');
+    
+    // return queryString;
+
+    let queryStringList = Object.keys(qs)
+    .filter( k => ignoreEmptyValues ? qs[k] !== undefined : true )
+    .map( key => {
+        let val = qs[key];
+        if ( isString(val)) {
+            val = encodeURIComponent(val);
+        } else {
+            val = encodeURIComponent( stringify(val) );
+        }
+        return { key, val };
+    });
+
+    queryStringList.sort( (a,b) => {
+        if( a.key > b.key ){
+            return 1;
+        }
+        if( a.key < b.key ){
+            return -1;
+        }
+        return 0;
+    })
+
+    return queryStringList.map(pair => `${pair.key}=${pair.val}`).join('&');
+}
