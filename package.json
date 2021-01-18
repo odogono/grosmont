@@ -23,6 +23,7 @@
     "jsonpointer": "^4.1.0",
     "klaw": "^3.0.0",
     "micromatch": "^4.0.2",
+    "mime-types": "^2.1.27",
     "mitt": "^2.1.0",
     "odgn-entity": "file:../entity",
     "postcss": "^8.2.4",

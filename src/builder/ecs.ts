@@ -49,6 +49,7 @@ import { slugify } from '../util/string';
 import { parseUri } from '../util/parse_uri';
 import { createMdxAstCompiler } from '@mdx-js/mdx';
 import { selectDirByUri, selectFileByUri } from './processor/file';
+import { StatementArgs } from 'odgn-entity/src/query';
 
 interface SelectOptions {
     debug?: boolean;
@@ -69,6 +70,8 @@ export interface SiteOptions extends EntitySetOptions {
 export class Site {
     es: EntitySetMem;
     options: SiteOptions;
+
+    indexes: Map<string,SiteIndex> = new Map<string,SiteIndex>();
 
     constructor(options:SiteOptions = {}){
         this.options = options;
@@ -155,7 +158,54 @@ export class Site {
     async update( e:Entity ){
         return await this.es.add( e );
     }
+
+
+    /**
+     * Adds a new index
+     * 
+     * the query should return an array. 
+     * the first item is the key
+     * the second item should an entity id
+     * 
+     */
+    async addIndex( name:string, query:string, args:StatementArgs ){
+        let index:SiteIndex = { query, args, index: new Map<any,any[]>() };
+        this.indexes.set( name, index );
+        await this.buildIndexes( name );
+    }
+
+    getIndex( name:string ){
+        return this.indexes.get(name);
+    }
+
+    /**
+     * builds all the indexes
+     */
+    async buildIndexes( runName?:string ){
+        
+        for( const [name,idx] of this.indexes ){
+            const {query,args,index} = idx;
+
+            const stmt = this.es.prepare(query);
+
+            const rows = await stmt.getResult(args);
+
+            index.clear();
+
+            for( const [key,eid,...rest] of rows ){
+                index.set(key, [eid, ...rest]);
+            }
+        }
+    }
 }
+
+
+interface SiteIndex {
+    query: string;
+    args: StatementArgs;
+    index: Map<any, any[]>;
+}
+
 
 
 async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, options: SelectOptions = {} ){
@@ -167,11 +217,13 @@ async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, opti
     ] select`);
     
     const ents = await stmt.getEntities({uri, ref:siteE.id});
+
     if( ents && ents.length > 0 ){
         let e = ents[0];
         return options.returnEid === true ? e.id : e;
     }
-
+    
+    // log('[selectSiteByUri]', 'found', ents, options );
     if (options.createIfNotFound) {
         let e = es.createEntity();
         e.File = { uri };
@@ -179,7 +231,11 @@ async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, opti
         let mtime = ctime;
         e.Stat = { ctime, mtime };
         e.SiteRef = { ref:siteE.id };
-        return e;
+
+        await es.add( e );
+
+        let eid = es.getUpdatedEntities()[0];
+        return es.getEntity(eid);
     }
     return undefined;
 }

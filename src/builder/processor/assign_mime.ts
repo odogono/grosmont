@@ -8,6 +8,7 @@ import { printAll } from "../ecs";
 import { Component } from 'odgn-entity/src/component';
 import { Site } from '../ecs';
 import { selectTargetPath } from "./target_path";
+import { applyMeta } from '../util';
 
 const log = (...args) => console.log('[ProcUrlIndex]', ...args);
 
@@ -31,6 +32,8 @@ export async function process(site: Site, es: EntitySet = undefined) {
 
         let mime = Mime.lookup( ext );
 
+        
+
         if( mime === false ){
             continue;
         }
@@ -38,13 +41,11 @@ export async function process(site: Site, es: EntitySet = undefined) {
         // convert from src type to dest type
         mime = mapToTargetMime(mime);
 
-        let meta = e.Meta?.meta ?? {};
+        let eu = applyMeta( e, {mime} );
 
-        meta = {...meta, mime};
+        log('lookup', uri, mime, eu.Meta );
 
-        e.Meta = {meta};
-
-        updates.push(e);
+        updates.push(eu);
 
         // const dst = await selectTargetPath( es, id );
 
@@ -54,6 +55,8 @@ export async function process(site: Site, es: EntitySet = undefined) {
     await es.add(updates);
     return es;
 }
+
+
 
 
 async function selectFiles(es: EntitySet): Promise<Entity[]> {
