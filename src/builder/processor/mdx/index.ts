@@ -84,10 +84,17 @@ export async function process(site: Site, es: EntitySet = undefined) {
 async function buildPageLinks( es:EntitySet, linkIndex:SiteIndex ){
     let result:PageLinks = new Map<string,PageLink>();
 
-    for( const [url, [eid,child]] of linkIndex.index ){
-        let path = await selectTargetPath(es, eid);
-        result.set(url, {url:path});
+    
+    for( const [url, [eid,type,child]] of linkIndex.index ){
+        if( type === 'external' ){
+            result.set(url, {url});
+        } else {
+            let path = await selectTargetPath(es, eid);
+            result.set(url, {url:path});
+        }
     }
+    // log('[buildPageLinks]', linkIndex.index);
+    // log('[buildPageLinks]', result);
 
     return result;
 }
@@ -413,7 +420,7 @@ async function applyLinks(es: EntitySet, e: Entity, result: TranspileResult, opt
 
     for (let [ linkUrl, { url, child }] of links) {
 
-        const linkE = await findEntityByUrl(es, url, { siteRef });
+        const linkE = await findEntityByUrl(es, url, { siteRef, title:child });
 
         if (linkE === undefined) {
             continue;
@@ -424,14 +431,13 @@ async function applyLinks(es: EntitySet, e: Entity, result: TranspileResult, opt
         // add a link dependency
         let depId = await insertDependency(es, e.id, linkE.id, 'link');
 
-        // const path = await selectTargetPath(es, linkE.id);
-
-
         if (existingIds.has(depId)) {
             existingIds.delete(depId);
         }
 
-        linkIndex.index.set(linkUrl, [linkE.id, 'internal', child]);
+        const type = linkE.File !== undefined ? 'internal' : 'external';
+
+        linkIndex.index.set(linkUrl, [linkE.id, type, child]);
 
         // find an entity
         // if( url.startsWith('file://') ){

@@ -1,3 +1,4 @@
+import Toml from 'toml';
 import Yaml from 'yaml';
 import unistVisit from 'unist-util-visit';
 import unistRemove from 'unist-util-remove';

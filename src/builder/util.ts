@@ -107,6 +107,7 @@ export async function getDependencyComponents(es: EntitySet, eid: EntityId, type
 
 interface FindEntityOptions {
     siteRef?: EntityId;
+    title?: string;
 }
 
 export async function findEntityByFileUri(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<EntityId> {
@@ -146,15 +147,29 @@ export async function findEntityByUrl(es: EntitySet, url:string, options: FindEn
         return eid !== undefined ? await es.getEntity(eid) : undefined;
     }
 
-    let { protocol, host, path: com, anchor: attr, queryKey } = parseUri(url);
+    let { protocol, host, path, anchor: attr, queryKey } = parseUri(url);
 
     if( protocol === 'file' ){
         return await getEntityByFileUri( es, url, options );
     }
 
-    log('[findEntityByUrl]', {protocol, host,com, attr, queryKey});
+    if( protocol === 'https' || protocol === 'http' ){
+        // const cUrl = `${protocol}://${host}${path}`;
+        let e = await getEntityByUrl(es, url);
+        if( e === undefined ){
+            e = es.createEntity();
+            e.Url = {url};
+            if( options.title ){
+                e.Title = { title:options.title };
+            }
+            await es.add( e );
+            let eid = es.getUpdatedEntities()[0];
+            return await es.getEntity(eid,true);
+        }
+        return e;
+    }
 
-
+    log('[findEntityByUrl]', {protocol, host,path, queryKey});
 
     return undefined;
 }
@@ -165,6 +180,17 @@ export async function findEntityByUrl(es: EntitySet, url:string, options: FindEn
  */
 async function findEntityByEntityUrl(es:EntitySet, url:string){
 
+}
+
+async function getEntityByUrl(es:EntitySet, url:string){
+    const stmt = es.prepare(`
+    [
+        /component/url#url !ca $url ==
+        @e
+    ] select
+    `);
+    const r = await stmt.getEntities({ url });
+    return r.length > 0 ? r[0] : undefined;
 }
 
 
