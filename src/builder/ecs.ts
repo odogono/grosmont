@@ -61,8 +61,8 @@ interface SelectOptions {
 
 
 export interface SiteIndex {
-    query: string;
-    args: StatementArgs;
+    query?: string;
+    args?: StatementArgs;
     index: Map<any, any[]>;
 }
 
@@ -169,15 +169,21 @@ export class Site {
      * the second item should an entity id
      * 
      */
-    async addIndex( name:string, query:string, args:StatementArgs ){
+    async addQueryIndex( name:string, query:string, args:StatementArgs ){
         let index:SiteIndex = { query, args, index: new Map<any,any[]>() };
         this.indexes.set( name, index );
         await this.buildIndexes( name );
         return index;
     }
 
-    getIndex( name:string ){
-        return this.indexes.get(name);
+
+    getIndex( name:string, create:boolean = false ){
+        let index = this.indexes.get(name);
+        if( index === undefined && create ){
+            index = { index: new Map<any,any[]>() };
+            this.indexes.set( name, index );
+        }
+        return index;
     }
 
     /**
@@ -188,27 +194,30 @@ export class Site {
         for( const [name,idx] of this.indexes ){
             const {query,args,index} = idx;
 
-            index.clear();
             
-            const stmt = this.es.prepare(query);
-            
-            let rows = await stmt.getResult(args);
+            if( query !== undefined ){
+                
+                index.clear();
 
-            if( rows === undefined || rows.length === 0 ){
-                continue;
+                const stmt = this.es.prepare(query);
+                
+                let rows = await stmt.getResult(args);
+
+                if( rows === undefined || rows.length === 0 ){
+                    continue;
+                }
+
+                // the result may just be a single row, so ensure
+                // we have the right format
+                if( !Array.isArray(rows[0]) ){
+                    rows = [rows];
+                }
+            
+                for( const [key,eid,...rest] of rows ){
+                    index.set(key, [eid, ...rest]);
+                }
             }
 
-            // the result may just be a single row, so ensure
-            // we have the right format
-            if( !Array.isArray(rows[0]) ){
-                rows = [rows];
-            }
-            
-            // log('[buildIndexes]', name, rows );
-
-            for( const [key,eid,...rest] of rows ){
-                index.set(key, [eid, ...rest]);
-            }
         }
     }
 }

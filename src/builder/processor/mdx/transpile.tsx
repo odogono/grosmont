@@ -49,8 +49,8 @@ export const PageContext = React.createContext({})
 export async function transpile(props: TranspileProps, options: TranspileOptions): Promise<TranspileResult> {
     // let { children, path, data, meta, links: applyLinks, css } = props;
     let meta = props.meta ?? {};// { isRenderable:true };
-    let applyLinks:PageLinks;
-    let {css, cssLinks:inputCssLinks, children} = props;
+    // let applyLinks:PageLinks;
+    let {css, cssLinks:inputCssLinks, children, applyLinks} = props;
 
     let { data, path } = props;
     const { resolveImport } = options;

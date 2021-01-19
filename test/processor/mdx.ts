@@ -353,6 +353,27 @@ Hello _world_
 
 
 
+test('inter page link', async ({es,site}) => {
+    await addMdx( site, 'file:///pages/main.mdx', `# Main Page`);
+
+    await addMdx( site, 'file:///pages/about.mdx', `
+    # About Page
+    [To Main](file:///pages/main.mdx)
+    `);
+
+    await assignMime(site);
+    await renderScss(es);
+    await renderMdx(site);
+
+    // printES(es);
+
+    let e = await site.getFile('file:///pages/about.mdx');
+
+    assert.equal(e.Text.data,
+        `<h1>About Page</h1><p><a href="/pages/main.mdx">To Main</a></p>`);
+
+});
+
 // processor - extract title meta data from first h1 or h2
 
 // processor - create target using create date and title

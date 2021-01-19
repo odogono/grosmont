@@ -13,6 +13,7 @@ export interface TranspileProps {
     links?: PageLinks;
     css?: string;
     cssLinks?: string[];
+    applyLinks?: PageLinks;
 }
 
 export interface TranspileResult {
@@ -71,7 +72,7 @@ export interface TranspileOptions {
 
 export interface PageLink {
     url?: string;
-    child: any;
+    child?: any;
 }
 
 export type PageLinks = Map<string, PageLink>;

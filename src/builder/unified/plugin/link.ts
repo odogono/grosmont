@@ -30,6 +30,7 @@ export function linkProc({ links, applyLinks }: LinkProcProps) {
                 return;
             }
 
+            // incoming links can overwrite the link url
             if (applyLinks !== undefined) {
                 let applyLink = applyLinks.get(ctx.url);
                 if (applyLink !== undefined) {
@@ -37,7 +38,7 @@ export function linkProc({ links, applyLinks }: LinkProcProps) {
                 }
             }
 
-            console.log('[linkProc]', text?.value, url );
+            // console.log('[linkProc]', text?.value, url );
             // console.log('[linkProc]', args, ctx);
             let child = ctx.children[0];
             let link: PageLink = { url: url, child: text?.value ?? url };

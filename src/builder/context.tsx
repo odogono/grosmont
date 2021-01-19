@@ -39,7 +39,7 @@ export interface Page extends Dir {
 
 export interface PageLink {
     url?: string;
-    child: any;
+    child?: any;
 }
 
 export type PageLinks = Map<string, PageLink>;
