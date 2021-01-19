@@ -75,7 +75,8 @@ export interface SiteOptions extends EntitySetOptions {
 
 
 export class Site {
-    es: EntitySetMem;
+    es: EntitySet;
+    e: Entity; // reference to the active site entity
     options: SiteOptions;
 
     indexes: Map<string,SiteIndex> = new Map<string,SiteIndex>();
@@ -115,6 +116,8 @@ export class Site {
         }
         if( e.size > 0 ){
             await this.es.add( e );
+            let eid = this.es.getUpdatedEntities()[0];
+            this.e = await this.es.getEntity(eid,true);
         }
     }
 
@@ -122,43 +125,34 @@ export class Site {
     /**
      * Returns the site entity
      */
-    getSite() {
-        const dids: BitField = this.es.resolveComponentDefIds(['/component/site']);
-        let e = this.es.getEntitiesMem(dids, { populate: true });
-        return e.length === 1 ? e[0] : undefined;
+    // async getSite() {
+    //     const dids: BitField = this.es.resolveComponentDefIds(['/component/site']);
+    //     let e = this.es.getEntities(dids, { populate: true });
+    //     return e.length === 1 ? e[0] : undefined;
+    // }
+    getSite(){
+        return this.e;
     }
 
 
-    async addDir( siteE, uri ): Promise<Entity> {
-        let e = selectDirByUri(this.es, uri, { createIfNotFound: true }) as Entity;
-        e.SiteRef = { ref: siteE.id };
+    async addDir( uri ): Promise<Entity> {
+        let e = await selectDirByUri(this.es, uri, { createIfNotFound: true }) as Entity;
+        e.SiteRef = { ref: this.e.id };
 
         await this.es.add( e );
 
         let eid = this.es.getUpdatedEntities()[0];
-        return this.es.getEntityMem(eid);
+        return this.es.getEntity(eid);
     }
 
 
-    async addFile( siteE, uri ): Promise<Entity> {
-        let e = await selectSiteFileByUri( this.es, siteE, uri, {createIfNotFound: true }) as Entity;
+    async addFile( url ): Promise<Entity> {
+        let e = await selectSiteFileByUri( this.es, this.e, url, {createIfNotFound: true }) as Entity;
         return e;
-        // let e = selectFileByUri(this.es, uri, { createIfNotFound: true }) as Entity;
-        // e.SiteRef = { ref: siteE.id };
-
-        // await this.es.add( e );
-
-        // let eid = this.es.getUpdatedEntities()[0];
-
-        // log('[addFile]', this.es.getUpdatedEntities() );
-
-        // return this.es.getEntityMem(eid);
-
-        // return this.es.entChanges.added[0];
     }
 
-    async getFile( siteE:Entity, uri ): Promise<Entity> {
-        return selectSiteFileByUri( this.es, siteE, uri) as Promise<Entity>;
+    async getFile( uri ): Promise<Entity> {
+        return selectSiteFileByUri( this.es, this.e, uri) as Promise<Entity>;
     }
 
 

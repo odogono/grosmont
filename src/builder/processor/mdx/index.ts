@@ -190,11 +190,14 @@ async function renderEntity(es: EntitySet, src: Entity, child: TranspileResult, 
     const cssEntries = await getEntityCSSDependencies(es, src);
 
     if (cssEntries !== undefined) {
-        // log('[renderEntity]', {cssEntries})
+        // log('[renderEntity]', src.id, child );
         let css = cssEntries.map(ent => ent.text).join('\n');
         let cssLinks = cssEntries.map(ent => ent.path);
+        if (child !== undefined) {
+            css = css + ' ' + child.css;
+            cssLinks = [...cssLinks, ...child.cssLinks];
+        }
         props = { ...props, css, cssLinks };
-
     }
     // props.css = css;
     // props.cssLinks = cssLinks;
@@ -202,7 +205,9 @@ async function renderEntity(es: EntitySet, src: Entity, child: TranspileResult, 
 
     let result = await transpile(props, { render: true, resolveImport });
 
-    // log('[renderEntity]', src.File.uri, result.meta );
+    // log('[renderEntity]', src.File.uri, result );
+    result.css = props.css;
+    result.cssLinks = props.cssLinks;
 
     result = await renderLayoutEntity(es, src, result, options);
 
@@ -224,7 +229,7 @@ async function renderLayoutEntity(es: EntitySet, src: Entity, child: TranspileRe
         return child;
     }
 
-    // log('[renderLayoutEntity]', layoutE);
+    // log('[renderLayoutEntity]', 'child', child);
 
     return await renderEntity(es, layoutE, child, options);
 }
@@ -356,33 +361,45 @@ async function applyLayout(es: EntitySet, e: Entity, result: TranspileMeta) {
 
 
 /**
- * 
- * @param es 
- * @param e 
- * @param result 
+ * takes any cssLinks found on the entities transpile result and creates dependency
+ * entities
  */
 async function applyCSSLinks(es: EntitySet, e: Entity, result: TranspileResult) {
 
     const { cssLinks } = result;
 
-    if (cssLinks === undefined || cssLinks.length === 0) {
-        return e;
+    // get a list of existing css dependencies
+    const existingIds = new Set( await getDependencies( es, e.id, 'css') );
+    
+
+    // log('[applyCSSLinks]', {existingIds} );
+
+    if (cssLinks !== undefined && cssLinks.length > 0) {
+
+        for (const link of cssLinks) {
+            let deets = parseUri(link)
+            let { host, path: com, anchor: attr, queryKey } = parseUri(link);
+            let eid = toInteger(host);
+
+            // log('[applyCSSLinks]', deets );
+
+            const path = await selectTargetPath(es, eid);
+            // log('[applyCSSLinks]', eid, com, attr, queryKey, '=', path);
+
+            // add a css dependency
+            let depId = await insertDependency(es, e.id, eid, 'css');
+
+            if( existingIds.has(depId) ){
+                existingIds.delete(depId);
+            }
+            //newIds.add(depId);
+        }
     }
 
-    for (const link of cssLinks) {
-        let deets = parseUri(link)
-        let { host, path: com, anchor: attr, queryKey } = parseUri(link);
-        let eid = toInteger(host);
+    // log('[applyCSSLinks]', 'remove', existingIds );
 
-        // log('[applyCSSLinks]', deets );
-
-        const path = await selectTargetPath(es, eid);
-        // log('[applyCSSLinks]', eid, com, attr, queryKey, '=', path);
-
-        // add a css dependency
-        await insertDependency(es, e.id, eid, 'css');
-    }
-
+    // remove dependencies that don't exist anymore
+    await es.removeEntity( Array.from(existingIds) );
 
     return e;
 }

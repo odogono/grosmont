@@ -1,5 +1,7 @@
+import { Component, getComponentEntityId } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
+import { log } from "util";
 
 
 export function applyMeta( e:Entity, data:any ):Entity {
@@ -14,9 +16,11 @@ export function applyMeta( e:Entity, data:any ):Entity {
 
 
 export async function insertDependency(es: EntitySet, src: EntityId, dst: EntityId, type:string) {
-    const layoutEid = await getDependency(es, src, type);
-    if (layoutEid !== undefined) {
-        return layoutEid;
+    let depCom = await getDependencyComponent(es, src, dst, type);
+
+    // const layoutEid = await getDependency(es, src, type);
+    if (depCom !== undefined) {
+        return getComponentEntityId(depCom);
     }
 
     let e = es.createEntity();
@@ -68,3 +72,30 @@ export async function getDependencyEntities(es: EntitySet, eid: EntityId, type:s
     return await stmt.getResult({ eid, type });
 }
 
+export async function getDependencyComponent(es: EntitySet, src: EntityId, dst:EntityId, type:string): Promise<Component> {
+    const stmt = es.prepare(`
+    [
+        /component/dep#src !ca ${src} ==
+        /component/dep#dst !ca ${dst} ==
+        and
+        /component/dep#type !ca ${type} ==
+        and
+        @c
+    ] select
+    `);
+    const result = await stmt.getResult({ src, dst, type });
+    return result.length > 0 ? result[0] : undefined;
+}
+
+
+export async function getDependencyComponents(es: EntitySet, eid: EntityId, type:string): Promise<Component[]> {
+    const stmt = es.prepare(`
+    [
+        /component/dep#type !ca ${type} ==
+        /component/dep#src !ca ${eid} ==
+        and
+        @c
+    ] select
+    `);
+    return await stmt.getResult({ eid, type });
+}

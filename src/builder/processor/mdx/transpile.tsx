@@ -94,7 +94,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
         
     meta = { ...meta, ...pageProps };
 
-    // log('[transpile]', 'meta', mdxResult);
+    // log('[transpile]', 'meta', pageProps);
 
     let result:TranspileResult = {
         path,  jsx, /* code, ast,*/ component, links, meta, cssLinks, additional:rest
@@ -205,6 +205,8 @@ function parseMdx(data: string, path:string, options:ProcessMDXOptions) {
         
         let code = transformJSX(jsx);
         let el = evalCode(code, path);
+
+        // log('[parseMdx]', 'el', el );
     
         return { ...el, code, jsx, ast, links };
 

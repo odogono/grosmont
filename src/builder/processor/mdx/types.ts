@@ -26,6 +26,7 @@ export interface TranspileResult {
     jsx?: string;
     links?: PageLinks;
     requires?: string[];
+    css?: string;
     cssLinks?: string[];
 }
 

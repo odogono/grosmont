@@ -36,9 +36,14 @@ export async function process(es: EntitySet) {
         const {css, srcPath, dstPath} = await renderScss( es, e );
         e.Text = { data:css, mime: 'text/css' };
 
-        // if( dstPath !== undefined && css !== undefined ){
-        //     await writeFile(dstPath, css);
-        // }
+
+        // alter the target filename
+        const uri = e.File.uri;
+        let filename = Path.basename(uri);
+
+        filename = filename.substr(0, filename.lastIndexOf(".")) + ".css";
+        e.Target = { uri:filename };
+        
     }
 
     // printAll(es, ents);

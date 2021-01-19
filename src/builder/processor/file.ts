@@ -9,17 +9,16 @@ import Path from 'path';
 import Klaw from 'klaw';
 import Process from 'process';
 import Through2 from 'through2';
-import Globrex from 'globrex';
 import Globalyzer from 'globalyzer';
 import Micromatch from 'micromatch';
 
 import { BitField } from 'odgn-entity/src/util/bitfield';
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
-import { printAll } from "../ecs";
+
 import { parseUri } from '../../util/uri';
 import { getComponentEntityId } from 'odgn-entity/src/component';
-import { Result } from 'postcss';
+
 
 
 
@@ -159,9 +158,9 @@ async function gather(es: EntitySetMem, site: Entity) {
 
         if (file.stats.isDirectory()) {
             
-            e = selectDirByUri(es, uri, { createIfNotFound: true }) as Entity;
+            e = await selectDirByUri(es, uri, { createIfNotFound: true }) as Entity;
         } else {
-            e = selectFileByUri(es, uri, { createIfNotFound: true }) as Entity;
+            e = await selectFileByUri(es, uri, { createIfNotFound: true }) as Entity;
         }
 
         e.Stat = { ctime, mtime };
@@ -202,13 +201,20 @@ interface SelectOptions {
  * @param uri 
  * @param options 
  */
-export function selectDirByUri(es: EntitySetMem, uri: string, options: SelectOptions = {}): (Entity | EntityId) {
+export async function selectDirByUri(es: EntitySet, uri: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
     if( !uri.endsWith('/') ){
         uri = uri + '/';
     }
-    const bf = es.resolveComponentDefIds('/component/dir');
-    const com = es.findComponent(bf, (com) => com['uri'] === uri );
+
+    const stmt = es.prepare(`[ /component/dir#uri !ca $uri == @c] select`);
+    let result = await stmt.getResult({uri});
+    let com = result.length > 0 ? result[0] : undefined;
+
+    // const bf = es.resolveComponentDefIds('/component/dir');
+    // const com = es.findComponent(bf, (com) => com['uri'] === uri );
     
+    // console.log('[selectDirByUri]', 'existing', com );
+
     if (com === undefined) {
         if (options.createIfNotFound) {
             let e = es.createEntity();
@@ -223,7 +229,7 @@ export function selectDirByUri(es: EntitySetMem, uri: string, options: SelectOpt
 
     const eid = getComponentEntityId(com);
     if (options.returnEid === true) { return eid; }
-    const e = es.getEntityMem(eid);
+    const e = es.getEntity(eid);
     return e;
 }
 
@@ -233,12 +239,15 @@ export function selectDirByUri(es: EntitySetMem, uri: string, options: SelectOpt
  * @param uri 
  * @param options 
  */
-export function selectFileByUri(es: EntitySetMem, uri: string, options: SelectOptions = {}): (Entity | EntityId) {
-    const bf = es.resolveComponentDefIds('/component/file');
+export async function selectFileByUri(es: EntitySet, uri: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
+    // const bf = es.resolveComponentDefIds('/component/file');
 
-    const com = es.findComponent(bf, (com) => {
-        return com['uri'] === uri;
-    });
+    // const com = es.findComponent(bf, (com) => {
+    //     return com['uri'] === uri;
+    // });
+
+    const stmt = es.prepare(`[ /component/file#uri !ca $uri == @c] select`);
+    const com = await stmt.getResult({uri});
 
     if (com === undefined) {
         if (options.createIfNotFound) {
@@ -254,7 +263,7 @@ export function selectFileByUri(es: EntitySetMem, uri: string, options: SelectOp
 
     const eid = getComponentEntityId(com);
     if (options.returnEid === true) { return eid; }
-    const e = es.getEntityMem(eid);
+    const e = es.getEntity(eid);
     return e;
 }
 
