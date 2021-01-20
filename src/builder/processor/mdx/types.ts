@@ -1,3 +1,4 @@
+import { SiteIndex } from "../../ecs";
 
 
 
@@ -30,6 +31,16 @@ export interface TranspileResult {
     css?: string;
     cssLinks?: string[];
 }
+
+
+
+
+export interface ProcessOptions {
+    fileIndex: SiteIndex;
+    linkIndex?: SiteIndex;
+    pageLinks?: PageLinks;
+}
+
 
 
 export interface TranspileMeta {
