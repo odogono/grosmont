@@ -3,25 +3,20 @@
 
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
-import { PageLink, PageLinks, ProcessOptions, TranspileMeta, TranspileProps, TranspileResult } from './types';
-import { Site, SiteIndex } from '../../ecs';
+import { ProcessOptions, TranspileMeta, TranspileResult } from './types';
+import { Site } from '../../ecs';
 
 import { transpile } from './transpile';
-import { html } from "js-beautify";
-import { buildQueryString, buildUrl, parseUri } from "../../../util/uri";
+import { parseUri } from "../../../util/uri";
 import {
     applyMeta,
     getDependencies,
-    getDependencyEntities,
     findEntityByFileUri,
     findEntityByUrl,
     insertDependency,
     removeDependency,
-    selectDependencyMeta,
 } from "../../util";
 import { toInteger } from "odgn-entity/src/util/to";
-import { selectTargetPath } from "../target_path";
-import { toComponentId } from "odgn-entity/src/component";
 import { buildFileIndex, buildProps, getEntityImportUrlFromPath, selectMdx } from "./util";
 
 
@@ -31,7 +26,7 @@ const log = (...args) => console.log('[ProcMDXParse]', ...args);
 
 
 /**
- * Compiles .mdx
+ * Takes /component/mdx and parses out meta data
  * 
  * @param es 
  */
@@ -87,12 +82,17 @@ async function preProcessMdx(es: EntitySet, e: Entity, options: ProcessOptions) 
 
         e = applyMeta(e, { ...meta });
 
+        // applies to /component/title
         e = applyTitle(es, e, meta);
 
+        // adds a layout dependency if found
         e = await applyLayout(es, e, meta);
 
+        // creates css dependencies
         e = await applyCSSLinks(es, e, result);
 
+        // creates link dependencies and adds to the link
+        // index for use at the point of rendering
         e = await applyLinks(es, e, result, options);
 
     } catch (err) {

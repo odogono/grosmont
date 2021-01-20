@@ -130,8 +130,15 @@ export class Site {
     //     let e = this.es.getEntities(dids, { populate: true });
     //     return e.length === 1 ? e[0] : undefined;
     // }
-    getSite(){
+    getSite():Entity {
         return this.e;
+    }
+
+    /**
+     * Returns the EntityId for the site
+     */
+    getSiteEntityId():EntityId {
+        return this.e.id;
     }
 
 
@@ -157,7 +164,9 @@ export class Site {
 
 
     async update( e:Entity ){
-        return await this.es.add( e );
+        await this.es.add( e );
+        let eid = this.es.getUpdatedEntities()[0];
+        return this.es.getEntity(eid);
     }
 
 

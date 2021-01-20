@@ -30,7 +30,7 @@ export async function process(site: Site, es: EntitySet = undefined) {
         const uri = e.File.uri;
         const ext = Path.extname(uri);
 
-        let mime = Mime.lookup( ext );
+        let mime = mimeFromExtension( ext );
 
         
 
@@ -64,6 +64,14 @@ async function selectFiles(es: EntitySet): Promise<Entity[]> {
     return await stmt.getEntities();
 }
 
+
+function mimeFromExtension( ext:string ){
+    return Mime.lookup( ext );
+}
+
+export function extensionFromMime( mime:string ){
+    return Mime.extension( mime );
+}
 
 function mapToTargetMime( mime:string ){
     switch( mime ){

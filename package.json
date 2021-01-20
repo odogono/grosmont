@@ -41,6 +41,7 @@
     "remark-mdx": "^2.0.0-next.8",
     "through2": "^4.0.2",
     "to-vfile": "^6.1.0",
+    "toml": "^3.0.0",
     "unist-util-filter": "^2.0.3",
     "unist-util-select": "^3.0.4",
     "vfile-reporter": "^6.0.2",

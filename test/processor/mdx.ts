@@ -7,6 +7,11 @@ import {
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as renderMdx } from '../../src/builder/processor/mdx';
+import { process as slugifyTitle } from '../../src/builder/processor/slugify_title';
+import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
+import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
+import { process as mdxRender } from '../../src/builder/processor/mdx/render';
+
 import { process as resolveTargetPath, selectTargetPath } from '../../src/builder/processor/target_path';
 import assert from 'uvu/assert';
 import { Entity } from 'odgn-entity/src/entity';
@@ -51,7 +56,7 @@ I really like using Markdown.
 
     // printES(es);
 
-    await renderMdx(site, es);
+    await renderMdx(site);
     
 
     let e = await site.getFile('file:///pages/main.mdx');
@@ -80,7 +85,7 @@ I really like using Markdown.
     e.Mdx = { data };
     await site.update(e);
 
-    await renderMdx(site, es);
+    await renderMdx(site);
 
     e = await site.getFile('file:///pages/main.mdx');
 
@@ -105,7 +110,7 @@ isEnabled: false
     await site.update(e);
 
 
-    await renderMdx(site, es);
+    await renderMdx(site);
 
     e = await site.getFile('file:///pages/main.mdx');
 
@@ -127,7 +132,7 @@ test('meta disabled page will not render', async (tcx) => {
     // await site.update(e);
 
 
-    await renderMdx(site, es);
+    await renderMdx(site);
 
     let e = await site.getFile('file:///pages/main.mdx');
 
@@ -160,7 +165,7 @@ isEnabled: true
     `);
     
     await resolveFileDeps(site.es);
-    await renderMdx(site, es);
+    await renderMdx(site);
 
     e = await site.getFile('file:///pages/disabled.mdx');
     assert.equal(e.Text, undefined);
@@ -220,7 +225,7 @@ Hello _world_
     e.Mdx = { data };
     await site.update(e);
 
-    await renderMdx(site, es);
+    await renderMdx(site);
 
     e = await site.getFile('file:///pages/main.mdx');
 
@@ -258,7 +263,7 @@ import 'file:///styles/main.scss';
 
     await assignMime(site, es);
     await renderScss(es);
-    await renderMdx(site, es);
+    await renderMdx(site);
 
 
     let e = await site.getFile('file:///pages/main.mdx');
@@ -284,7 +289,7 @@ import 'file:///styles/main.scss';
 
     await assignMime(site, es);
     await renderScss(es);
-    await renderMdx(site, es);
+    await renderMdx(site);
 
     // console.log('\n\n---\n');
     // printAll(es);
@@ -300,7 +305,7 @@ import 'file:///styles/alt.scss';
 
     await assignMime(site, es);
     await renderScss(es);
-    await renderMdx(site, es);
+    await renderMdx(site);
 
     let e = await site.getFile('file:///pages/main.mdx');
 
@@ -394,6 +399,32 @@ test('external page link', async ({es,site}) => {
 });
 
 
+test('extract target slug from title', async({es,site}) => {
+
+    let e = await addMdx( site, 'file:///pages/main.mdx', `
+# Extracting the Page Title
+    `);
+    e.Target = { uri:'/html/' };
+    await site.update(e);
+
+    await assignMime(site);
+    await mdxPreprocess(site);
+    
+    await slugifyTitle(site);
+    
+    
+    await mdxResolveMeta(site);
+    await mdxRender(site);
+    
+
+    e = await site.getFile('file:///pages/main.mdx');
+
+    assert.equal( e.Target.uri, '/html/extracting-the-page-title.html');
+
+    // printES(es);
+
+});
+
 // processor - extract title meta data from first h1 or h2
 
 // processor - create target using create date and title
@@ -416,5 +447,5 @@ async function addMdx( site:Site, url:string, data:string, meta?:any ){
     if( meta !== undefined ){
         e.Meta = { meta };
     }
-    await site.update(e);
+    return await site.update(e);
 }
