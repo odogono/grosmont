@@ -148,8 +148,7 @@ export class Site {
 
         await this.es.add( e );
 
-        let eid = this.es.getUpdatedEntities()[0];
-        return this.es.getEntity(eid);
+        return this.getLastAdded();
     }
 
 
@@ -165,10 +164,13 @@ export class Site {
 
     async update( e:Entity ){
         await this.es.add( e );
+        return this.getLastAdded();
+    }
+
+    async getLastAdded(){
         let eid = this.es.getUpdatedEntities()[0];
         return this.es.getEntity(eid);
     }
-
 
     /**
      * Adds a new index

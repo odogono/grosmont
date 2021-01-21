@@ -1,11 +1,43 @@
 
 export const defs = [
     {
+        uri: '/component/src',
+        properties: [
+            { name: 'url', type: 'string' },
+        ]
+    },
+    {
+        uri: '/component/dst',
+        properties: [
+            { name: 'url', type: 'string' },
+        ]
+    },
+    {
         uri: '/component/url',
         properties: [
             { name: 'url', type: 'string' },
         ]
     },
+    {
+        uri: '/component/mime',
+        properties: [
+            { name: 'type', type: 'string' },
+        ]
+    },
+    {
+        uri: '/component/status',
+        properties: [
+            { name: 'status', type: 'string', 
+                enum:[ 'active', 'inactive', 'pending', 'deleted'] },
+        ]
+    },
+    {
+        uri: '/component/data',
+        properties: [
+            { name: 'data', type: 'string' /* base64 encoded */ },
+        ]
+    },
+    // DEPRECATED - use /component/src
     {
         uri: '/component/file',
         properties: [
@@ -14,6 +46,7 @@ export const defs = [
             { name: 'ext', type: 'string' }
         ]
     },
+    // DEPRECATED - use /component/src
     {
         uri: '/component/dir',
         properties: [
@@ -28,6 +61,8 @@ export const defs = [
             { name: 'mtime', type: 'datetime' },
         ]
     },
+
+    // DEPRECATED - use /component/src
     {
         uri: '/component/source',
         properties: [
@@ -35,6 +70,7 @@ export const defs = [
             { name: 'data', type:'string' },
         ]
     },
+    // DEPRECATED - use /component/dst and others
     {
         uri: '/component/target',
         properties: [
@@ -58,6 +94,7 @@ export const defs = [
             { name: 'meta', type: 'json' }
         ]
     },
+    // DEPRECATED - dependencies are used instead
     {
         uri: '/component/layout',
         properties: [
@@ -88,6 +125,7 @@ export const defs = [
         properties: []
     },
     
+    // DEPRECATED - use dependencies
     {
         uri: '/component/css_links',
         properties: [
@@ -97,6 +135,7 @@ export const defs = [
             {name:'paths', type:'json'},
         ]
     },
+    // DEPRECATED
     {
         uri: '/component/page_css',
         properties: [
@@ -109,6 +148,8 @@ export const defs = [
         uri: '/component/static',
         properties: []
     },
+
+    // DEPRECATED - use dependencies
     {
         uri: '/component/tags',
         properties: [
@@ -116,6 +157,7 @@ export const defs = [
             {name:'tags', type:'json'}
         ]
     },
+    // DEPRECATED - use dependencies
     {
         uri: '/component/links',
         properties: [
@@ -123,6 +165,7 @@ export const defs = [
             {name:'links', type:'json'}
         ]
     },
+    // DEPRECATED - tag is identified using dependencies
     {
         uri: '/component/tag',
         properties: [
@@ -136,6 +179,8 @@ export const defs = [
     //         {name:'url', type:'string'},
     //     ]
     // },
+
+    // DEPRECATED - use dependencies
     {
         // e 1:1-> /links 1:m-> /page_link
         uri: '/component/page_link',
@@ -209,7 +254,7 @@ export const defs = [
         ]
     },
     {
-        // marks a page as being css
+        // DEPRECATED marks a page as being css
         uri: '/component/css',
         properties: [
             {name:'data', type:'string'},
