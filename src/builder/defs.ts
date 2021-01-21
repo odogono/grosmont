@@ -208,7 +208,7 @@ export const defs = [
 
             // the type of dependency - page/link/image/etc
             // a dir dependency means that the src belongs to the parent dir
-            {name: 'type', type:'string'}
+            {name: 'type', type:'string', enum:[ 'link', 'css', 'dir' ]}
         ]
     },
 
