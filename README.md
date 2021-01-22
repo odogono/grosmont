@@ -1,4 +1,4 @@
-# OpenDoorGoNorth.com
+# ODGN Static Site Generator
 
 Dogfooding odgn-ecs
 
@@ -31,7 +31,7 @@ TODO
 
 [Tachyons CSS framework](https://tachyons.io)
 
-
+[Devii - A developer blog starter](https://github.com/colinhacks/devii)
 
 
 

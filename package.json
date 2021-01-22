@@ -1,5 +1,5 @@
 {
-  "name": "odgn-cms",
+  "name": "odgn-ssg",
   "private": true,
   "scripts": {
     "test": "uvu",

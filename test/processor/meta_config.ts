@@ -78,8 +78,35 @@ title = "BBC News"
 
 //     e = await parseMeta( site, text );
 
-    console.log('\n\n---\n');
-    printAll( es );
+    // console.log('\n\n---\n');
+    // printAll( es );
+});
+
+
+test('target path for file (yaml)', async ({ es, site }) => {
+
+    let text = `
+comment: a title and url
+
+# pk (reserved) is a way of identifying an existing entity
+pk: /component/url#/url
+
+/component/url:
+  url: https://www.bbc.co.uk/news
+
+/component/title:
+  title: BBC News
+
+    `;
+    log('err')
+
+    let e = await parseMeta( site, text, 'yaml' );
+
+    assert.equal( e.Title.title, 'BBC News');
+
+
+    // console.log('\n\n---\n');
+    // printAll( es );
 });
 
 
