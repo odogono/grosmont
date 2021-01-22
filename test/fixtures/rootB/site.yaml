@@ -1,0 +1,15 @@
+/component/src:
+  url: file:///.
+
+/component/dst:
+  url: file:///dist/
+
+/component/title:
+  title: Site Root B
+
+/component/patterns:
+  include: 
+    - '**/*'
+  exclude:
+    - .DS_Store
+    - '**/*.jpg'

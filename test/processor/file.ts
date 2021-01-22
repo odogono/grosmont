@@ -1,9 +1,10 @@
 import { suite } from 'uvu';
 import Path from 'path';
-import { printAll, Site } from '../../src/builder/ecs';
+import { Site } from '../../src/builder/site';
 import {
     process as resolveFileDeps,
 } from '../../src/builder/processor/file_deps';
+import { processNew as scanSrc } from '../../src/builder/processor/file';
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as renderMdx } from '../../src/builder/processor/mdx';
@@ -18,8 +19,10 @@ import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as resolveTargetPath, selectTargetPath } from '../../src/builder/processor/target_path';
 import assert from 'uvu/assert';
 import { Entity } from 'odgn-entity/src/entity';
+import { printAll, printEntity } from '../../src/builder/util';
+import { transformCSS } from '../../src/builder/css';
 
-const log = (...args) => console.log('[TestProcMeta]', ...args);
+const log = (...args) => console.log('[TestFile]', ...args);
 
 const printES = (es) => {
     console.log('\n\n---\n');
@@ -34,11 +37,34 @@ test.before.each(async (tcx) => {
     let id = 1000;
     let idgen = () => ++id;
 
-    const target = `file://${rootPath}/dist/`;
-    tcx.site = new Site({ idgen, name: 'test', target });
-    await tcx.site.init();
-    // tcx.siteEntity = tcx.site.getSite();
-    tcx.es = tcx.site.es;
+    // const target = `file://${rootPath}/dist/`;
+    // tcx.site = new Site({ idgen, name: 'test', target });
+    // await tcx.site.init();
+    // // tcx.siteEntity = tcx.site.getSite();
+    // tcx.es = tcx.site.es;
+
+    const configPath = `file://${rootPath}/test/fixtures/rootB/site.yaml`;
+    
+    // log( configPath );
+
+    const site = await Site.create( {idgen, configPath, rootPath} );
+
+    tcx.site = site;
+    tcx.es = site.es;
+    tcx.e = site.getSite();
+});
+
+
+
+test.only('reading a site entity', async ({es,site}) => {
+    
+    // log( site.getSrcUrl() );
+
+    // printEntity(es, site.getSite());
+
+    await scanSrc(site);
+
+    // printES(es);
 });
 
 

@@ -1,0 +1,21 @@
+---
+status: active
+renderable: false
+comment: Master Layout
+---
+
+import 'file:///pages/styles/master.css';
+
+<html lang="en">
+    <head>
+        <title>{page.title}</title>
+        <meta name="description" content="Open Door Go North" />
+        <meta name="author" content="SitePoint" />
+        <meta charSet="utf-8" />
+        {/* { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)} */}
+        <InlineCSS />
+    </head>
+
+    <body>{children}</body>
+
+</html>

@@ -1,0 +1,7 @@
+
+/component/title:
+  title: Weeknotes
+
+/component/mdx:
+  data: |
+    weeknotes are a weekly summary of activity
