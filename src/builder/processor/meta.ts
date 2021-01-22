@@ -39,7 +39,7 @@ export async function process(site: Site) {
 
 
 
-export async function parse(site: Site, text: string, type: string = 'toml'): Promise<Entity> {
+export async function parse(site: Site, text: string, type: string = 'yaml'): Promise<Entity> {
     const { es } = site;
 
     let data;
@@ -62,7 +62,7 @@ export async function parse(site: Site, text: string, type: string = 'toml'): Pr
         }
     }
 
-    log('parsed', data);
+    // log('parsed', data);
     // let eid = 0;
     // let pk:string;
     let { id: eid, pk, ...other } = data;

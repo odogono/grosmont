@@ -46,8 +46,8 @@ test.before.each(async (tcx) => {
 test('no dst without a target', async ({ es, site }) => {
 
     let e = await parseMeta( site, `
-    ["/component/src"]
-    url = "file:///pages/main.mdx"
+    /component/src:
+        url: file:///pages/main.mdx
     `);
 
     // there will be no dst url because there is no target
@@ -62,10 +62,10 @@ test('no dst without a target', async ({ es, site }) => {
 test('filename dst', async ({ es, site }) => {
 
     let e = await parseMeta( site, `
-    ["/component/src"]
-    url = "file:///pages/main.mdx"
-    ["/component/dst"]
-    url = "main.txt"
+    /component/src:
+        url: file:///pages/main.mdx
+    /component/dst:
+        url: main.txt
     `);
 
     // there will be no dst url because there is no target
@@ -80,37 +80,37 @@ test('filename dst', async ({ es, site }) => {
 test('parent dst', async ({ es, site }) => {
 
     await parseMeta( site, `
-    ["/component/dep"]
-    src = 2001
-    dst = 2000
-    type = "dir"
+    /component/dep:
+        src: 2001
+        dst: 2000
+        type: dir
     `);
     
     await parseMeta( site, `
-    ["/component/dep"]
-    src = 2000
-    dst = 1999
-    type = "dir"
+    /component/dep:
+        src: 2000
+        dst: 1999
+        type: dir
     `);
 
     await parseMeta( site, `
-    id = 1999
-    ["/component/dst"]
-    url = "/root/output.htm"
+    id: 1999
+    /component/dst:
+        url: /root/output.htm
     `);
 
     await parseMeta( site, `
-    id = 2000
-    ["/component/dst"]
-    url = "pages/"
+    id: 2000
+    /component/dst:
+        url: pages/
     `);
 
     let e = await parseMeta( site, `
-    id = 2001
-    ["/component/src"]
-    url = "file:///pages/main.mdx"
-    ["/component/dst"]
-    url = "main.txt"
+    id: 2001
+    /component/src:
+        url: file:///pages/main.mdx
+    /component/dst:
+        url: main.txt
     `);
 
     
@@ -127,41 +127,41 @@ test('parent dst', async ({ es, site }) => {
 test('parent has filename', async ({ es, site }) => {
 
     await parseMeta( site, `
-    ["/component/dep"]
-    src = 2001
-    dst = 2000
-    type = "dir"
+    /component/dep:
+        src: 2001
+        dst: 2000
+        type: dir
     `);
     
     await parseMeta( site, `
-    ["/component/dep"]
-    src = 2000
-    dst = 1999
-    type = "dir"
+    /component/dep:
+        src: 2000
+        dst: 1999
+        type: dir
     `);
 
     await parseMeta( site, `
-    id = 1999
-    ["/component/dst"]
-    url = "pages/output.txt"
+    id: 1999
+    /component/dst:
+        url: pages/output.txt
     `);
 
     await parseMeta( site, `
-    id = 2000
+    id: 2000
     `);
 
     let e = await parseMeta( site, `
-    id = 2001
-    ["/component/src"]
-    url = "file:///pages/main.mdx"
+    id: 2001
+    /component/src:
+        url: file:///pages/main.mdx
     `);
 
+    // console.log('\n\n---\n');
+    // printAll( es );
     
     // there will be no dst url because there is no target
     let path = await getDstUrl( es, e.id );
 
-    // console.log('\n\n---\n');
-    // printAll( es );
 
     assert.equal( path, "/pages/output.txt" );
 
