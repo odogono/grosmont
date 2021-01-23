@@ -17,9 +17,10 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 
 import { parseUri } from '../../util/uri';
-import { getComponentEntityId } from 'odgn-entity/src/component';
-import { printAll } from '../util';
+import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
+import { insertDependency, printAll } from '../util';
 import { Site } from '../site';
+import { parse } from '../config';
 
 
 
@@ -45,14 +46,149 @@ export async function process(es: EntitySetMem) {
 
 export async function processNew(site: Site) {
 
-    let rootPath = site.getSrcUrl(true);
+    // recurse through the sites Src creating entities
+    await readFileSystem(site);
+
+    // resolve any meta.* files into their containing files
+    await readFileMeta(site);
+
+    // build dependencies
+    await buildDeps(site);
+}
+
+
+async function buildDeps(site: Site){
+    const {es} = site;
+
+    // select /src entities with a file url
+    const coms = await selectFileSrc(es);
+
+    for( const com of coms ){
+        const {url} = com;
+
+        // find the parent
+        const parentUrl = Path.dirname( url ) + Path.sep;
+        const parent = await selectComponentByUrl(es, parentUrl);
+
+        const eid = getComponentEntityId(com);
+        const pid = getComponentEntityId(parent);
+
+        if( pid === 0 ){
+            continue;
+        }
+
+        // insert or update
+        const depId = await insertDependency( es, eid, pid, 'dir');
+        // await selectDependency(es, eid, pId, 'dir');
+
+
+        // log('com', eid, '->', pid, '=', depId);
+        // log('com', getComponentEntityId(com), 'parent', getComponentEntityId(parent) );
+
+    }
+
+    return site;
+}
+
+async function readFileMeta(site: Site){
+    const {es} = site;
+    // find /src with meta.(yaml|toml) files
+    const metaEnts = await selectMeta( site.es );
+
+    // log('meta', metaEnts);
+
+    let coms = [];
+
+    for( const e of metaEnts ){
+        let path = site.getSrcUrl(e.Src.url);
+        let ext = Path.extname(path).substring(1);
+
+        // find the parent dir
+        const parentUrl = Path.dirname( e.Src.url ) + Path.sep;
+        let parentE = await selectByUrl(es, parentUrl);
+
+        if( parentE === undefined ){
+            parentE = es.createEntity();
+            parentE.Src = {url:parentUrl};
+        }
+
+        let content = await Fs.readFile(path, 'utf8');
+
+        // parse the meta into an entity
+        let metaE = await parse( site.es, content, ext, {add:false} );
+
+        // fold this entity into the parent
+        for( let [,com] of metaE.components ){
+            
+            com = setEntityId( com, parentE.id );
+            coms.push( com );
+        }
+
+        // copy over the stat times
+        coms.push(  setEntityId( e.Stat, parentE.id ) );
+    }
+
+    await site.es.add( coms );
+
+    // dont remove the meta files - we will need them to compare
+    // for updates
+    // await site.es.removeEntity( metaEnts.map( e => e.id) );
+
+    return site;
+}
+
+
+async function selectByUrl( es:EntitySet, url:string ): Promise<Entity> {
+    const stmt = es.prepare(`[
+        /component/src#url !ca $url ==
+        @c
+    ] select`);
+
+    let res = await stmt.getEntities({url});
+    return res.length > 0 ? res[0] : undefined;
+}
+
+async function selectComponentByUrl( es:EntitySet, url:string ): Promise<Component> {
+    const stmt = es.prepare(`[
+        /component/src#url !ca $url ==
+        /component/src !bf
+        @c
+    ] select`);
+
+    let res = await stmt.getResult({url});
+    return res.length > 0 ? res[0] : undefined;
+}
+
+async function selectFileSrc( es:EntitySet ): Promise<Component[]> {
+    const stmt = es.prepare(`[
+        /component/src#url !ca ~r/^file\:\/\// ==
+        /component/src !bf
+        @c
+    ] select`);
+
+    return await stmt.getResult();
+}
+
+async function selectMeta( es:EntitySet ): Promise<Entity[]> {
+    const stmt = es.prepare(`[
+        /component/src#url !ca ~r/meta.(?:toml)?(?:yaml)?$/ ==
+        @c
+    ] select`);
+
+    return await stmt.getEntities();
+}
+
+
+
+async function readFileSystem(site: Site) {
+    let rootPath = site.getSrcUrl();
     const siteEntity = site.getEntity();
 
     const [include, exclude] = gatherPatterns(site);
 
-    log('root', rootPath);
+    // log('root', rootPath);
 
-    log('patterns', { include, exclude });
+    // log('patterns', { include, exclude });
 
     let matches = await getMatches(rootPath, include, exclude);
 
@@ -92,8 +228,6 @@ export async function processNew(site: Site) {
 
     return site;
 }
-
-
 
 async function getMatches(rootPath: string, include, exclude) {
 

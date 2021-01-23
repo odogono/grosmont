@@ -56,14 +56,14 @@ test.before.each(async (tcx) => {
 
 
 
-test.only('reading a site entity', async ({es,site}) => {
+test('reading a site entity', async ({es,site}) => {
     
     // log( site.getSrcUrl() );
 
     // printEntity(es, site.getSite());
 
     await scanSrc(site);
-
+    
     // printES(es);
 });
 

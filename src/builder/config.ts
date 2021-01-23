@@ -51,7 +51,11 @@ export async function parse(es: EntitySet, text: string, type: string = 'yaml', 
         }
     }
 
-    // log('parsed', data);
+    // log('parsed', type, data);
+    if( data === undefined || data === null ){
+        return undefined;
+    }
+
     // let eid = 0;
     // let pk:string;
     let { id: eid, pk, ...other } = data;

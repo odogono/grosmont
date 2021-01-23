@@ -9,6 +9,7 @@ import { BitField, TYPE_OR } from 'odgn-entity/src/util/bitfield';
 import { parseUri } from '../../util/uri';
 import { ComponentDefId } from 'odgn-entity/src/component_def';
 import { printAll } from '../ecs';
+import { selectDependency } from '../util';
 
 
 
@@ -70,45 +71,7 @@ export async function process(es: EntitySetMem) {
     return es;
 }
 
-/**
- * Selects a dependency entity
- */
-export async function selectDependency(es: EntitySetMem, src?: EntityId, dst?: EntityId, type?: string, asEntity: boolean = false) {
-    // const did:ComponentDefId = es.resolveComponentDefId('/component/dep');
 
-    let conds = [];
-    if (src !== undefined) {
-        conds.push(`/component/dep#src !ca ${src} ==`);
-    }
-    if (dst !== undefined) {
-        conds.push(`/component/dep#dst !ca ${dst} ==`);
-    }
-    if (conds.length === 2) { conds.push('and'); }
-    if (type !== undefined) {
-        conds.push(`/component/dep#type !ca ${type} ==`);
-    }
-    if (conds.length >= 2) { conds.push('and'); }
-
-    if (asEntity) {
-        let query = `[
-            /component/dep !bf
-            ${conds.join('\n')}
-            @c
-        ] select`;
-        let stack = await es.query(query);
-        return stack.popValue() as unknown as Component[];
-    }
-
-    let query = `[
-        /component/dep !bf
-        ${conds.join('\n')}
-        @c
-    ] select`;
-
-    let out = await es.queryEntities(query);
-
-    return out;
-}
 
 /**
  * Removes dir entities and children specified by the eids

@@ -117,12 +117,6 @@ export class Site {
             url = pathToFileURL( Path.join( root, fileURLToPath(url) ) ).href;
             e.Dst = {url};
 
-            // if( e.Src ){
-            //     e.Src = { url: this.getSrcUrl(e.Src.url) };
-            // }
-            // if( e.Dst ){
-            //     e.Dst = { url: this.getDstUrl(e.Dst.url) };
-            // }
             this.e = await this.update(e);
         }
     }
@@ -156,9 +150,12 @@ export class Site {
         
     }
 
-    getSrcUrl( asPath?:boolean ){
-        let res = this.e.Src.url;
-        return asPath ? fileURLToPath(res) : res;
+    getSrcUrl( appendPath?:string ){
+        let res = fileURLToPath(this.e.Src.url);
+        if( appendPath ){
+            res = Path.join( res, appendPath.startsWith('file://') ? fileURLToPath(appendPath) : appendPath );
+        }
+        return res;
         // let root = fileURLToPath( Path.dirname( this.options.configPath ) );
         
         // url = url ?? this.e.Src?.url ?? '/.';
@@ -169,9 +166,13 @@ export class Site {
         // return path;
     }
 
-    getDstUrl(asPath?:boolean){
+    getDstUrl(appendPath?:string){
         let res = this.e.Dst.url;
-        return asPath ? fileURLToPath(res) : res;
+        if( appendPath ){
+            res = Path.join( res, appendPath.startsWith('file://') ? fileURLToPath(appendPath) : appendPath );
+        }
+        return res;
+        // return asPath ? fileURLToPath(res) : res;
         // url = url ?? this.e.Dst?.url ?? '.';
         // // const parts = parseUri( url );
         // // log('[getDstUrl]', parts);

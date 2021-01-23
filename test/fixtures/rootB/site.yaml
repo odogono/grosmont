@@ -11,5 +11,7 @@
   include: 
     - '**/*'
   exclude:
+    - '**/tags/**'
+    - '**/styles/**'
     - .DS_Store
     - '**/*.jpg'
