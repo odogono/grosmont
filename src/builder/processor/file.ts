@@ -12,15 +12,18 @@ import Through2 from 'through2';
 import Globalyzer from 'globalyzer';
 import Micromatch from 'micromatch';
 
-import { BitField } from 'odgn-entity/src/util/bitfield';
+import { BitField, toString as bfToString  } from 'odgn-entity/src/util/bitfield';
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 
 import { parseUri } from '../../util/uri';
 import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
-import { insertDependency, printAll } from '../util';
-import { Site } from '../site';
+import { insertDependency, isTimeSame, printAll } from '../util';
+import { selectSite, Site } from '../site';
 import { parse } from '../config';
+import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
+import { getDefId } from 'odgn-entity/src/component_def';
+
 
 
 
@@ -46,19 +49,163 @@ export async function process(es: EntitySetMem) {
 
 export async function processNew(site: Site) {
 
+    // create an es to put the scan into
+    let incoming = await cloneEntitySet(site.es);
+
+    // read the fs
+    await readFileSystem(site, incoming);
+
+    // compare the two es
+
     // recurse through the sites Src creating entities
-    await readFileSystem(site);
+    
 
     // resolve any meta.* files into their containing files
-    await readFileMeta(site);
+    // await readFileMeta(site);
 
     // build dependencies
-    await buildDeps(site);
+    // await buildDeps(site);
 }
 
 
-async function buildDeps(site: Site){
-    const {es} = site;
+export async function cloneEntitySet( es:EntitySet ){
+    const {idgen,eidEpoch,workerId} = es;
+
+    let result = new EntitySetMem(undefined,{idgen});
+
+    const defs = await es.getComponentDefs();
+    for( const def of defs ){
+        await result.register(def);
+    }
+
+    // copy the site entity
+    const se = await selectSite(es);
+    await result.add( se );
+
+    return result;
+}
+
+
+export async function applyEntitySetDiffs( esA:EntitySet, esB:EntitySet, diffs:SrcUrlDiffResult ){
+
+    let removeEids:EntityId[] = [];
+    let diffComs:Component[] = [];
+    let updateEs:Entity[] = [];
+
+    const diffDefId = getDefId( esA.getByUri('/component/diff') );
+
+    for( const [aEid,op, bEid] of diffs ){
+
+        if( op === ChangeSetOp.Remove ){
+            removeEids.push( aEid );
+            // add eid to remove list
+            continue;
+        }
+        if( op === ChangeSetOp.Update || op === ChangeSetOp.Add ){
+            let e = await esB.getEntity(bEid, true);
+            if( e === undefined ){
+                log('[applyEntitySetDiffs]', 'could not find', bEid );
+            }
+            let eid = op === ChangeSetOp.Add ? esA.createEntityId() : aEid;
+            for( const [,com] of e.components ){
+                diffComs.push( setEntityId( com, eid ) );
+            }
+            diffComs.push( setEntityId( esA.createComponent( diffDefId, {op} ), eid ) );
+            // e.Diff = {op};
+            // updateEs.push( e );
+            // create a diff component and add to es
+            // let com = setEntityId( es.createComponent( diffDefId, {op} ), eid );
+            // diffComs.push( com );
+            continue;
+        }
+    }
+
+    await esA.removeEntity( removeEids );
+
+    // the retain flag means the changeset wont be cleared,
+    // which in effect batches the remove and add together
+    await esA.add( diffComs, {retain:true} );
+    // await esA.add( updateEs, {retain:true} );
+
+    esA.getUpdatedEntities
+    return esA;
+}
+
+
+type SrcUrlDiffResult = [ EntityId, ChangeSetOp, EntityId? ][];
+
+/**
+ * Compares two EntitySets using /component/src#/url as a key
+ */
+export async function diffEntitySets( esA:EntitySet, esB:EntitySet ): Promise<SrcUrlDiffResult> {
+    const idxA = await buildSrcUrlIndex(esA);
+    const idxB = await buildSrcUrlIndex(esB);
+
+    let result = [];
+
+    // log('idxA', idxA);
+
+    for( let [url,eid,mtime, bf] of idxA ){
+        
+        // find url in b
+        let row = idxB.find( b => b[0] === url );
+        
+        
+        if( row === undefined ){
+            // a does not exist in b (removed)
+            result.push( [eid, ChangeSetOp.Remove] );
+            continue;
+        }
+        
+        const [, bEid, bTime, bBf] = row;
+
+        if( !isTimeSame( mtime, bTime ) ){
+            // b has a different timestamp (updated)
+            result.push( [eid, ChangeSetOp.Update, bEid] );
+            // log(`e ${eid} has different timestamp to ${bEid} - ${mtime} != ${bTime}`);
+            continue;
+        }
+
+        if( bfToString(bf) != bfToString(bBf) ){
+            result.push( [eid, ChangeSetOp.Update, bEid] );
+        }
+    }
+
+    for( let [url,eid,mtime] of idxB ){
+        let row = idxA.find( a => a[0] === url );
+
+        if( row === undefined ){
+            // b does not exist in a (added)
+            result.push( [undefined, ChangeSetOp.Add, eid] );
+            continue;
+        }
+    }
+
+
+    return result;
+    // log( '[diffEntitySets]', coms );
+}
+
+
+
+async function buildSrcUrlIndex( es:EntitySet ):Promise<[ string, EntityId, string, BitField ][]> {
+    const query = `
+    [ [/component/src /component/times] !bf @e ] select
+    [ /component/src#/url /id /component/times#/mtime /bitField ] pluck
+    `
+    const stmt = es.prepare(query);
+    let result = await stmt.getResult();
+    if( result.length === 0 ){
+        return result;
+    }
+    // make sure we have an array of array
+    return Array.isArray( result[0] ) ? result : [ result ];
+}
+
+
+async function buildDeps(site:Site, es?:EntitySet){
+    es = es ?? site.es;
+    
 
     // select /src entities with a file url
     const coms = await selectFileSrc(es);
@@ -87,13 +234,14 @@ async function buildDeps(site: Site){
 
     }
 
-    return site;
+    return es;
 }
 
-async function readFileMeta(site: Site){
-    const {es} = site;
+async function readFileMeta(site:Site, es?:EntitySet){
+    es = es ?? site.es;
+    
     // find /src with meta.(yaml|toml) files
-    const metaEnts = await selectMeta( site.es );
+    const metaEnts = await selectMeta( es );
 
     // log('meta', metaEnts);
 
@@ -128,13 +276,13 @@ async function readFileMeta(site: Site){
         coms.push(  setEntityId( e.Stat, parentE.id ) );
     }
 
-    await site.es.add( coms );
+    await es.add( coms );
 
     // dont remove the meta files - we will need them to compare
     // for updates
     // await site.es.removeEntity( metaEnts.map( e => e.id) );
 
-    return site;
+    return es;
 }
 
 
@@ -180,9 +328,10 @@ async function selectMeta( es:EntitySet ): Promise<Entity[]> {
 
 
 
-async function readFileSystem(site: Site) {
+async function readFileSystem(site: Site, es?:EntitySet) {
     let rootPath = site.getSrcUrl();
     const siteEntity = site.getEntity();
+    es = es ?? site.es;
 
     const [include, exclude] = gatherPatterns(site);
 
@@ -212,9 +361,9 @@ async function readFileSystem(site: Site) {
             url = url.endsWith(Path.sep) ? url : url + Path.sep;
         }
 
-        e = await selectSrcByUrl(site.es, url, { createIfNotFound: true }) as Entity;
+        e = await selectSrcByUrl(es, url, { createIfNotFound: true }) as Entity;
 
-        e.Stat = { ctime, mtime };
+        e.Times = { ctime, mtime };
         e.SiteRef = { ref: siteEntity.id };
 
         files.push(e);
@@ -222,11 +371,11 @@ async function readFileSystem(site: Site) {
 
     // log('files', files);
     
-    await site.es.add(files);
+    await es.add(files);
     
     // printAll( site.es as EntitySetMem, files );
 
-    return site;
+    return es;
 }
 
 async function getMatches(rootPath: string, include, exclude) {
@@ -323,7 +472,7 @@ export async function selectSrcByUrl(es: EntitySet, url: string, options: Select
         e.Src = { url };
         let ctime = new Date().toISOString();
         let mtime = ctime;
-        e.Stat = { ctime, mtime };
+        e.Times = { ctime, mtime };
         return e;
     }
 
@@ -482,7 +631,7 @@ async function gather(es: EntitySetMem, site: Entity) {
             e = await selectFileByUri(es, uri, { createIfNotFound: true }) as Entity;
         }
 
-        e.Stat = { ctime, mtime };
+        e.Times = { ctime, mtime };
         e.SiteRef = { ref: site.id };
 
         files.push(e);
@@ -520,6 +669,7 @@ interface SelectOptions {
 }
 
 
+
 /**
  * 
  * @param es 
@@ -546,7 +696,7 @@ export async function selectDirByUri(es: EntitySet, uri: string, options: Select
             e.Dir = { uri };
             let ctime = new Date().toISOString();
             let mtime = ctime;
-            e.Stat = { ctime, mtime };
+            e.Times = { ctime, mtime };
             return e;
         }
         return undefined;
@@ -580,7 +730,7 @@ export async function selectFileByUri(es: EntitySet, uri: string, options: Selec
             e.File = { uri };
             let ctime = new Date().toISOString();
             let mtime = ctime;
-            e.Stat = { ctime, mtime };
+            e.Times = { ctime, mtime };
             return e;
         }
         return undefined;

@@ -256,7 +256,7 @@ async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, opti
         e.File = { uri };
         let ctime = new Date().toISOString();
         let mtime = ctime;
-        e.Stat = { ctime, mtime };
+        e.Times = { ctime, mtime };
         e.SiteRef = { ref:siteE.id };
 
         await es.add( e );
@@ -561,8 +561,8 @@ export async function applyStat(ctx:SiteContext): Promise<SiteContext> {
     const pages = selectSource(ctx);
     let apply:Entity[] = [];
     for( const page of pages ){
-        if( page.Stat === undefined ){
-            page.Stat = { ctime:Date.now(), mtime:Date.now() };
+        if( page.Times === undefined ){
+            page.Times = { ctime:Date.now(), mtime:Date.now() };
             apply.push(page);
         }
     }
@@ -1447,7 +1447,7 @@ async function createDirEntity(ctx: SiteContext, relativePath: string, stats?: F
     // };
     e.Dir = { path: relativePath };
     // e.Source = {uri};
-    e.Stat = {
+    e.Times = {
         ctime,
         mtime
     }
@@ -1503,7 +1503,7 @@ function createFileEntity(ctx: SiteContext, relativePath: string, stats: Fs.Stat
     e.Source = {
         uri
     }
-    e.Stat = {
+    e.Times = {
         ctime,
         mtime
     }

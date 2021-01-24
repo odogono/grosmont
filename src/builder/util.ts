@@ -3,7 +3,7 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { BitField, get as bfGet } from "odgn-entity/src/util/bitfield";
 import { parseUri } from "../util/uri";
-
+import Day from 'dayjs';
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
 
@@ -298,3 +298,21 @@ export async function getEntityByFileUri(es: EntitySet, path: string, options: F
 
 
 
+export async function getTimestamps( e:Entity ){
+    if( e === undefined || e.Times === undefined ){
+        return undefined;
+    }
+    let {ctime,mtime} = e.Times;
+
+    return {
+        ctime: new Date(ctime),
+        mtime: new Date(mtime)
+    }
+}
+
+/**
+ * Returns true if the dates match
+ */
+export function isTimeSame( dateA:string|Date, dateB:string|Date ):boolean {
+    return Day(dateA).isSame( Day(dateB), 'second' );
+}

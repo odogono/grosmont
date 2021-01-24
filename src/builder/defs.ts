@@ -54,8 +54,9 @@ export const defs = [
             { name: 'path', type: 'string' }
         ]
     },
+    // timestamps
     {
-        uri: '/component/stat',
+        uri: '/component/times',
         properties: [
             { name: 'ctime', type: 'datetime' },
             { name: 'mtime', type: 'datetime' },
@@ -266,6 +267,13 @@ export const defs = [
         properties: [
             {name: 'data', type:'string'},
             {name: 'mime', type:'string'}
+        ]
+    },
+
+    {
+        uri: '/component/diff',
+        properties: [
+            {name: 'op', type:'integer'} // ChangeSetOp
         ]
     }
 ];

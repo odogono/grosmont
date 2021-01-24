@@ -117,6 +117,10 @@ export class Site {
             url = pathToFileURL( Path.join( root, fileURLToPath(url) ) ).href;
             e.Dst = {url};
 
+            if( e.Site === undefined ){
+                e.Site = {};
+            }
+
             this.e = await this.update(e);
         }
     }
@@ -297,6 +301,14 @@ export class Site {
 }
 
 
+export async function selectSite( es:EntitySet ){
+    const stmt = es.prepare(`
+    [ /component/site !bf @e ] select
+    `);
+
+    return await stmt.getEntity();
+}
+
 
 async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, options: SelectOptions = {} ){
     const stmt = es.prepare(`[
@@ -319,7 +331,7 @@ async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, opti
         e.File = { uri };
         let ctime = new Date().toISOString();
         let mtime = ctime;
-        e.Stat = { ctime, mtime };
+        e.Times = { ctime, mtime };
         e.SiteRef = { ref:siteE.id };
 
         await es.add( e );
