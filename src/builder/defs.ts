@@ -271,7 +271,7 @@ export const defs = [
     },
 
     {
-        uri: '/component/diff',
+        uri: '/component/upd',
         properties: [
             {name: 'op', type:'integer'} // ChangeSetOp
         ]

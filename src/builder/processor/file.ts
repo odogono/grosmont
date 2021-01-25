@@ -56,12 +56,14 @@ export async function processNew(site: Site) {
     await readFileSystem(site, incoming);
 
     // compare the two es
+    let diffs = await diffEntitySets( site.es, incoming );
 
-    // recurse through the sites Src creating entities
+    // apply the diffs
+    await applyEntitySetDiffs( site.es, incoming, diffs, true );
     
 
     // resolve any meta.* files into their containing files
-    // await readFileMeta(site);
+    await readFileMeta(site);
 
     // build dependencies
     // await buildDeps(site);
@@ -85,14 +87,19 @@ export async function cloneEntitySet( es:EntitySet ){
     return result;
 }
 
-
-export async function applyEntitySetDiffs( esA:EntitySet, esB:EntitySet, diffs:SrcUrlDiffResult ){
+/**
+ * 
+ * @param esA 
+ * @param esB 
+ * @param diffs 
+ */
+export async function applyEntitySetDiffs( esA:EntitySet, esB:EntitySet, diffs:SrcUrlDiffResult, addDiff:boolean = true ){
 
     let removeEids:EntityId[] = [];
     let diffComs:Component[] = [];
     let updateEs:Entity[] = [];
 
-    const diffDefId = getDefId( esA.getByUri('/component/diff') );
+    const diffDefId = getDefId( esA.getByUri('/component/upd') );
 
     for( const [aEid,op, bEid] of diffs ){
 
@@ -110,8 +117,10 @@ export async function applyEntitySetDiffs( esA:EntitySet, esB:EntitySet, diffs:S
             for( const [,com] of e.components ){
                 diffComs.push( setEntityId( com, eid ) );
             }
-            diffComs.push( setEntityId( esA.createComponent( diffDefId, {op} ), eid ) );
-            // e.Diff = {op};
+            if( addDiff ){
+                diffComs.push( setEntityId( esA.createComponent( diffDefId, {op} ), eid ) );
+            }
+            // e.Upd = {op};
             // updateEs.push( e );
             // create a diff component and add to es
             // let com = setEntityId( es.createComponent( diffDefId, {op} ), eid );
@@ -320,6 +329,8 @@ async function selectFileSrc( es:EntitySet ): Promise<Component[]> {
 async function selectMeta( es:EntitySet ): Promise<Entity[]> {
     const stmt = es.prepare(`[
         /component/src#url !ca ~r/meta.(?:toml)?(?:yaml)?$/ ==
+        [/component/src /component/upd] !bf // ensure it has both components
+        and
         @c
     ] select`);
 
