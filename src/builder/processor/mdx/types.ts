@@ -36,7 +36,7 @@ export interface TranspileResult {
 
 
 export interface ProcessOptions {
-    fileIndex: SiteIndex;
+    fileIndex?: SiteIndex;
     linkIndex?: SiteIndex;
     pageLinks?: PageLinks;
 }

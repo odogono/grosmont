@@ -1,6 +1,8 @@
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
+import { isString } from "../../../util/is";
 import { Site } from '../../ecs';
+import { ProcessOptions } from "./types";
 
 import { selectMdx } from "./util";
 
@@ -9,6 +11,10 @@ import { selectMdx } from "./util";
 const log = (...args) => console.log('[ProcMDXResolveMeta]', ...args);
 
 
+export interface ResolveMetaOptions extends ProcessOptions {
+    e?: EntityId;
+}
+
 
 /**
  * Resolves /component/meta for an entity by using its
@@ -16,16 +22,29 @@ const log = (...args) => console.log('[ProcMDXResolveMeta]', ...args);
  * 
  * @param es 
  */
-export async function process(site: Site) {
+export async function process(site: Site, options: ResolveMetaOptions = {}) {
     const es = site.es;
+    const eid = options.e;
+
 
 
     // second pass - resolving meta with dependencies
-    let ents = await selectMdx(es);
+    let ents = eid !== undefined ?
+        [await es.getEntity(eid)]
+        : await selectMdx(es);
+
     let output = [];
 
     for (const e of ents) {
-        let meta = await selectDependencyMeta(es, e.id);
+
+        let metaList = await selectDependencyMeta(es, e.id);
+        if( metaList.length === 0 ){
+            continue;
+        }
+        log('dirCom', metaList);
+
+        let meta = mergeMeta(metaList);
+
 
         e.Meta = { meta };
 
@@ -37,10 +56,31 @@ export async function process(site: Site) {
 }
 
 
+function mergeMeta(metaList: any[]) {
+    // merge the meta - ignore keys with undefined values
+    return metaList.reduce((r, meta) => {
+        for (const [key, val] of Object.entries(meta)) {
+            if (val !== undefined) {
+                if( key === 'tags' ){
+                    let pre = Array.isArray(r[key]) ? r[key] : [];
+                    if( isString(val) ){
+                        r[key] = [ ...pre, val ];
+                    } else if( Array.isArray(val) ){
+                        r[key] = [ ...pre, ...val ];
+                    }
+                    
+                } else {
+                    r[key] = val;
+                }
+            }
+        }
+        return r;
+    }, {});
+}
+
+
 /**
- * 
- * @param es 
- * @param eid 
+ * Returns an array of Meta starting at the eid and working up the dir dependencies
  */
 async function selectDependencyMeta(es: EntitySet, eid: EntityId) {
     const stmt = es.prepare(`
@@ -95,16 +135,5 @@ async function selectDependencyMeta(es: EntitySet, eid: EntityId) {
 
     let metaList = stmt.getValue('result');
 
-    // merge the meta - ignore keys with undefined values
-    metaList = metaList.reduce((r, meta) => {
-        for (const [key, val] of Object.entries(meta)) {
-            if (val !== undefined) {
-                r[key] = val;
-            }
-        }
-        return r; //{...r, ...meta};
-    }, {});
-
-    // log('dirCom', metaList );
     return metaList;
 }

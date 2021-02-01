@@ -127,6 +127,109 @@ export async function selectDependency(es: EntitySet, src?: EntityId, dst?: Enti
     return out;
 }
 
+
+/**
+ * Returns an array of the parent ids of this dependency
+ * 
+ * @param es EntitySet
+ * @param eid EntityId
+ * @param type string
+ */
+export async function getDependencyParents(es:EntitySet, eid:EntityId, type:string):Promise<EntityId[]> {
+    const stmt = es.prepare(`
+    // selects the parent dir entity, or 0 if none is found
+    // ( es eid -- es eid )
+    [
+        swap
+        [
+            /component/dep !bf
+            /component/dep#src !ca *^$1 ==
+            /component/dep#type !ca $type ==
+            and
+            @c
+        ] select
+
+        // if the size of the select result is 0, then return false
+        size 0 == [ drop false @! ] swap if
+        pop!
+        /dst pluck
+        @>
+    ] selectParent define
+
+    [] result let
+
+    // iterate up the dir dependency tree
+    $eid
+    [
+        selectParent
+
+        
+        // if no parent, stop execution
+        dup [ drop @! ] swap false == if
+        
+        // add to result
+        dup $result + result !
+        // prints
+        
+        true // loop
+    ] loop
+    $result
+    `);
+    return await stmt.getResult({eid, type});
+}
+
+/**
+ * Returns an array of eids which are children of the specified eid by type.
+ * 
+ * @param es 
+ * @param eid 
+ * @param type 
+ * @param depth 
+ */
+export async function getDependencyChildren(es:EntitySet, eid:EntityId, type:string, depth:number = 100):Promise<EntityId[]> {
+    const stmt = es.prepare(`
+
+    // selects child ids of the e, or false if none found
+    [
+        $es [
+            /component/dep !bf
+            /component/dep#dst !ca *^$1 ==
+            /component/dep#type !ca $type ==
+            and
+            @c
+        ] select
+        
+        // if the size of the select result is 0, then return false
+        size 0 == [ drop false @! ] swap if
+        /src pluck
+        
+        @>
+        swap drop // drop the es
+    ] selectChildren define
+    
+    es let
+    [] result let
+    [] $eid +
+    [
+        [] [ swap *selectChildren + ] reduce
+        [ false != ] filter
+        
+        // if no children, stop
+        dup [ drop @! ] swap size! 0 == if
+
+        // add to result
+        dup $result swap + result !
+        
+        1 $depth - depth !
+        
+        0 $depth > // loop
+    ] loop
+    $result
+    `);
+
+    return await stmt.getResult({eid, type, depth});
+}
+
 /**
  *  
  */
