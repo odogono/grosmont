@@ -2,7 +2,7 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { isString } from "../../../util/is";
 import { Site } from '../../ecs';
-import { ProcessOptions } from "./types";
+import { ProcessOptions } from "../../types";
 
 import { selectMdx } from "./util";
 

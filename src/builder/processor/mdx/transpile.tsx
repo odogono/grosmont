@@ -37,7 +37,7 @@ import {
     TranspileOptions, 
     TranspileResult, 
     PageLinks 
-} from './types';
+} from '../../types';
 
 const log = (...args) => console.log('[TranspileMDX]', ...args);
 

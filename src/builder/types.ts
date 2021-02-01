@@ -1,4 +1,4 @@
-import { SiteIndex } from "../../ecs";
+import { SiteIndex } from "./ecs";
 
 
 
@@ -36,6 +36,7 @@ export interface TranspileResult {
 
 
 export interface ProcessOptions {
+    onlyUpdated?: boolean;
     fileIndex?: SiteIndex;
     linkIndex?: SiteIndex;
     pageLinks?: PageLinks;

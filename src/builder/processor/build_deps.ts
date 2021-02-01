@@ -4,9 +4,10 @@ import { EntitySetMem } from "odgn-entity/src/entity_set";
 import { Site } from "../site";
 import { selectFileSrc, selectComponentByUrl, insertDependency } from '../util';
 import { getComponentEntityId } from 'odgn-entity/src/component';
+import { ProcessOptions } from '../types';
 
 
-export interface ProcessOptions {
+export interface BuildDepsOptions extends ProcessOptions {
     debug?: true;
     readFS?: boolean;
     readFSResult?: EntitySetMem;
@@ -19,7 +20,7 @@ export interface ProcessOptions {
  * @param site 
  * @param options 
  */
-export async function process(site: Site, options: ProcessOptions = {}) {
+export async function process(site: Site, options: BuildDepsOptions = {}) {
 
     let es = site.es;
 

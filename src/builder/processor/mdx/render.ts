@@ -3,7 +3,7 @@
 
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
-import { ProcessOptions, TranspileProps, TranspileResult } from './types';
+import { ProcessOptions, TranspileProps, TranspileResult } from '../../types';
 import { Site } from '../../ecs';
 
 import { transpile } from './transpile';

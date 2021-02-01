@@ -5,7 +5,7 @@ import { buildUrl } from "../../../util/uri";
 import { Site, SiteIndex } from "../../ecs";
 import { getDependencyEntities, uriToPath } from "../../util";
 import { getDstUrl } from "../dst_url";
-import { PageLink, PageLinks, TranspileProps } from "./types";
+import { PageLink, PageLinks, TranspileProps } from "../../types";
 
 
 const log = (...args) => console.log('[Util]', ...args);
