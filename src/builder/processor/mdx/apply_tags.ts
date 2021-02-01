@@ -10,6 +10,14 @@ import { createTimes, insertDependency, selectDependency } from "../../util";
 const log = (...args) => console.log('[ProcApplyTags]', ...args);
 
 
+
+/**
+ * Takes Entities which have tags within their Meta and creates tag
+ * entities and dependencies
+ * 
+ * @param site 
+ * @param options 
+ */
 export async function process(site: Site, options = {}) {
     const es = site.es;
 

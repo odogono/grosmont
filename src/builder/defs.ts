@@ -246,13 +246,7 @@ export const defs = [
     {
         uri: '/component/mdx',
         properties: [
-            {name:'data', type:'string'},
-            {name:'jsx', type:'string'},
-            {name:'code', type:'string'},
-            {name:'component', type:'any', persist:false},
-            {name:'writeJS', type:'boolean'},
-            {name:'writeAST', type:'boolean'},
-            {name:'writeJSX', type:'boolean'},
+            {name:'data', type:'string'}
         ]
     },
     {

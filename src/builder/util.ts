@@ -441,13 +441,6 @@ export async function findEntityByUrl(es: EntitySet, url:string, options: FindEn
 }
 
 
-/**
- *  e://component/file?uri=file:///pages/main.mdx - address an entity
- */
-async function findEntityByEntityUrl(es:EntitySet, url:string){
-
-}
-
 async function getEntityByUrl(es:EntitySet, url:string){
     const stmt = es.prepare(`
     [
