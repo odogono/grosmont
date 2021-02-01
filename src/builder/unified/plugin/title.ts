@@ -12,12 +12,14 @@ import {select,selectAll} from 'unist-util-select';
  */
 export function titlePlugin() {
     return (tree, file) => {
-
+        
         let pageProps = appendExport(tree, 'page', { });
+        // log('ok', pageProps);
 
         if( 'title' in pageProps && 'description' in pageProps ){
             return;
         }
+
 
         const firstHeading = select('heading[depth=1] > text', tree);
 
@@ -31,6 +33,8 @@ export function titlePlugin() {
                 pageProps.description = description?.value ?? '';
             }
         }
+
+        
 
         // re-apply with new properties
         pageProps = appendExport(tree, 'page', pageProps );
@@ -51,8 +55,9 @@ function appendExport(tree, name: string, additional: any = {}) {
         const propGather = {
             ObjectProperty(path) {
                 const key = path.node.key?.name ?? path.node.key?.value;
-                const value = path.node.value?.value;
-                // log('propGather', key);
+                // const value = path.node.value?.value;
+                let value = eval( babelGenerate(path.node.value).code );
+
                 if (key !== undefined) {
                     this.props[key] = value;
                 }
@@ -113,6 +118,4 @@ function appendExport(tree, name: string, additional: any = {}) {
 }
 
 
-function log(...args){
-    console.log('[titlePlugin]', ...args);
-}
+const log = (...args) => console.log('[titlePlugin]', ...args);

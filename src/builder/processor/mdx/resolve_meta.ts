@@ -3,6 +3,7 @@ import { EntitySet } from "odgn-entity/src/entity_set";
 import { isString } from "../../../util/is";
 import { Site } from '../../ecs';
 import { ProcessOptions } from "../../types";
+import { mergeMeta } from "../../util";
 
 import { selectMdx } from "./util";
 
@@ -27,7 +28,6 @@ export async function process(site: Site, options: ResolveMetaOptions = {}) {
     const eid = options.e;
 
 
-
     // second pass - resolving meta with dependencies
     let ents = eid !== undefined ?
         [await es.getEntity(eid)]
@@ -41,10 +41,9 @@ export async function process(site: Site, options: ResolveMetaOptions = {}) {
         if( metaList.length === 0 ){
             continue;
         }
-        log('dirCom', metaList);
+        // log('dirCom', metaList);
 
         let meta = mergeMeta(metaList);
-
 
         e.Meta = { meta };
 
@@ -56,27 +55,6 @@ export async function process(site: Site, options: ResolveMetaOptions = {}) {
 }
 
 
-function mergeMeta(metaList: any[]) {
-    // merge the meta - ignore keys with undefined values
-    return metaList.reduce((r, meta) => {
-        for (const [key, val] of Object.entries(meta)) {
-            if (val !== undefined) {
-                if( key === 'tags' ){
-                    let pre = Array.isArray(r[key]) ? r[key] : [];
-                    if( isString(val) ){
-                        r[key] = [ ...pre, val ];
-                    } else if( Array.isArray(val) ){
-                        r[key] = [ ...pre, ...val ];
-                    }
-                    
-                } else {
-                    r[key] = val;
-                }
-            }
-        }
-        return r;
-    }, {});
-}
 
 
 /**

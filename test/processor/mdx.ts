@@ -7,6 +7,7 @@ import { process as renderMdx } from '../../src/builder/processor/mdx';
 import { process as slugifyTitle } from '../../src/builder/processor/slugify_title';
 import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
 import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
+import { process as applyTags } from '../../src/builder/processor/mdx/apply_tags';
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { parse as parseMeta } from '../../src/builder/processor/meta';
@@ -435,6 +436,36 @@ test('extract target slug from title', async({es,site}) => {
     // printES(es);
 
 });
+
+
+test.only('tags in mdx', async({es,site}) => {
+    let e = await addMdx( site, 'file:///pages/main.mdx',`
+---
+tags:
+- weeknotes
+- blog
+- Good Stuff
+---
+## Things that happened
+    `);
+    e.Meta = {meta:{ tags:[ 'active'] } };
+    await site.update(e);
+
+    e = await addMdx(site, 'file:///pages/about.mdx', `## About Me`, { tags:'blog'} );
+
+    await mdxPreprocess(site);
+
+    // convert /meta tags into dependencies
+    await applyTags(site);
+
+    // printES( es );
+
+    let eids = await site.findByTags(['weeknotes', 'blog'] );
+
+    assert.equal( eids, [ 1002, 1003 ] );
+});
+
+
 
 // processor - extract title meta data from first h1 or h2
 

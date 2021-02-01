@@ -133,17 +133,16 @@ export async function applyUpdatesToDependencies(site:Site){
             [] /component/upd + swap + $es swap !c + drop
         ] addUpdCom define
 
+
         // set the es as a word - makes easier to reference
         es let
 
-        
         selectUpdates
         
-        [ @! ] swap size! 0 == if
+        [ @! ] swap size 0 == rot swap if
         
         [
             pop?
-            // prints
             spread swap // op eid
             *$3 swap // pull the es to the top
             

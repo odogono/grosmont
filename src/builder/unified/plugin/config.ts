@@ -17,14 +17,16 @@ export function configPlugin(options) {
                 let parsed = Yaml.parse(config);
 
                 // const {enabled, ...rest} = parsed;
-                // console.log('[configPlugin]', parsed, options);
                 if (options.page) {
                     parsed = { ...options.page, ...parsed };
                 }
+                // console.log('[configPlugin]', parsed);
 
                 (node as any).type = 'export';
                 // (node as any).value = 'export const frontMatter = ' + JSON.stringify(parsed) + ';';
                 (node as any).value = 'export const page = ' + JSON.stringify(parsed) + ';';
+
+                // console.log('[configPlugin]', (node as any).value);
 
             } catch (e) {
                 console.error("Parsing error on line " + e.line + ", column " + e.column +

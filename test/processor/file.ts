@@ -81,49 +81,45 @@ async function loadRootB(site: Site) {
 
 
 
-test.only('reading a site entity', async ({ es, site }) => {
+test.skip('reading a site entity', async ({ es, site }) => {
     id = 1100;
     const insts = Fs.readFileSync(Path.join(rootPath, '/test/fixtures/root.b.insts'), 'utf-8');
     const stmt = es.prepare(insts)
     await stmt.run();
 
-    // let com = (es as EntitySet).createComponent('/component/upd', {op:ChangeSetOp.Update});
-    // com = setEntityId(com, 1003);
-    // await es.add(com);
-
-    let com = es.createComponent('/component/meta', { meta: { tags: ['weeknotes'] } });
-    com = setEntityId(com, 1014);
+    let com = (es as EntitySet).createComponent('/component/upd', {op:ChangeSetOp.Update});
+    com = setEntityId(com, 1011);
     await es.add(com);
+
+    // let com = es.createComponent('/component/meta', { meta: { tags: ['weeknotes'] } });
+    // com = setEntityId(com, 1014);
+    // await es.add(com);
 
     await buildDeps(site);
 
-    await applyUpdatesToDependencies(site);
+    // await applyUpdatesToDependencies(site);
 
-    await mdxResolveMeta(site, { e: 1005 });
+    // await mdxResolveMeta(site, { e: 1014 });
 
-    const eid = await getDependencyParents(site.es, 1015, 'dir');
-
-    log('parents', eid);
-
-    printES(es);
-});
-
-test('reading a site entity', async ({ es, site }) => {
-    log('idgen', id);
-    await scanSrc(site);
-
-    const bf = es.resolveComponentDefIds(['/component/upd', '/component/dep']);
-    const exportOptions = {
-        path: '', exportDefs: false, retainEid: true, exclude: bf,
-        pk: [["/component/site", "e:///component/src#/url"]]
-    }
-    let insts = await exportEntitySet(es, exportOptions);
     // printES(es);
-    log(insts);
 });
 
+// test('reading a site entity', async ({ es, site }) => {
+//     log('idgen', id);
+//     await scanSrc(site);
 
-test('depencies are also marked as updated', async ({ es, site }) => {
+//     const bf = es.resolveComponentDefIds(['/component/upd', '/component/dep']);
+//     const exportOptions = {
+//         path: '', exportDefs: false, retainEid: true, exclude: bf,
+//         pk: [["/component/site", "e:///component/src#/url"]]
+//     }
+//     let insts = await exportEntitySet(es, exportOptions);
+//     // printES(es);
+//     log(insts);
+// });
+
+
+test('dependencies are also marked as updated', async ({ es, site }) => {
     let mem = es.clone({ cloneEntities: false });// new EntitySetMem( undefined, {idgen} );
     let ents = [
         createFileEntity(es, 'file:///pages/'),
@@ -142,11 +138,14 @@ test('depencies are also marked as updated', async ({ es, site }) => {
 
     await mem.add(ents);
 
-    await scanSrc(site, { readFSResult: mem, debug: true });
+    await scanSrc(site, { readFSResult: mem });
 
     // await mdxResolveMeta(site);
 
-    printES(es);
+    // printES(es);
+    
+    let e = await es.getEntity(1006);
+    assert.equal( e.Upd.op, 2 );
 
     // log( es.getRemovedEntities() );
     // log( es.comChanges );
@@ -225,7 +224,7 @@ test('apply added entities', async ({ es, site }) => {
     // printES(es);
 
     let e = await getEntityBySrcUrl(es, 'file:///pages/index.mdx');
-    assert.equal(e.Diff.op, ChangeSetOp.Add);
+    assert.equal(e.Upd.op, ChangeSetOp.Add);
 });
 
 test('apply updated entities', async ({ es, site }) => {
@@ -253,7 +252,7 @@ test('apply updated entities', async ({ es, site }) => {
     // printES(es);
 
     let e = await getEntityBySrcUrl(es, 'file:///pages/index.mdx');
-    assert.equal(e.Diff.op, ChangeSetOp.Update);
+    assert.equal(e.Upd.op, ChangeSetOp.Update);
 });
 
 async function getEntityBySrcUrl(es: EntitySet, url: string) {
@@ -290,7 +289,7 @@ test('apply updated component entities', async ({ es, site }) => {
     await applyEntitySetDiffs(es, esnx, diffs);
 
     e = await getEntityBySrcUrl(es, 'file:///pages/index.mdx');
-    assert.equal(e.Diff.op, ChangeSetOp.Update);
+    assert.equal(e.Upd.op, ChangeSetOp.Update);
 });
 
 

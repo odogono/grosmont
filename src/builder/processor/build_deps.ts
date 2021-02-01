@@ -7,6 +7,9 @@ import { getComponentEntityId } from 'odgn-entity/src/component';
 import { ProcessOptions } from '../types';
 
 
+const log = (...args) => console.log('[ProcBuildDeps]', ...args);
+
+
 export interface BuildDepsOptions extends ProcessOptions {
     debug?: true;
     readFS?: boolean;
@@ -24,9 +27,10 @@ export async function process(site: Site, options: BuildDepsOptions = {}) {
 
     let es = site.es;
 
-
     // select /src entities with a file url
     const coms = await selectFileSrc(es);
+
+    // log('coms', coms);
 
     for (const com of coms) {
         const { url } = com;

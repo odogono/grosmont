@@ -96,7 +96,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
         
     meta = { ...meta, ...pageProps };
 
-    // log('[transpile]', 'meta', pageProps);
+    // log('[transpile]', 'meta', mdxResult );
 
     let result:TranspileResult = {
         path,  jsx, /* code, ast,*/ component, links, meta, cssLinks, additional:rest
@@ -153,49 +153,6 @@ function renderHTML({ components, component: Component, children }) {
 
     return html;
 }
-
-
-// async function transpileWith(ctx: SiteContext, page: Entity, options?: TranspileOptions): Promise<SiteContext> {
-
-//     // let path = ctx.pageSrcPath(page);
-//     // let inLinks = getPageLinks(ctx, page);
-//     // let inCss = getPageCss(ctx, page);
-//     // let inMeta = getPageMeta(ctx, page);
-//     // const data = page.Source?.data;
-    
-//     // console.log('[transpileWith]', page.File.path, page.Meta.meta, inMeta );
-//     // console.log('[transpileWith]', props );
-//     // log('[transpileWith]', page.Source.uri, inCss );
-    
-//     const props = { path, data, meta: inMeta, links: inLinks, ...inCss };
-    
-//     let { path:absPath, meta, links, additional, requires, cssLinks } = await transpile(props, options);
-    
-    
-//     requires = requires.map( r => {
-//         let path = Path.isAbsolute(r) ? Path.relative(ctx.rootPath,r) : r;
-//         return 'file:/' + path;
-//     })
-//     // log('[transpileWith]', requires );
-//     // note the required files, so that they will be resolved after
-//     ctx.addDependencies(page, requires);
-
-//     // [page, meta] = applyTitle(ctx, page, meta);
-//     // [page, meta] = await applyLayout(ctx, page, meta);
-//     // [page, meta] = await applyTags(ctx, page, meta);
-//     // page = await applyCSSLinks(ctx, page, cssLinks);
-//     // page = await applyLinks(ctx, page, links);
-//     // [page, meta] = applyTarget(ctx, page, meta);
-    
-//     // page.Meta = {...page.Meta, meta};
-//     // printEntity(ctx,page);
-//     // console.log('---');
-
-//     // await ctx.add(page);
-
-//     return ctx;
-// }
-
 
 
 
@@ -255,7 +212,6 @@ export function processMdx(content: string, options:ProcessMDXOptions): ProcessM
         
         .use(configPlugin, { page: pageProps })
         .use(removeCommentPlugin)
-        // .use( () => tree => console.log('HERE', tree) )
         
         .use(linkProc, { links, applyLinks })
         // take a snap of the AST

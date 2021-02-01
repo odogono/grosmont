@@ -26,6 +26,7 @@ import { parse } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
 import { parseUri } from '../util/uri';
 import { getComponentEntityId } from 'odgn-entity/src/component';
+import { findEntitiesByTags } from './util';
 
 
 const log = (...args) => console.log('[Site]', ...args);
@@ -243,6 +244,15 @@ export class Site {
         return index;
     }
 
+    /**
+     * Returns an array of Entity Ids that have dependencies on the given
+     * tags
+     * 
+     * @param tags 
+     */
+    async findByTags( tags:string[] ):Promise<EntityId[]> {
+        return findEntitiesByTags( this.es, tags, {siteRef:this.e.id} );
+    }
 
     getIndex( name:string, create:boolean = false ){
         let index = this.indexes.get(name);

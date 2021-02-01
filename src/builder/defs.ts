@@ -167,11 +167,11 @@ export const defs = [
             {name:'links', type:'json'}
         ]
     },
-    // DEPRECATED - tag is identified using dependencies
+    
     {
         uri: '/component/tag',
         properties: [
-            {name:'name', type:'string'},
+            {name:'slug', type:'string'},
         ]
     },
     // {

@@ -71,7 +71,7 @@ async function preProcessMdx(es: EntitySet, e: Entity, options: ProcessOptions) 
         const { meta } = result;
         // const { isEnabled } = meta;
 
-        // log('[preProcessMdx]', props.path, meta, result);
+        // log('[preProcessMdx]', props.path, meta );
 
         // if( isEnabled === false ){
         //     return e;
@@ -90,6 +90,10 @@ async function preProcessMdx(es: EntitySet, e: Entity, options: ProcessOptions) 
 
         // creates css dependencies
         e = await applyCSSLinks(es, e, result);
+
+        // creates tag dependencies
+        // NOTE - does not happen here, since tags from parents also need to be applied 
+        // e = await applyTags( es, e, result );
 
         // creates link dependencies and adds to the link
         // index for use at the point of rendering
@@ -192,6 +196,14 @@ async function applyCSSLinks(es: EntitySet, e: Entity, result: TranspileResult) 
     return e;
 }
 
+/**
+ * takes any cssLinks found on the entities transpile result and creates dependency
+ * entities
+ */
+async function applyTags(es: EntitySet, e: Entity, result: TranspileResult) {
+    log('[applyTags]')
+    return e;
+}
 
 /**
  * takes links found from the transpile result, rewrites the urls, 

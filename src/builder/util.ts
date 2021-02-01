@@ -5,16 +5,49 @@ import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { BitField, get as bfGet } from "odgn-entity/src/util/bitfield";
 import { parseUri } from "../util/uri";
 import Day from 'dayjs';
+import { ProcessOptions } from './types';
+import { isString } from '../util/is';
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
 
 
 export function applyMeta( e:Entity, data:any ):Entity {
     let meta = e.Meta?.meta ?? {};
-    meta = {...meta, ...data};
+    // log('existing meta', meta, 'new', data);
+    meta = mergeMeta( [meta, data] );
+    // meta = {...meta, ...data};
     e.Meta = {meta};
     return e;
 }
+
+
+/**
+ * Merges an array of meta into a single value
+ * 
+ * @param metaList 
+ */
+export function mergeMeta(metaList: any[]) {
+    // merge the meta - ignore keys with undefined values
+    return metaList.reduce((r, meta) => {
+        for (const [key, val] of Object.entries(meta)) {
+            if (val !== undefined) {
+                if( key === 'tags' ){
+                    let pre = Array.isArray(r[key]) ? r[key] : [];
+                    if( isString(val) ){
+                        r[key] = [ ...pre, val ];
+                    } else if( Array.isArray(val) ){
+                        r[key] = [ ...pre, ...val ];
+                    }
+                    
+                } else {
+                    r[key] = val;
+                }
+            }
+        }
+        return r;
+    }, {});
+}
+
 
 /**
  * Returns all entities populated with components
@@ -293,7 +326,7 @@ export async function getDependencyComponents(es: EntitySet, eid: EntityId, type
 
 
 
-interface FindEntityOptions {
+export interface FindEntityOptions {
     siteRef?: EntityId;
     title?: string;
 }
@@ -318,6 +351,51 @@ export async function findEntityBySrcUrl(es: EntitySet, path: string, options: F
     return r.length > 0 ? r[0] : undefined;
 }
 
+
+
+
+export async function findEntitiesByTags(es:EntitySet, tags:string[], options:FindEntityOptions = {}): Promise<EntityId[]> {
+    const ref = options.siteRef ?? 0;
+
+    const q = `
+    [
+        $es [
+            /component/tag#slug !ca *^$1 ==
+            /component/site_ref#ref !ca $ref ==
+            and
+            @eid 
+        ] select swap drop
+        [ drop false @! ] swap size 0 == rot swap if
+        pop!
+        @>
+    ] selectTagBySlug define
+
+    [
+        
+        $es [
+            /component/dep#dst !ca *^$1 ==
+            @eid /component/dep#src @ca
+        ] select swap drop
+        [ drop false @! ] swap size 0 == rot swap if
+        pop!
+        @>
+    ] selectTagDepByDst define
+
+    es let
+    $tags *selectTagBySlug map
+    [ false != ] filter
+
+    *selectTagDepByDst map
+
+    unique // get rid of dupes
+
+    // prints
+    // []
+    `;
+
+    const stmt = es.prepare(q);
+    return await stmt.getResult({ref,tags});
+}
 
 
 /**
@@ -469,12 +547,26 @@ export async function selectSiteTargetUri( es:EntitySet, e:Entity ){
  * 
  * @param es 
  */
-export async function selectFileSrc(es: EntitySet): Promise<Component[]> {
-    const stmt = es.prepare(`[
+export async function selectFileSrc(es: EntitySet, options:ProcessOptions = {}): Promise<Component[]> {
+    const onlyUpdated = options.onlyUpdated ?? false;
+
+    const q = onlyUpdated ? `[
+        /component/upd#op !ca 2 ==
+        /component/upd#op !ca 1 ==
+        or
         /component/src#url !ca ~r/^file\:\/\// ==
+        and
         /component/src !bf
         @c
-    ] select`);
+    ] select`
+        : `[
+            /component/src#url !ca ~r/^file\:\/\// ==
+            /component/src !bf
+            @c
+        ] select
+        `;
+
+    const stmt = es.prepare(q);
 
     return await stmt.getResult();
 }
@@ -503,4 +595,9 @@ export function pathToUri(path: string) {
         return undefined;
     }
     return path.startsWith('file://') ? path : 'file://' + path;
+}
+
+export function createTimes() {
+    let time = new Date().toISOString();
+    return { ctime:time, mtime:time };
 }
