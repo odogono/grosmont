@@ -73,6 +73,4 @@ export function importCSSPlugin(options: ImportCSSPluginOptions = {}) {
 }
 
 
-function log(...args) {
-    console.log('[importCSSPlugin]', ...args);
-}
+const log = (...args) => console.log('[importCSSPlugin]', ...args);

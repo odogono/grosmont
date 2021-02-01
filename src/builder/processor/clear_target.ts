@@ -5,8 +5,8 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { printAll } from "../ecs";
 import { Component } from 'odgn-entity/src/component';
-import { selectSiteTarget, selectSiteTargetUri } from './read_dir_meta';
 import { joinPaths, pathToUri, uriToPath } from './file';
+import { selectSiteTargetUri } from '../util';
 
 
 /**
@@ -104,13 +104,15 @@ export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Com
         // ["💥 eid is" $eid] to_str! .
         [ $eid @eid /component/target !bf @c ] select
 
+        
         // if we have a result, then exit
-        dup [ @! ] rot size 0 < if
-
+        dup [ @! ] rot size! 0 < if
+        
         // remove the empty result
         // es now on top
         drop
-
+        
+        
         // select the parent of the target
         [
             /component/dep !bf
@@ -121,9 +123,7 @@ export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Com
         ] select
 
         // if there is no parent, then exit
-        dup [ @! ] rot size 0 == if
-
-        // prints
+        dup [ @! ] rot size! 0 == if
 
         // set eid to parent
         /dst pluck eid !

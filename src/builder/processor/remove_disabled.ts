@@ -1,7 +1,7 @@
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
+import { selectMetaDisabled } from "../util";
 import { selectDependencies, selectDirDependencies } from "./file_deps";
-import { selectMetaDisabled } from "./read_dir_meta";
 
 
 export async function process(es: EntitySet) {

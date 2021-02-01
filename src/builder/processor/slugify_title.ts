@@ -3,6 +3,7 @@ import { EntitySet } from "odgn-entity/src/entity_set";
 import { slugify } from "../../util/string";
 import { printEntity, Site } from '../ecs';
 import { extensionFromMime } from "./assign_mime";
+import { getDstUrl } from "./dst_url";
 
 
 
@@ -30,19 +31,22 @@ export async function process(site: Site) {
 
         let {title} = e.Title;
         let meta = e.Meta?.meta ?? {};
-        let target = e.Target?.uri ?? '';
+        let target = e.Dst?.url ?? '';// await getDstUrl(site.es,e.eid);// e.Dst?.url ?? '';
 
-        let uri = `${target}${slugify(title)}`;
+        let url = slugify(title);
+        if( target ){
+            url = `${target}${url}`;
+        }
         
         if( meta.mime ){
             let ext = extensionFromMime( meta.mime );
-            uri = `${uri}.${ext}`;
+            url = `${url}.${ext}`;
         }
 
 
-        e.Target = { uri };
+        e.Dst = { url };
         
-        output.push(e.Target);
+        output.push(e.Dst);
     }
 
     await site.es.add(output);
@@ -54,11 +58,11 @@ export async function process(site: Site) {
 export async function select(es: EntitySet): Promise<Entity[]> {
 
     // select components which have /title AND /meta but also optionally
-    // target
+    // /dst
     const query = `
-        [ [ /component/title /component/meta ] !bf @c] select
+        [ [ /component/title /component/meta /component/dst ] !bf @c] select
         /@e pluck!
-        rot [ *^$1 /component/target !bf @c ] select rot +    
+        rot [ *^$1 /component/dst !bf @c ] select rot +    
     `;
 
     const stmt = es.prepare(query);

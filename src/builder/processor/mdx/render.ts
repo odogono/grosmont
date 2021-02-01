@@ -2,12 +2,13 @@
 
 
 import { Entity, EntityId } from "odgn-entity/src/entity";
-import { EntitySet } from "odgn-entity/src/entity_set";
+import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { ProcessOptions, TranspileProps, TranspileResult } from './types';
 import { Site } from '../../ecs';
 
 import { transpile } from './transpile';
-import { buildFileIndex, buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath, selectMdx } from "./util";
+import { buildSrcIndex, buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath, selectMdx } from "./util";
+import { printAll } from "../../util";
 
 
 
@@ -25,8 +26,10 @@ export async function process(site: Site) {
 
 
     // resolve linkIndex
-    let fileIndex = await buildFileIndex(site);
+    let fileIndex = await buildSrcIndex(site);
     let linkIndex = site.getIndex('/index/links', true);
+
+    // log('LINK index', linkIndex);
 
     const pageLinks = await buildPageLinks(es, linkIndex );
 
@@ -59,7 +62,7 @@ async function renderMdx(es: EntitySet, e: Entity, child: TranspileResult, optio
             return e;
         }
 
-        // log('[renderMdx]', e.File.uri, meta);
+        // log('[renderMdx]', e.Src.url, meta);
 
         // if( isRenderable !== false ){
         e.Text = { data: html, mime: 'text/html' };
@@ -95,7 +98,7 @@ async function renderEntity(es: EntitySet, src: Entity, child: TranspileResult, 
 
     let result = await transpile(props, { render: true, resolveImport });
 
-    // log('[renderEntity]', src.File.uri, result );
+    // log('[renderEntity]', src.Src.url, result );
     result.css = props.css;
     result.cssLinks = props.cssLinks;
 
@@ -111,9 +114,11 @@ async function renderLayoutEntity(es: EntitySet, src: Entity, child: TranspileRe
 
     const layoutE = await getLayoutFromDependency(es, src.id);
 
-    // log('[renderLayoutEntity]', 'returned', layoutEid, 'for', src.id );
+    // printAll(es as EntitySetMem);
 
-    // log('[renderLayoutEntity]', layoutE.File.uri );
+    // log('[renderLayoutEntity]', 'returned', layoutE.id, 'for', src.id );
+
+    // log('[renderLayoutEntity]', layoutE.Src.url );
 
     if (layoutE === undefined) {
         return child;
@@ -154,17 +159,18 @@ async function getLayoutFromDependency(es: EntitySet, eid: EntityId): Promise<En
     // eid = 0;
     const stmt = es.prepare(`
     [
-        /component/dep#src !ca ${eid} ==
+        /component/dep#src !ca $eid ==
         /component/dep#type !ca "layout" ==
         and
         @c
     ] select
     /dst pluck
-
+    
     // exit with undefined if nothing was found
     dup [ undefined @! ] swap [] == if
-
+    
     // select the entity
+    pop!
     swap [ *^$1 @e ] select
     `);
     return await stmt.getResult({ eid });

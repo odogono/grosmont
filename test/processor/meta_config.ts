@@ -1,9 +1,6 @@
 import { suite } from 'uvu';
 import Path from 'path';
 import { printAll, Site } from '../../src/builder/ecs';
-import {
-    process as resolveFileDeps,
-} from '../../src/builder/processor/file_deps';
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as renderMdx } from '../../src/builder/processor/mdx';
@@ -13,7 +10,6 @@ import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse'
 import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 
-import { process as resolveTargetPath, selectTargetPath } from '../../src/builder/processor/target_path';
 import assert from 'uvu/assert';
 import { Entity } from 'odgn-entity/src/entity';
 
@@ -44,16 +40,16 @@ test.before.each(async (tcx) => {
 test('target path for file', async ({ es, site }) => {
 
     let text = `
-comment = "a title and url"
+comment: a title and url
 
 # pk (reserved) is a way of identifying an existing entity
-pk = "/component/url#/url"
+pk: /component/url#/url
 
-["/component/url"]
-url = "https://www.bbc.co.uk/news"
+/component/url:
+  url: https://www.bbc.co.uk/news
 
-["/component/title"]
-title = "BBC News"
+/component/title:
+  title: BBC News
     `;
     log('err')
 

@@ -11,13 +11,13 @@ import { parseUri } from "../../../util/uri";
 import {
     applyMeta,
     getDependencies,
-    findEntityByFileUri,
+    findEntityBySrcUrl,
     findEntityByUrl,
     insertDependency,
     removeDependency,
 } from "../../util";
 import { toInteger } from "odgn-entity/src/util/to";
-import { buildFileIndex, buildProps, getEntityImportUrlFromPath, selectMdx } from "./util";
+import { buildSrcIndex, buildProps, getEntityImportUrlFromPath, selectMdx } from "./util";
 
 
 
@@ -33,8 +33,8 @@ const log = (...args) => console.log('[ProcMDXParse]', ...args);
 export async function process(site: Site) {
     const es = site.es;
 
-    // build an index of /file#uri
-    let fileIndex = await buildFileIndex(site);
+    // build an index of /src#url
+    let fileIndex = await buildSrcIndex(site);
     let linkIndex = site.getIndex('/index/links', true);
 
     // select scss entities
@@ -135,7 +135,7 @@ async function applyLayout(es: EntitySet, e: Entity, result: TranspileMeta) {
     // log('[applyLayout]', e.File.uri, {layout} );
 
     // find the entity matching the layout
-    const layoutEid = await findEntityByFileUri(es, layout, { siteRef });
+    const layoutEid = await findEntityBySrcUrl(es, layout, { siteRef });
 
     // log('[applyLayout]', 'found', layoutEid);
 
@@ -224,7 +224,7 @@ async function applyLinks(es: EntitySet, e: Entity, result: TranspileResult, opt
             existingIds.delete(depId);
         }
 
-        const type = linkE.File !== undefined ? 'internal' : 'external';
+        const type = linkE.Src !== undefined ? 'internal' : 'external';
 
         linkIndex.index.set(linkUrl, [linkE.id, type, child]);
 

@@ -1,4 +1,5 @@
-import { Component, getComponentEntityId } from "odgn-entity/src/component";
+import Path from 'path';
+import { Component, getComponentEntityId, toComponentId } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { BitField, get as bfGet } from "odgn-entity/src/util/bitfield";
@@ -194,7 +195,7 @@ interface FindEntityOptions {
     title?: string;
 }
 
-export async function findEntityByFileUri(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<EntityId> {
+export async function findEntityBySrcUrl(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<EntityId> {
     const ref = options.siteRef ?? 0;
 
     const query = `
@@ -204,7 +205,7 @@ export async function findEntityByFileUri(es: EntitySet, path: string, options: 
     swap
     [
         /component/site_ref#ref !ca $ref ==
-        /component/file#uri !ca *^$1 ==
+        /component/src#url !ca *^$1 ==
         and
         @eid
     ] select`;
@@ -227,14 +228,14 @@ export async function findEntityByUrl(es: EntitySet, url:string, options: FindEn
     // https://news.bbc.co.uk/ - external
 
     if( url.startsWith('/') ){
-        const eid = await findEntityByFileUri(es, url, options);
+        const eid = await findEntityBySrcUrl(es, url, options);
         return eid !== undefined ? await es.getEntity(eid) : undefined;
     }
 
     let { protocol, host, path, anchor: attr, queryKey } = parseUri(url);
 
     if( protocol === 'file' ){
-        return await getEntityByFileUri( es, url, options );
+        return await getEntityBySrcUrl( es, url, options );
     }
 
     if( protocol === 'https' || protocol === 'http' ){
@@ -279,13 +280,13 @@ async function getEntityByUrl(es:EntitySet, url:string){
 
 
 
-export async function getEntityByFileUri(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<Entity> {
+export async function getEntityBySrcUrl(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<Entity> {
     const ref = options.siteRef ?? 0;
 
     const query = `
     [
         /component/site_ref#ref !ca $ref ==
-        /component/file#uri !ca $path ==
+        /component/src#url !ca $path ==
         and
         @e
     ] select`;
@@ -315,4 +316,88 @@ export async function getTimestamps( e:Entity ){
  */
 export function isTimeSame( dateA:string|Date, dateB:string|Date ):boolean {
     return Day(dateA).isSame( Day(dateB), 'second' );
+}
+
+
+export function getParentDirectory(uri: string) {
+    const result = Path.dirname(uri);
+    return result.endsWith(Path.sep) ? result : result + Path.sep;
+}
+
+
+export async function selectMetaDisabled( es:EntitySet ): Promise<EntityId[]> {
+    const stmt = es.prepare(`[
+        /component/enabled#is !ca false ==
+        // /component/meta#/meta/isEnabled !ca false ==
+        @eid
+    ] select`);
+
+    return await stmt.getResult();
+}
+
+
+export async function selectSiteTargetUri( es:EntitySet, e:Entity ){
+    if( e.Site !== undefined ){
+        return e.Target !== undefined ? e.Target.uri : undefined;
+    }
+    if( e.SiteRef !== undefined ){
+        const eid = e.SiteRef.ref;
+        const did = es.resolveComponentDefId('/component/target');
+        const com = await es.getComponent( toComponentId(eid,did) );
+        return com !== undefined ? com.uri : undefined;
+    }
+    return undefined;
+}
+
+
+// /**
+//  * 
+//  * @param es 
+//  * @param e 
+//  */
+// export async function fileUriToAbsolute( es:EntitySet, e:Entity ){
+//     const rootPath = await selectSitePath( es, e.SiteRef.ref );
+//     return joinPaths(rootPath, e.File.uri);
+// }
+
+
+/**
+ * Selects /component/src which have a file:// url
+ * 
+ * @param es 
+ */
+export async function selectFileSrc(es: EntitySet): Promise<Component[]> {
+    const stmt = es.prepare(`[
+        /component/src#url !ca ~r/^file\:\/\// ==
+        /component/src !bf
+        @c
+    ] select`);
+
+    return await stmt.getResult();
+}
+
+export async function selectComponentByUrl(es: EntitySet, url: string): Promise<Component> {
+    const stmt = es.prepare(`[
+        /component/src#url !ca $url ==
+        /component/src !bf
+        @c
+    ] select`);
+
+    let res = await stmt.getResult({ url });
+    return res.length > 0 ? res[0] : undefined;
+}
+
+
+export function uriToPath(uri: string) {
+    if (uri === undefined) {
+        return '';
+    }
+    return uri.startsWith('file://') ? uri.substring('file://'.length) : uri;
+}
+
+export function pathToUri(path: string) {
+    if (path === undefined) {
+        return undefined;
+    }
+    return path.startsWith('file://') ? path : 'file://' + path;
 }

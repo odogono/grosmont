@@ -20,11 +20,12 @@ import {
     EntitySetSQL
 } from 'odgn-entity/src/entity_set_sql';
 
-import { selectDirByUri, selectFileByUri } from './processor/file';
+import { selectDirByUri, selectFileByUri, selectSrcByUrl } from './processor/file';
 import { StatementArgs } from 'odgn-entity/src/query';
 import { parse } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
 import { parseUri } from '../util/uri';
+import { getComponentEntityId } from 'odgn-entity/src/component';
 
 
 const log = (...args) => console.log('[Site]', ...args);
@@ -93,9 +94,17 @@ export class Site {
         await this.readConfig(options);
     }
 
+    /**
+     * 
+     * @param options 
+     */
     async readConfig(options:SiteOptions = undefined){
         options = options ?? this.options;
+        const {configPath} = options;
 
+        if( configPath === undefined ){
+            return;
+        }
         
         const path = fileURLToPath(options.configPath);
         let config = await Fs.readFile(path, 'utf8');
@@ -140,10 +149,10 @@ export class Site {
             e.Site = { name };
         }
         if( dir !== undefined ){
-            e.Dir = { uri:dir };
+            e.Src = { url:dir };
         }
         if( target !== undefined ){
-            e.Target = { uri:target };
+            e.Dst = { url:target };
         }
         if( e.size > 0 ){
             await this.es.add( e );
@@ -176,24 +185,12 @@ export class Site {
             res = Path.join( res, appendPath.startsWith('file://') ? fileURLToPath(appendPath) : appendPath );
         }
         return res;
-        // return asPath ? fileURLToPath(res) : res;
-        // url = url ?? this.e.Dst?.url ?? '.';
-        // // const parts = parseUri( url );
-        // // log('[getDstUrl]', parts);
-        // let path = Path.join( this.rootPath, fileURLToPath(url) );
-        // // log('[getDstUrl]', this.rootPath, fileURLToPath(url), path );
-        // return path;
     }
 
 
     /**
      * Returns the site entity
      */
-    // async getSite() {
-    //     const dids: BitField = this.es.resolveComponentDefIds(['/component/site']);
-    //     let e = this.es.getEntities(dids, { populate: true });
-    //     return e.length === 1 ? e[0] : undefined;
-    // }
     getSite():Entity {
         return this.e;
     }
@@ -209,27 +206,19 @@ export class Site {
     }
 
 
-    async addDir( uri ): Promise<Entity> {
-        let e = await selectDirByUri(this.es, uri, { createIfNotFound: true }) as Entity;
-        e.SiteRef = { ref: this.e.id };
-
-        await this.es.add( e );
-
-        return this.getLastAdded();
+    async addSrc( url:string ): Promise<Entity> {
+        return selectSiteSrcByUrl( this, url, {createIfNotFound:true} ) as Promise<Entity>;
     }
 
-
-    async addFile( url ): Promise<Entity> {
-        let e = await selectSiteFileByUri( this.es, this.e, url, {createIfNotFound: true }) as Entity;
-        return e;
-    }
-
-    async getFile( uri ): Promise<Entity> {
-        return selectSiteFileByUri( this.es, this.e, uri) as Promise<Entity>;
+    async getSrc( uri:string ): Promise<Entity> {
+        return selectSiteSrcByUrl( this, uri) as Promise<Entity>;
     }
 
 
     async update( e:Entity ){
+        if( e.SiteRef === undefined && this.e ){
+            e.SiteRef = { ref: this.e.id };
+        }
         await this.es.add( e );
         return this.getLastAdded();
     }
@@ -310,35 +299,71 @@ export async function selectSite( es:EntitySet ){
 }
 
 
-async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, options: SelectOptions = {} ){
-    const stmt = es.prepare(`[
-        /component/file#uri !ca $uri ==
-        /component/site_ref#ref !ca $ref ==
-        and
-        @e
-    ] select`);
+// async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, options: SelectOptions = {} ){
+//     const stmt = es.prepare(`[
+//         /component/file#uri !ca $uri ==
+//         /component/site_ref#ref !ca $ref ==
+//         and
+//         @e
+//     ] select`);
     
-    const ents = await stmt.getEntities({uri, ref:siteE.id});
+//     const ents = await stmt.getEntities({uri, ref:siteE.id});
 
-    if( ents && ents.length > 0 ){
-        let e = ents[0];
-        return options.returnEid === true ? e.id : e;
-    }
+//     if( ents && ents.length > 0 ){
+//         let e = ents[0];
+//         return options.returnEid === true ? e.id : e;
+//     }
     
-    // log('[selectSiteByUri]', 'found', ents, options );
-    if (options.createIfNotFound) {
+//     // log('[selectSiteByUri]', 'found', ents, options );
+//     if (options.createIfNotFound) {
+//         let e = es.createEntity();
+//         e.File = { uri };
+//         let ctime = new Date().toISOString();
+//         let mtime = ctime;
+//         e.Times = { ctime, mtime };
+//         e.SiteRef = { ref:siteE.id };
+
+//         await es.add( e );
+
+//         let eid = es.getUpdatedEntities()[0];
+//         return es.getEntity(eid);
+//     }
+//     return undefined;
+// }
+
+async function selectSiteSrcByUrl(site: Site, url: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
+    const {es} = site;
+    const ref = site.e.id;
+    const stmt = es.prepare(`
+        [
+            /component/src#/url !ca $url ==
+            /component/site_ref#/ref !ca $ref ==
+            and
+            @c
+        ] select
+    `);
+    let com = await stmt.getResult({ url, ref });
+    com = com.length === 0 ? undefined : com[0];
+
+    // log('[selectSiteSrcByUrl]', url, com );
+    if (com === undefined) {
+        if (!options.createIfNotFound) {
+            // log('[selectSiteSrcByUrl]', 'nope', {url,ref});
+            // log( stmt );
+            return undefined;
+        }
         let e = es.createEntity();
-        e.File = { uri };
+        e.Src = { url };
         let ctime = new Date().toISOString();
         let mtime = ctime;
         e.Times = { ctime, mtime };
-        e.SiteRef = { ref:siteE.id };
-
-        await es.add( e );
-
-        let eid = es.getUpdatedEntities()[0];
-        return es.getEntity(eid);
+        e.SiteRef = {ref};
+        return e;
     }
-    return undefined;
-}
 
+    const eid = getComponentEntityId(com);
+    if (options.returnEid === true) { return eid; }
+    
+    const e = es.getEntity(eid);
+    return e;
+}

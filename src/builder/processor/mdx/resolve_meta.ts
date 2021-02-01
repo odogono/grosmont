@@ -33,7 +33,7 @@ export async function process(site: Site) {
     }
     await es.add(output);
 
-    return es;
+    return site;
 }
 
 
@@ -58,11 +58,11 @@ async function selectDependencyMeta(es: EntitySet, eid: EntityId) {
         ] select
 
         // if the size of the select result is 0, then return 0
-        size! 0 == [ drop false @! ] swap if
+        size 0 == [ drop false @! ] swap if
         pop!
         /dst pluck
         @>
-    ] selectParentDir define
+    ] selectParent define
 
     [ // es eid -- es eid [meta]
         swap [ *^%1 @eid /component/meta !bf @c ] select 
@@ -81,10 +81,8 @@ async function selectDependencyMeta(es: EntitySet, eid: EntityId) {
         // add to result
         $result + result !
         
-        selectParentDir
+        selectParent
         
-
-
         // if no parent, stop execution
         dup [ drop @! ] swap false == if
 

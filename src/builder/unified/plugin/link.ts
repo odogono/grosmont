@@ -33,6 +33,7 @@ export function linkProc({ links, applyLinks }: LinkProcProps) {
             // incoming links can overwrite the link url
             if (applyLinks !== undefined) {
                 let applyLink = applyLinks.get(ctx.url);
+                // console.log('[linkProc]', 'applyLink', ctx.url, applyLink);
                 if (applyLink !== undefined) {
                     ctx.url = applyLink.url;
                 }

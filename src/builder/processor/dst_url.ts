@@ -6,9 +6,6 @@ import { Component } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { printAll } from "../ecs";
-import { selectSiteTarget } from './read_dir_meta';
-import { joinPaths, writeFile } from './file';
-import { resolveTarget, selectDirTarget } from './clear_target';
 import { BitField } from 'odgn-entity/src/util/bitfield';
 
 
@@ -43,7 +40,7 @@ async function selectSrc(es: EntitySet): Promise<Entity[]> {
 
 /**
  * Returns an absolute path for the given entity by looking at /component/file, 
- * /component/dir, and /component/target.
+ * and /component/target.
  * 
  * loop
         select /target
@@ -77,11 +74,12 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
     [ "" swap ~r/\\/$/ replace ] removeTrailingSlash define
 
     [
-        dup ~r/^\\// eval
-        
+        dup isAbsPath
+        // dup ~r/^\\// eval
         [["/" *^^$0] "" join ] swap false == if
 
     ] ensureLeadingSlash define
+
 
     [ $paths + paths ! ] addToPaths define
     
@@ -116,7 +114,7 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
 
 
         // if the size of the select result is 0, then return 0
-        size! 0 == [ drop false @! ] swap if
+        size 0 == [ drop false @! ] swap if
         pop!
         /dst pluck
         @>
@@ -148,7 +146,7 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
 
         
 
-        dup [ drop swap false @! ] swap size 0 == if
+        dup [ drop swap false @! ] swap size! 0 == if
         
         dup isAbsPath
         
@@ -173,7 +171,7 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
     ] handleParent define
 
     [
-        [ drop @!] $filename size 0 != if
+        [ drop @!] $filename size! 0 != if
         filename !
         @>
     ] setFilename define
@@ -221,7 +219,7 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
 
     
     // if no filename is found, then quit
-    [ undefined @! ] $filename size 0 == if
+    [ undefined @! ] $filename size! 0 == if
 
 
     $paths "" join 
@@ -229,11 +227,13 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
 
     
     
-    dup [ drop undefined @! ] swap size 0 == if
+    dup [ drop undefined @! ] swap size! 0 == if
     ensureLeadingSlash
-    @>
     
+    @>
     `);
+
+    
 
     const dirCom = await stmt.getResult({ eid });
     return dirCom && dirCom.length > 0 ? dirCom : undefined;

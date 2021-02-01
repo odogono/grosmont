@@ -9,7 +9,7 @@ import { BitField, TYPE_OR } from 'odgn-entity/src/util/bitfield';
 import { parseUri } from '../../util/uri';
 import { ComponentDefId } from 'odgn-entity/src/component_def';
 import { printAll } from '../ecs';
-import { selectDependency } from '../util';
+import { getParentDirectory, selectDependency } from '../util';
 
 
 
@@ -31,7 +31,6 @@ export async function process(es: EntitySetMem) {
             continue;
         }
         const uri = file.File?.uri ?? file.Dir?.uri;
-        // const { path:filePath } = parseUri(file.File.uri);
         const parentUri = getParentDirectory(uri);
         const pe = await selectByDirUri(es, parentUri);
 
@@ -156,10 +155,7 @@ function selectFilesAndDirs(es: EntitySetMem): Entity[] {
 
 
 
-export function getParentDirectory(uri: string) {
-    const result = Path.dirname(uri);
-    return result.endsWith(Path.sep) ? result : result + Path.sep;
-}
+
 
 async function selectByDirUri(es: EntitySetMem, uri: string): Promise<Entity> {
     const query = `[

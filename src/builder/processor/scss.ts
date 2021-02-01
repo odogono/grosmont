@@ -10,7 +10,6 @@ import { Component } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { printAll } from "../ecs";
-import { selectSiteTarget } from './read_dir_meta';
 import { joinPaths, writeFile } from './file';
 import { resolveTarget, selectDirTarget } from './clear_target';
 import { applyMeta } from '../util';
@@ -38,11 +37,11 @@ export async function process(es: EntitySet) {
 
 
         // alter the target filename
-        const uri = e.File.uri;
-        let filename = Path.basename(uri);
+        const url = e.Src.url;
+        let filename = Path.basename(url);
 
         filename = filename.substr(0, filename.lastIndexOf(".")) + ".css";
-        e.Target = { uri:filename };
+        e.Target = { url:filename };
         
     }
 
@@ -83,7 +82,7 @@ export async function renderScss(es: EntitySet, e: Entity): Promise<RenderScssRe
     // // determine target using dir deps
     // const targetCom = await selectDirTarget(es, e.id);
 
-    const filename = selectFilename(e);
+    const filename = getSrcUrl(e);
 
     // let dstPath = targetCom !== undefined ?
     //     joinPaths(siteTargetUri, targetCom?.uri) :
@@ -109,10 +108,10 @@ export async function renderScss(es: EntitySet, e: Entity): Promise<RenderScssRe
  * 
  * @param e 
  */
-function selectFilename(e: Entity) {
-    if (e.File !== undefined) {
-        const uri = e.File.uri;
-        return Path.basename(uri);
+function getSrcUrl(e: Entity) {
+    if (e.Src !== undefined) {
+        const url = e.Src.url;
+        return Path.basename(url);
     }
 
     return undefined;

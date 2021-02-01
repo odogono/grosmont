@@ -7,14 +7,13 @@ import { EntitySet } from "odgn-entity/src/entity_set";
 import { printAll } from "../ecs";
 import { Component } from 'odgn-entity/src/component';
 import { Site } from '../ecs';
-import { selectTargetPath } from "./target_path";
 import { applyMeta } from '../util';
 
 const log = (...args) => console.log('[ProcAssignMime]', ...args);
 
 
 /**
- * Examines /component/file#uri and assigns a mime type based on
+ * Examines /component/src#url and assigns a mime type based on
  * the extension
  * 
  * @param es 
@@ -27,12 +26,10 @@ export async function process(site: Site, es: EntitySet = undefined) {
     let updates:Entity[] = [];
 
     for( const e of files ){
-        const uri = e.File.uri;
-        const ext = Path.extname(uri);
+        const url = e.Src.url;
+        const ext = Path.extname(url);
 
         let mime = mimeFromExtension( ext );
-
-        
 
         if( mime === false ){
             continue;
@@ -43,7 +40,7 @@ export async function process(site: Site, es: EntitySet = undefined) {
 
         let eu = applyMeta( e, {mime} );
 
-        // log('lookup', uri, mime, eu.Meta );
+        // log('lookup', url, mime, eu.Meta );
 
         updates.push(eu);
 
@@ -60,7 +57,7 @@ export async function process(site: Site, es: EntitySet = undefined) {
 
 
 async function selectFiles(es: EntitySet): Promise<Entity[]> {
-    const stmt = es.prepare(`[ /component/file !bf @e ] select`);
+    const stmt = es.prepare(`[ /component/src !bf @e ] select`);
     return await stmt.getEntities();
 }
 

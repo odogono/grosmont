@@ -65,11 +65,13 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
             return <style dangerouslySetInnerHTML={{__html:css}} />;
         },
         CSSLinks: () => {
-            // log('[transpile][CSSLinks]',props.cssLinks);
+            inputCssLinks = inputCssLinks.filter(Boolean);
+            // if( inputCssLinks ) log('[transpile][CSSLinks]',inputCssLinks);
+            
             // { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)}
-            return <>
+            return inputCssLinks ? <>
                 {inputCssLinks.map( c => <link key={c} rel="stylesheet" href={c} />)}
-            </>
+            </> : null;
         }
         // Layout,
         // a: (props) => {

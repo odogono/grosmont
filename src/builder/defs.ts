@@ -4,6 +4,7 @@ export const defs = [
         uri: '/component/src',
         properties: [
             { name: 'url', type: 'string' },
+            { name: 'mime', type: 'string' },
         ]
     },
     {

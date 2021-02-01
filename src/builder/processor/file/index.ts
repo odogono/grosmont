@@ -16,11 +16,12 @@ import { BitField, create as createBitField, toString as bfToString } from 'odgn
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 
-import { parseUri } from '../../util/uri';
+import { parseUri } from '../../../util/uri';
 import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
-import { insertDependency, isTimeSame, printAll } from '../util';
-import { selectSite, Site } from '../site';
-import { parse } from '../config';
+import { insertDependency, isTimeSame, printAll } from '../../util';
+import { process as buildDeps } from '../build_deps';
+import { selectSite, Site } from '../../site';
+import { parse } from '../../config';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { getDefId } from 'odgn-entity/src/component_def';
 
@@ -30,23 +31,23 @@ import { getDefId } from 'odgn-entity/src/component_def';
 let logActive = true;
 const log = (...args) => logActive && console.log('[ProcFile]', ...args);
 
-/**
- * Matches /site + /dir component and scans the directory for
- * files
- * 
- * @param es 
- */
-export async function process(es: EntitySetMem) {
-    // select site + dir components
-    const sites = await selectSites(es);
+// /**
+//  * Matches /site + /dir component and scans the directory for
+//  * files
+//  * 
+//  * @param es 
+//  */
+// export async function process(es: EntitySetMem) {
+//     // select site + dir components
+//     const sites = await selectSites(es);
 
-    // start the crawl of each site
-    for (const site of sites) {
-        await gather(es, site);
-    }
+//     // start the crawl of each site
+//     for (const site of sites) {
+//         await gather(es, site);
+//     }
 
-    return es;
-}
+//     return es;
+// }
 
 export interface ProcessOptions {
     debug?: true;
@@ -55,7 +56,7 @@ export interface ProcessOptions {
 }
 
 
-export async function processNew(site: Site, options: ProcessOptions = {}) {
+export async function process(site: Site, options: ProcessOptions = {}) {
     // logActive = options.debug ?? false;
     // const readFS = options.readFS ?? true;
 
@@ -100,7 +101,7 @@ export async function processNew(site: Site, options: ProcessOptions = {}) {
  * - take the src eids add to update list
  * @param site 
  */
-async function applyUpdatesToDependencies(site:Site){
+export async function applyUpdatesToDependencies(site:Site){
     const stmt = site.es.prepare(`
 
         [
@@ -135,10 +136,14 @@ async function applyUpdatesToDependencies(site:Site){
         // set the es as a word - makes easier to reference
         es let
 
+        
         selectUpdates
         
+        [ @! ] swap size! 0 == if
+        
         [
-            pop
+            pop?
+            // prints
             spread swap // op eid
             *$3 swap // pull the es to the top
             
@@ -146,14 +151,13 @@ async function applyUpdatesToDependencies(site:Site){
             rot applyOp
             
             // add upd coms to each e
-            // prints
             dup
             **addUpdCom map drop
             
             // add the result to the list
             rot swap +
             // continue to loop while there are still eids
-            size! 0 !=
+            size 0 !=
         ] loop
     `);
 
@@ -316,39 +320,7 @@ async function buildSrcUrlIndex(es: EntitySet): Promise<[string, EntityId, strin
 }
 
 
-async function buildDeps(site: Site, es?: EntitySet) {
-    es = es ?? site.es;
 
-
-    // select /src entities with a file url
-    const coms = await selectFileSrc(es);
-
-    for (const com of coms) {
-        const { url } = com;
-
-        // find the parent
-        const parentUrl = Path.dirname(url) + Path.sep;
-        const parent = await selectComponentByUrl(es, parentUrl);
-
-        const eid = getComponentEntityId(com);
-        const pid = getComponentEntityId(parent);
-
-        if (pid === 0) {
-            continue;
-        }
-
-        // insert or update
-        const depId = await insertDependency(es, eid, pid, 'dir');
-        // await selectDependency(es, eid, pId, 'dir');
-
-
-        // log('com', eid, '->', pid, '=', depId);
-        // log('com', getComponentEntityId(com), 'parent', getComponentEntityId(parent) );
-
-    }
-
-    return es;
-}
 
 async function readFileMeta(site: Site, es?: EntitySet) {
     es = es ?? site.es;
@@ -409,26 +381,8 @@ async function selectByUrl(es: EntitySet, url: string): Promise<Entity> {
     return res.length > 0 ? res[0] : undefined;
 }
 
-async function selectComponentByUrl(es: EntitySet, url: string): Promise<Component> {
-    const stmt = es.prepare(`[
-        /component/src#url !ca $url ==
-        /component/src !bf
-        @c
-    ] select`);
 
-    let res = await stmt.getResult({ url });
-    return res.length > 0 ? res[0] : undefined;
-}
 
-async function selectFileSrc(es: EntitySet): Promise<Component[]> {
-    const stmt = es.prepare(`[
-        /component/src#url !ca ~r/^file\:\/\// ==
-        /component/src !bf
-        @c
-    ] select`);
-
-    return await stmt.getResult();
-}
 
 async function selectMeta(es: EntitySet): Promise<Entity[]> {
     const stmt = es.prepare(`[

@@ -3,11 +3,12 @@ import { Entity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { buildUrl } from "../../../util/uri";
 import { Site, SiteIndex } from "../../ecs";
-import { getDependencyEntities } from "../../util";
-import { selectTargetPath } from "../target_path";
+import { getDependencyEntities, uriToPath } from "../../util";
+import { getDstUrl } from "../dst_url";
 import { PageLink, PageLinks, TranspileProps } from "./types";
 
 
+const log = (...args) => console.log('[Util]', ...args);
 
 export function buildProps(e: Entity): TranspileProps {
     let data = e.Mdx.data;
@@ -27,7 +28,11 @@ export async function buildPageLinks( es:EntitySet, linkIndex:SiteIndex ){
         if( type === 'external' ){
             result.set(url, {url});
         } else {
-            let path = await selectTargetPath(es, eid);
+            let path = await getDstUrl(es, eid);
+
+            path = uriToPath(path);
+            
+            // log('[getDstUrl]', eid, path );
             result.set(url, {url:path});
         }
     }
@@ -39,7 +44,7 @@ export async function buildPageLinks( es:EntitySet, linkIndex:SiteIndex ){
 
 
 
-export async function buildFileIndex(site: Site) {
+export async function buildSrcIndex(site: Site) {
     // let es = site.es;
     const siteEntity = site.getSite();
 
@@ -48,16 +53,16 @@ export async function buildFileIndex(site: Site) {
     // select entities with /component/file AND /component/text (eg. have been rendered)
     const query = `[
         /component/site_ref#ref !ca $ref ==
-        [/component/file /component/text /component/meta] !bf
+        [/component/src] !bf
         and
         @e
     ] select
-
-    [ /component/file#uri /id /component/meta#/meta/mime ] pluck
+    
+    [ /component/src#url /id /component/meta#/meta/mime ] pluck
 
     `;
 
-    return await site.addQueryIndex('/index/fileUri', query, { ref: siteEntity.id });
+    return await site.addQueryIndex('/index/srcUrl', query, { ref: siteEntity.id });
 }
 
 
@@ -80,6 +85,7 @@ export async function selectMdx(es: EntitySet): Promise<Entity[]> {
  * @param path 
  */
 export function getEntityImportUrlFromPath(fileIndex: SiteIndex, path: string) {
+    // console.log('[getEntityImportUrlFromPath]', path);
     if (fileIndex === undefined || path == '') {
         return undefined;
     }
@@ -104,7 +110,7 @@ export async function getEntityCSSDependencies(es: EntitySet, e: Entity) {
 
     for (const dep of cssDeps) {
         const { src, dst } = dep.Dep;
-        let path = await selectTargetPath(es, dst);
+        let path = await getDstUrl(es,dst);
 
         // log('[getEntityCSSDependencies]', dst, did);
         const com = await es.getComponent(toComponentId(dst, did));
