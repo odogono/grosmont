@@ -9,10 +9,11 @@ import CSSNano from 'cssnano';
 import { Component } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
-import { printAll } from "../ecs";
-import { joinPaths, writeFile } from './file';
-import { resolveTarget, selectDirTarget } from './clear_target';
-import { applyMeta } from '../util';
+import { printAll } from "../../ecs";
+import { joinPaths, writeFile } from '../file';
+import { resolveTarget, selectDirTarget } from '../clear_target';
+import { applyMeta } from '../../util';
+import { Site } from '../../site';
 
 
 
@@ -21,7 +22,8 @@ import { applyMeta } from '../util';
  * putting the result into a text component
  * 
  */
-export async function process(es: EntitySet) {
+export async function process(site: Site) {
+    const {es} = site;
 
     // select scss entities
     const ents = await selectScss(es);
@@ -41,7 +43,7 @@ export async function process(es: EntitySet) {
         let filename = Path.basename(url);
 
         filename = filename.substr(0, filename.lastIndexOf(".")) + ".css";
-        e.Target = { url:filename };
+        e.Dst = { url:filename };
         
     }
 
@@ -49,6 +51,8 @@ export async function process(es: EntitySet) {
 
     // apply changes
     await es.add( ents );
+
+    return site;
 }
 
 

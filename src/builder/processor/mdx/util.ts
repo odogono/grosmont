@@ -2,7 +2,7 @@ import { toComponentId } from "odgn-entity/src/component";
 import { Entity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { buildUrl } from "../../../util/uri";
-import { Site, SiteIndex } from "../../ecs";
+import { Site, SiteIndex } from "../../site";
 import { getDependencyEntities, uriToPath } from "../../util";
 import { getDstUrl } from "../dst_url";
 import { PageLink, PageLinks, TranspileProps } from "../../types";
@@ -112,10 +112,12 @@ export async function getEntityCSSDependencies(es: EntitySet, e: Entity) {
         const { src, dst } = dep.Dep;
         let path = await getDstUrl(es,dst);
 
-        // log('[getEntityCSSDependencies]', dst, did);
         const com = await es.getComponent(toComponentId(dst, did));
+        log('[getEntityCSSDependencies]', dst, did, com);
 
-        result.push({ path, text: com.data });
+        if( com ){
+            result.push({ path, text: com.data });
+        }
     }
 
     return result;

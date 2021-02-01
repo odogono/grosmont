@@ -262,7 +262,7 @@ import 'file:///styles/main.scss';
     
 
     await assignMime(site, es);
-    await renderScss(es);
+    await renderScss(site);
 
     // printES(es);
 
@@ -291,7 +291,7 @@ import 'file:///styles/main.scss';
     await addScss(site, 'file:///styles/main.scss', `h2 { color: blue; }`);
 
     await assignMime(site, es);
-    await renderScss(es);
+    await renderScss(site);
     await renderMdx(site);
 
     // console.log('\n\n---\n');
@@ -307,7 +307,7 @@ import 'file:///styles/alt.scss';
     `);
 
     await assignMime(site, es);
-    await renderScss(es);
+    await renderScss(site);
     await renderMdx(site);
 
     let e = await site.getSrc('file:///pages/main.mdx');
@@ -351,7 +351,7 @@ Hello _world_
     
 
     await assignMime(site);
-    await renderScss(es);
+    await renderScss(site);
     await renderMdx(site);
 
     // console.log('\n\n---\n');
@@ -380,7 +380,7 @@ test('internal page link', async ({es,site}) => {
     `);
 
     await assignMime(site);
-    await renderScss(es);
+    await renderScss(site);
     // printES(es);
     await renderMdx(site);
 
@@ -398,7 +398,7 @@ test('external page link', async ({es,site}) => {
     `);
 
     await assignMime(site);
-    await renderScss(es);
+    await renderScss(site);
     await renderMdx(site);
 
     // printES(es);

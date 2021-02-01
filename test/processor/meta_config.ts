@@ -1,6 +1,6 @@
 import { suite } from 'uvu';
 import Path from 'path';
-import { printAll, Site } from '../../src/builder/ecs';
+import { Site } from '../../src/builder/site';
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as renderMdx } from '../../src/builder/processor/mdx';
@@ -12,6 +12,7 @@ import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 
 import assert from 'uvu/assert';
 import { Entity } from 'odgn-entity/src/entity';
+import { printAll } from '../../src/builder/util';
 
 const log = (...args) => console.log('[TestProcMeta]', ...args);
 

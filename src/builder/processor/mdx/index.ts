@@ -1,4 +1,4 @@
-import { Site } from '../../ecs';
+import { Site } from '../../site';
 
 
 import { process as preprocess } from './parse';

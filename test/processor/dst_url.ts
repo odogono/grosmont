@@ -1,9 +1,10 @@
 import { suite } from 'uvu';
 import Path from 'path';
-import { printAll, Site } from '../../src/builder/ecs';
+import { Site } from '../../src/builder/site';
 import { getDstUrl } from '../../src/builder/processor/dst_url';
 import { parse as parseMeta } from '../../src/builder/processor/meta';
 import assert from 'uvu/assert';
+import { printAll } from '../../src/builder/util';
 
 const log = (...args) => console.log('[TestProcTargetPath]', ...args);
 

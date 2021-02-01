@@ -21,6 +21,7 @@ import { process as slugifyTitle } from '../../src/builder/processor/slugify_tit
 import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
 import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
+import { process as markMdx } from '../../src/builder/processor/mdx/mark';
 
 import { Entity } from 'odgn-entity/src/entity';
 import { getDependencyParents, getDependencyChildren, printAll, printEntity } from '../../src/builder/util';
@@ -81,11 +82,8 @@ async function loadRootB(site: Site) {
 
 
 
-test.skip('reading a site entity', async ({ es, site }) => {
-    id = 1100;
-    const insts = Fs.readFileSync(Path.join(rootPath, '/test/fixtures/root.b.insts'), 'utf-8');
-    const stmt = es.prepare(insts)
-    await stmt.run();
+test.only('reading a site entity', async ({ es, site }) => {
+    await loadRootB(site);
 
     let com = (es as EntitySet).createComponent('/component/upd', {op:ChangeSetOp.Update});
     com = setEntityId(com, 1011);
@@ -97,11 +95,12 @@ test.skip('reading a site entity', async ({ es, site }) => {
 
     await buildDeps(site);
 
+    await markMdx(site, {loadData:true});
     // await applyUpdatesToDependencies(site);
 
     // await mdxResolveMeta(site, { e: 1014 });
 
-    // printES(es);
+    printES(es);
 });
 
 // test('reading a site entity', async ({ es, site }) => {

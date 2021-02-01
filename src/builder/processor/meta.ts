@@ -4,7 +4,7 @@ import Yaml from 'yaml';
 import { Entity, EntityId, getEntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { getEntityAttribute } from "odgn-entity/src/util/entity";
-import { printEntity, Site } from '../ecs';
+import { Site } from '../site';
 
 import { Component, getComponentDefId } from 'odgn-entity/src/component';
 import { ComponentDef, getDefId } from 'odgn-entity/src/component_def';
