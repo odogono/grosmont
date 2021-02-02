@@ -9,6 +9,8 @@ import send from 'send';
 import url from 'url';
 import Mitt from 'mitt'
 
+const log = (...args) => console.log('[server]', ...args);
+
 const app = express();
 const port = 3000;
 
@@ -22,6 +24,10 @@ Chokidar.watch('.').on('all', (event, path) => {
     }
 });
 
+
+async function onStart(){
+    log(`Example app listening at http://localhost:${port}`);
+}
 
 
 // app.use(serveStatic('dist') );
@@ -94,7 +100,7 @@ function countdown(res, count) {
 
 app.get('/', (req, res) => res.send('Hello World!'))
 
-app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
+app.listen(port, onStart);
 
 
 

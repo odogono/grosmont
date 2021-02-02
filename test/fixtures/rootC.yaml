@@ -1,0 +1,14 @@
+/component/src:
+  url: file:///pages/
+
+/component/dst:
+  url: file:///dist/
+
+/component/title:
+  title: Open Door Go North
+
+/component/patterns:
+  include: 
+    - '**/*'
+  exclude:
+    - .DS_Store

@@ -1,1 +1,2 @@
-#!/usr/bin/env node
+#!/usr/bin/env npx ts-node
+require('../src/serve/index.ts');
