@@ -126,7 +126,7 @@ export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Com
         dup [ @! ] rot size! 0 == if
 
         // set eid to parent
-        /dst pluck eid !
+        /dst pluck! eid !
 
         // keeps the loop looping
         true

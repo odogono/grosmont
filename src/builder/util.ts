@@ -185,7 +185,7 @@ export async function getDependencyParents(es:EntitySet, eid:EntityId, type:stri
         // if the size of the select result is 0, then return false
         size 0 == [ drop false @! ] swap if
         pop!
-        /dst pluck
+        /dst pluck!
         @>
     ] selectParent define
 
@@ -234,7 +234,7 @@ export async function getDependencyChildren(es:EntitySet, eid:EntityId, type:str
         
         // if the size of the select result is 0, then return false
         size 0 == [ drop false @! ] swap if
-        /src pluck
+        /src pluck!
         
         @>
         swap drop // drop the es

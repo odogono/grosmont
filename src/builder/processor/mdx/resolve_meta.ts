@@ -78,13 +78,13 @@ async function selectDependencyMeta(es: EntitySet, eid: EntityId) {
         // if the size of the select result is 0, then return 0
         size 0 == [ drop false @! ] swap if
         pop!
-        /dst pluck
+        /dst pluck!
         @>
     ] selectParent define
 
     [ // es eid -- es eid [meta]
         swap [ *^%1 @eid /component/meta !bf @c ] select 
-        /meta pluck
+        /meta pluck!
         rot swap // rearrange exit vars
     ] selectMeta define
 

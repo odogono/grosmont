@@ -117,7 +117,7 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
         // if the size of the select result is 0, then return false
         size 0 == [ drop false @! ] swap if
         pop!
-        /dst pluck
+        /dst pluck!
         @>
     ] selectParent define
 
@@ -194,8 +194,6 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
         // examine /component/dst and add to the result
         // if it exists
         handleDst
-        
-        
 
         // if the dst exists and is absolute, then we have
         // finished

@@ -106,7 +106,7 @@ export async function applyUpdatesToDependencies(site:Site){
 
         [
             $es [ /component/upd !bf @c ] select
-            [ /@e /op ] pluck
+            [ /@e /op ] pluck!
         ] selectUpdates define
 
         // selects /dep which match the eid and returns the src
@@ -307,7 +307,7 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<Sr
 async function buildSrcUrlIndex(es: EntitySet): Promise<[string, EntityId, string, BitField][]> {
     const query = `
     [ [/component/src /component/times] !bf @e ] select
-    [ /component/src#/url /id /component/times#/mtime /bitField ] pluck
+    [ /component/src#/url /id /component/times#/mtime /bitField ] pluck!
     `
     const stmt = es.prepare(query);
     let result = await stmt.getResult();

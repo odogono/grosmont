@@ -104,7 +104,7 @@ export async function selectDirDependencies(es: EntitySet, dir: EntityId | Entit
             [] result let // result array
             [
                 selectDeps
-                /src pluck
+                /src pluck!
                 dup 
                 $result concat result !
                 size!

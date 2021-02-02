@@ -164,7 +164,7 @@ async function getLayoutFromDependency(es: EntitySet, eid: EntityId): Promise<En
         and
         @c
     ] select
-    /dst pluck
+    /dst pluck!
     
     // exit with undefined if nothing was found
     dup [ undefined @! ] swap [] == if
