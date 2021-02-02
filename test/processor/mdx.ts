@@ -4,13 +4,13 @@ import { Site } from '../../src/builder/site';
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as renderMdx } from '../../src/builder/processor/mdx';
-import { process as slugifyTitle } from '../../src/builder/processor/slugify_title';
+import { process as assignTitle } from '../../src/builder/processor/assign_title';
 import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
 import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
 import { process as applyTags } from '../../src/builder/processor/mdx/apply_tags';
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
-import { parse as parseMeta } from '../../src/builder/processor/meta';
+import { parse } from '../../src/builder/config';
 
 import assert from 'uvu/assert';
 import { Entity } from 'odgn-entity/src/entity';
@@ -363,7 +363,7 @@ Hello _world_
 test('internal page link', async ({es,site}) => {
     // await addMdx( site, 'file:///pages/main.mdx', `# Main Page`);
 
-    let e = await parseMeta( site, `
+    let e = await parse( site, `
     /component/src:
         url: file:///pages/main.mdx
     /component/mdx:
@@ -415,13 +415,38 @@ test('extract target slug from title', async({es,site}) => {
     let e = await addMdx( site, 'file:///pages/main.mdx', `
 # Extracting the Page Title
     `);
+    await site.update(e);
+
+    await assignMime(site);
+    await mdxPreprocess(site);
+    
+    // printES(es);
+    
+    await mdxResolveMeta(site);
+    await mdxRender(site);
+    
+    await assignTitle(site);
+
+    e = await site.getSrc('file:///pages/main.mdx');
+
+    assert.equal( e.Dst.url, 'extracting-the-page-title.html');
+
+    // printES(es);
+
+});
+
+test('extract target slug from title with dst', async({es,site}) => {
+
+    let e = await addMdx( site, 'file:///pages/main.mdx', `
+# Extracting the Page Title
+    `);
     e.Dst = { url:'/html/' };
     await site.update(e);
 
     await assignMime(site);
     await mdxPreprocess(site);
     
-    await slugifyTitle(site);
+    await assignTitle(site);
     // printES(es);
     
     await mdxResolveMeta(site);

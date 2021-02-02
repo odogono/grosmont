@@ -15,9 +15,8 @@ import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as renderMdx } from '../../src/builder/processor/mdx';
-import { parse as parseMeta } from '../../src/builder/processor/meta';
 import { getDstUrl } from '../../src/builder/processor/dst_url';
-import { process as slugifyTitle } from '../../src/builder/processor/slugify_title';
+import { process as slugifyTitle } from '../../src/builder/processor/assign_title';
 import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
 import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
@@ -52,18 +51,14 @@ interface TestProps {
 }
 
 test.before.each(async (tcx) => {
-
+    id = 1000;
     const configPath = `file://${rootPath}/test/fixtures/rootB/site.yaml`;
-
-    // log( configPath );
-
     const site = await Site.create({ idgen, configPath });
 
     tcx.site = site;
     tcx.es = site.es;
     tcx.e = site.getSite();
-
-    // log( site );
+    
 });
 
 async function loadRootB(site: Site) {
@@ -77,7 +72,7 @@ async function loadRootB(site: Site) {
 
 
 
-test.only('reading a site entity', async ({ es, site }) => {
+test('reading a site entity', async ({ es, site }) => {
     await loadRootB(site);
 
     let com = (es as EntitySet).createComponent('/component/upd', {op:ChangeSetOp.Update});
@@ -114,6 +109,7 @@ test.only('reading a site entity', async ({ es, site }) => {
 
 
 test('dependencies are also marked as updated', async ({ es, site }) => {
+    // id = 1000;
     let mem = es.clone({ cloneEntities: false });// new EntitySetMem( undefined, {idgen} );
     let ents = [
         createFileEntity(es, 'file:///pages/'),

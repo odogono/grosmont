@@ -2,7 +2,7 @@ import { suite } from 'uvu';
 import Path from 'path';
 import { Site } from '../../src/builder/site';
 import { getDstUrl } from '../../src/builder/processor/dst_url';
-import { parse as parseMeta } from '../../src/builder/processor/meta';
+import { parse } from '../../src/builder/config';
 import assert from 'uvu/assert';
 import { printAll } from '../../src/builder/util';
 
@@ -31,7 +31,7 @@ test.before.each( async (tcx) => {
 
 test('no dst without a target', async ({ es, site }) => {
 
-    let e = await parseMeta( site, `
+    let e = await parse( site, `
     /component/src:
         url: file:///pages/main.mdx
     `);
@@ -47,7 +47,7 @@ test('no dst without a target', async ({ es, site }) => {
 
 test('filename dst', async ({ es, site }) => {
 
-    let e = await parseMeta( site, `
+    let e = await parse( site, `
     /component/src:
         url: file:///pages/main.mdx
     /component/dst:
@@ -63,7 +63,7 @@ test('filename dst', async ({ es, site }) => {
 
 test('file:// dst', async ({ es, site }) => {
 
-    let e = await parseMeta( site, `
+    let e = await parse( site, `
     /component/src:
         url: file:///pages/main.mdx
     /component/dst:
@@ -81,33 +81,33 @@ test('file:// dst', async ({ es, site }) => {
 
 test('parent dst', async ({ es, site }) => {
 
-    await parseMeta( site, `
+    await parse( site, `
     /component/dep:
         src: 2001
         dst: 2000
         type: dir
     `);
     
-    await parseMeta( site, `
+    await parse( site, `
     /component/dep:
         src: 2000
         dst: 1999
         type: dir
     `);
 
-    await parseMeta( site, `
+    await parse( site, `
     id: 1999
     /component/dst:
         url: /root/output.htm
     `);
 
-    await parseMeta( site, `
+    await parse( site, `
     id: 2000
     /component/dst:
         url: pages/
     `);
 
-    let e = await parseMeta( site, `
+    let e = await parse( site, `
     id: 2001
     /component/src:
         url: file:///pages/main.mdx
@@ -128,31 +128,31 @@ test('parent dst', async ({ es, site }) => {
 
 test('parent has filename', async ({ es, site }) => {
 
-    await parseMeta( site, `
+    await parse( site, `
     /component/dep:
         src: 2001
         dst: 2000
         type: dir
     `);
     
-    await parseMeta( site, `
+    await parse( site, `
     /component/dep:
         src: 2000
         dst: 1999
         type: dir
     `);
 
-    await parseMeta( site, `
+    await parse( site, `
     id: 1999
     /component/dst:
         url: pages/output.txt
     `);
 
-    await parseMeta( site, `
+    await parse( site, `
     id: 2000
     `);
 
-    let e = await parseMeta( site, `
+    let e = await parse( site, `
     id: 2001
     /component/src:
         url: file:///pages/main.mdx
@@ -168,6 +168,33 @@ test('parent has filename', async ({ es, site }) => {
     assert.equal( path, "/pages/output.txt" );
 
 });
+
+
+// test.only('scss sitation', async ({es,site}) => {
+
+//     await parse( site, `
+//     /component/dep:
+//         src: 2000
+//         dst: 1999
+//         type: dir
+//     `);
+
+//     await parse( site, `
+//     id: 1999
+//     src: file:///styles/
+//     dst: /styles/
+//     `);
+
+//     let e = await parse( site, `
+//     id: 2000
+//     /component/src:
+//         url: file:///styles/main.scss
+//     `);
+
+//     let path = await getDstUrl( es, e.id );
+
+//     log( 'path', path);
+// })
 
 
 test.run();

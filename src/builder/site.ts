@@ -182,9 +182,12 @@ export class Site {
 
     getDstUrl(appendPath?:string){
         let res = this.e.Dst.url;
+
         if( appendPath ){
+            res = res.startsWith('file://') ? fileURLToPath(res) : res;
             res = Path.join( res, appendPath.startsWith('file://') ? fileURLToPath(appendPath) : appendPath );
         }
+        
         return res;
     }
 
@@ -254,7 +257,7 @@ export class Site {
         return findEntitiesByTags( this.es, tags, {siteRef:this.e.id} );
     }
 
-    getIndex( name:string, create:boolean = false ){
+    getIndex( name:string, create:boolean = false ):SiteIndex {
         let index = this.indexes.get(name);
         if( index === undefined && create ){
             index = { index: new Map<any,any[]>() };

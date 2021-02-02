@@ -32,7 +32,7 @@ export interface ParseOptions {
  */
 export async function parse(site: Site, input: string|object, type: string = 'yaml', options:ParseOptions = {}): Promise<Entity> {
     const {es, rootPath} = site;
-    const addToES = options.add ?? false;
+    const addToES = options.add ?? true;
 
     let data:any = isString(input) ?
         parseString(input as string,type)
@@ -77,6 +77,9 @@ export async function parse(site: Site, input: string|object, type: string = 'ya
             }
             else if( key === 'dst'){
                 e.Dst = {url: other[key] };
+            }
+            else if( key === 'text'){
+                e.Text = {data: other[key] };
             }
             else {
                 meta[key] = other[key];

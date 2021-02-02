@@ -8,7 +8,7 @@ import { getDstUrl } from "./dst_url";
 
 
 
-const log = (...args) => console.log('[ProcSlugifyTitle]', ...args);
+const log = (...args) => console.log('[ProcAssignTitle]', ...args);
 
 
 
@@ -31,7 +31,7 @@ export async function process(site: Site) {
 
         let {title} = e.Title;
         let meta = e.Meta?.meta ?? {};
-        let target = e.Dst?.url ?? '';// await getDstUrl(site.es,e.eid);// e.Dst?.url ?? '';
+        let target = e.Dst?.url ?? '';
 
         let url = slugify(title);
         if( target ){
@@ -60,8 +60,8 @@ export async function select(es: EntitySet): Promise<Entity[]> {
     // select components which have /title AND /meta but also optionally
     // /dst
     const query = `
-        [ [ /component/title /component/meta /component/dst ] !bf @c] select
-        /@e pluck!
+        [ [ /component/title /component/meta ] !bf @c] select
+        /@e pluck
         rot [ *^$1 /component/dst !bf @c ] select rot +    
     `;
 

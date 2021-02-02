@@ -14,6 +14,7 @@ import { joinPaths, writeFile } from '../file';
 import { resolveTarget, selectDirTarget } from '../clear_target';
 import { applyMeta } from '../../util';
 import { Site } from '../../site';
+import { getDstUrl } from '../dst_url';
 
 
 
@@ -41,6 +42,10 @@ export async function process(site: Site) {
         // alter the target filename
         const url = e.Src.url;
         let filename = Path.basename(url);
+
+        const dstUrl = await getDstUrl(es, e.id);
+
+        log('dstUrl', dstUrl);
 
         filename = filename.substr(0, filename.lastIndexOf(".")) + ".css";
         e.Dst = { url:filename };
