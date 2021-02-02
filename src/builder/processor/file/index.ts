@@ -347,7 +347,7 @@ async function readFileMeta(site: Site, es?: EntitySet) {
         let content = await Fs.readFile(path, 'utf8');
 
         // parse the meta into an entity
-        let metaE = await parse(site.es, content, ext, { add: false });
+        let metaE = await parse(site, content, ext, { add: false });
 
         // fold this entity into the parent
         for (let [, com] of metaE.components) {

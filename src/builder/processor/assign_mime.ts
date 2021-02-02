@@ -6,7 +6,7 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { printAll } from "../ecs";
 import { Component } from 'odgn-entity/src/component';
-import { Site } from '../ecs';
+import { Site } from '../site';
 import { applyMeta } from '../util';
 
 const log = (...args) => console.log('[ProcAssignMime]', ...args);
@@ -18,8 +18,8 @@ const log = (...args) => console.log('[ProcAssignMime]', ...args);
  * 
  * @param es 
  */
-export async function process(site: Site, es: EntitySet = undefined) {
-    es = es ?? site.es;
+export async function process(site: Site) {
+    const {es} = site;
     const siteEntity = site.getSite();
 
     const files = await selectFiles(es);

@@ -113,7 +113,7 @@ export async function getEntityCSSDependencies(es: EntitySet, e: Entity) {
         let path = await getDstUrl(es,dst);
 
         const com = await es.getComponent(toComponentId(dst, did));
-        log('[getEntityCSSDependencies]', dst, did, com);
+        // log('[getEntityCSSDependencies]', dst, did, com);
 
         if( com ){
             result.push({ path, text: com.data });

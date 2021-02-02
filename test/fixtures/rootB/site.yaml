@@ -1,11 +1,7 @@
-/component/src:
-  url: file:///.
+title: Site Root B
+src: file:///.
+dst: ../dist/
 
-/component/dst:
-  url: file:///dist/
-
-/component/title:
-  title: Site Root B
 
 /component/patterns:
   include: 

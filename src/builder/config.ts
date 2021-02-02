@@ -1,6 +1,6 @@
 import Toml from 'toml';
 import Yaml from 'yaml';
-
+import Path from 'path';
 
 import { Entity, EntityId, getEntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
@@ -10,6 +10,9 @@ import { getEntityAttribute } from "odgn-entity/src/util/entity";
 import { Component, getComponentDefId } from 'odgn-entity/src/component';
 import { ComponentDef, getDefId } from 'odgn-entity/src/component_def';
 import { stringify } from 'odgn-entity/src/util/json';
+import { isString } from '../util/is';
+import { Site } from './site';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 
 const log = (...args) => console.log('[Config]', ...args);
@@ -27,32 +30,16 @@ export interface ParseOptions {
  * @param type 
  * @param options 
  */
-export async function parse(es: EntitySet, text: string, type: string = 'yaml', options:ParseOptions = {}): Promise<Entity> {
-    
+export async function parse(site: Site, input: string|object, type: string = 'yaml', options:ParseOptions = {}): Promise<Entity> {
+    const {es, rootPath} = site;
     const addToES = options.add ?? false;
 
-    let data;
+    let data:any = isString(input) ?
+        parseString(input as string,type)
+        : input;
 
-    if (type == 'toml' || type == 'text/toml') {
-        try {
-            data = Toml.parse(text);
-        } catch (err) {
-            log('[parse] error', err);
-            return undefined;
-        }
-    }
-    else if (type === 'yaml' || type === 'text/yaml') {
-        try {
-            data = Yaml.parse(text);
-        }
-        catch (err) {
-            log('[parse] error', err);
-            return undefined;
-        }
-    }
-
-    // log('parsed', type, data);
     if( data === undefined || data === null ){
+        log('no input', input);
         return undefined;
     }
 
@@ -66,11 +53,7 @@ export async function parse(es: EntitySet, text: string, type: string = 'yaml', 
 
         const def = es.getByUri(key);
         if (def !== undefined) {
-            // log('com', def.name, val);
-
             coms.push([def, es.createComponent(def, val)]);
-
-            // e[ def.name ] = com;
         } else {
             metaKeys.push(key);
         }
@@ -85,7 +68,20 @@ export async function parse(es: EntitySet, text: string, type: string = 'yaml', 
     if (metaKeys.length > 0) {
         let meta = {};
         for (const key of metaKeys) {
-            meta[key] = other[key];
+
+            if( key === 'title' ){
+                e.Title = { title: other[key] };
+            }
+            else if( key === 'src'){
+                e.Src = {url: other[key] };
+            }
+            else if( key === 'dst'){
+                e.Dst = {url: other[key] };
+            }
+            else {
+                meta[key] = other[key];
+            }
+
         }
         e.Meta = { meta };
     }
@@ -119,6 +115,37 @@ export async function parse(es: EntitySet, text: string, type: string = 'yaml', 
     return e;
 }
 
+// function parseUrl( rootPath:string, url:string ){
+//     if( url.startsWith('file://') ){
+//         return url;
+//     }
+//     // log('[parseUrl]', url);
+//     // if( !Path.isAbsolute(url) ){
+//     //     url = Path.join(rootPath, url);
+//     // }
+//     return pathToFileURL( url ).href;
+// }
+
+function parseString( data:string, type:string = 'yaml' ){
+    if (type == 'toml' || type == 'text/toml') {
+        try {
+            return Toml.parse(data);
+        } catch (err) {
+            log('[parse] error', err);
+            return undefined;
+        }
+    }
+    else if (type === 'yaml' || type === 'text/yaml') {
+        try {
+            return Yaml.parse(data);
+        }
+        catch (err) {
+            log('[parse] error', err);
+            return undefined;
+        }
+    }
+    
+}
 
 async function getEntityByUrl(es: EntitySet, url: string, val: string) {
     const q = `[ ${url} !ca ${stringify(val)} == @e ] select`;

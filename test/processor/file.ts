@@ -53,22 +53,17 @@ interface TestProps {
 
 test.before.each(async (tcx) => {
 
-
-    // const target = `file://${rootPath}/dist/`;
-    // tcx.site = new Site({ idgen, name: 'test', target });
-    // await tcx.site.init();
-    // // tcx.siteEntity = tcx.site.getSite();
-    // tcx.es = tcx.site.es;
-
     const configPath = `file://${rootPath}/test/fixtures/rootB/site.yaml`;
 
     // log( configPath );
 
-    const site = await Site.create({ idgen, configPath, rootPath });
+    const site = await Site.create({ idgen, configPath });
 
     tcx.site = site;
     tcx.es = site.es;
     tcx.e = site.getSite();
+
+    // log( site );
 });
 
 async function loadRootB(site: Site) {
@@ -100,7 +95,7 @@ test.only('reading a site entity', async ({ es, site }) => {
 
     // await mdxResolveMeta(site, { e: 1014 });
 
-    printES(es);
+    // printES(es);
 });
 
 // test('reading a site entity', async ({ es, site }) => {

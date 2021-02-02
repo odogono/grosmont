@@ -21,9 +21,8 @@ test.before.each( async (tcx) => {
     let id = 1000;
     let idgen = () => ++id;
 
-    const target = `file://${rootPath}/dist/`;
-    tcx.site = new Site({idgen, name:'test', target});
-    await tcx.site.init();
+    const dst = `file://${rootPath}/dist/`;
+    tcx.site = await Site.create({idgen, name:'test', dst});
     tcx.siteEntity = tcx.site.getSite();
     tcx.es = tcx.site.es;
 });

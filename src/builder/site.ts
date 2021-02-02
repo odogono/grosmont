@@ -49,7 +49,7 @@ export interface SiteIndex {
 
 export interface SiteOptions extends EntitySetOptions {
     name?: string;
-    target?: string;
+    dst?: string;
     dir?: string;
     es?: EntitySet;
     configPath?: string;
@@ -60,7 +60,6 @@ export interface SiteOptions extends EntitySetOptions {
 export class Site {
     es: EntitySet;
     e: Entity; // reference to the active site entity
-    options: SiteOptions;
     rootPath: string;
 
     indexes: Map<string,SiteIndex> = new Map<string,SiteIndex>();
@@ -71,61 +70,69 @@ export class Site {
 
         let es = options.es ?? new EntitySetMem(undefined, options);
 
-        let site = new Site({es, ...options});
+        let site = new Site();
 
-        await site.init();
+        site.es = options.es ?? new EntitySetMem(undefined, options);
+        
+        for (const def of defs) {
+            await site.es.register(def);
+        }
+        
+        await site.parseOptions(options);
+
+        await site.readConfig(options);
 
         return site;
     }
 
-    constructor(options:SiteOptions = {}){
-        this.options = options;
-    }
-    
-    async init(options:SiteOptions = undefined) {
-        options = options ?? this.options;
-        this.es = options.es ?? new EntitySetMem(undefined, options);
-        
-        for (const def of defs) {
-            await this.es.register(def);
-        }
-        
-        await this.parseOptions(options);
-
-        await this.readConfig(options);
-    }
+    private constructor (){}
 
     /**
      * 
      * @param options 
      */
-    async readConfig(options:SiteOptions = undefined){
-        options = options ?? this.options;
-        const {configPath} = options;
+    async readConfig(options:SiteOptions = {}){
+        let {configPath, rootPath} = options;
 
         if( configPath === undefined ){
             return;
         }
+        if( configPath.startsWith('file://') ){
+            configPath = fileURLToPath(configPath);
+        }
         
-        const path = fileURLToPath(options.configPath);
-        let config = await Fs.readFile(path, 'utf8');
+        if( rootPath === undefined ){
+            rootPath = Path.dirname(configPath);
+        }
+        if( rootPath.startsWith('file://') ){
+            rootPath = fileURLToPath(rootPath);
+        }
+        rootPath = rootPath.endsWith(Path.sep) ? rootPath : rootPath + Path.sep;
         
+        // const path = fileURLToPath(options.configPath);
+        let config = await Fs.readFile(configPath, 'utf8');
+        
+        this.rootPath = pathToFileURL( rootPath ).href;
         
         if( config ){
-            let e = await parse( this.es, config, 'yaml', {add:true} );
-            let root = options.rootPath; // fileURLToPath( Path.dirname( options.configPath ) );
-            let configRoot = fileURLToPath( Path.dirname( options.configPath ) );
+            // log('parsing', config);
+            let e = await parse( this, config, 'yaml', {add:true} );
             
-            // log('[readConfig]', options.rootPath );
-
             // resolve the src and dst paths
-            let url = e.Src?.url ?? '/.';
-            url = pathToFileURL( Path.join( configRoot, fileURLToPath(url) ) ).href;
+            let url = e.Src?.url ?? pathToFileURL( rootPath ).href;
+            url = url.startsWith('file://') ? fileURLToPath(url) : url; 
+            url = pathToFileURL( Path.join( rootPath, url ) ).href;
             e.Src = {url};
 
-            url = e.Dst?.url ?? '.';
-            url = pathToFileURL( Path.join( root, fileURLToPath(url) ) ).href;
+            // log('[readConfig]', 'src', url);
+            
+            url = e.Dst?.url ?? pathToFileURL( rootPath ).href;;
+            url = url.startsWith('file://') ? fileURLToPath(url) : url; 
+            // log('[readConfig]', 'dst', Path.join(rootPath,url) );
+            url = pathToFileURL( Path.join( rootPath, url ) ).href;
             e.Dst = {url};
+            // log('[readConfig]', 'dst', url);
+            
 
             if( e.Site === undefined ){
                 e.Site = {};
@@ -142,7 +149,8 @@ export class Site {
     }
 
     async parseOptions( options:SiteOptions = {} ){
-        const {name,target,dir, rootPath} = options;
+        // await parse(this.es, options, undefined);
+        const {name,dst,dir, rootPath} = options;
         this.rootPath = rootPath;
 
         let e = this.es.createEntity();
@@ -152,8 +160,8 @@ export class Site {
         if( dir !== undefined ){
             e.Src = { url:dir };
         }
-        if( target !== undefined ){
-            e.Dst = { url:target };
+        if( dst !== undefined ){
+            e.Dst = { url:dst };
         }
         if( e.size > 0 ){
             await this.es.add( e );
@@ -170,14 +178,6 @@ export class Site {
             res = Path.join( res, appendPath.startsWith('file://') ? fileURLToPath(appendPath) : appendPath );
         }
         return res;
-        // let root = fileURLToPath( Path.dirname( this.options.configPath ) );
-        
-        // url = url ?? this.e.Src?.url ?? '/.';
-        // // const parts = parseUri( url );
-        // // log('[getDstUrl]', parts);
-        // let path = Path.join( root, fileURLToPath(url) );
-        // // log('[getSrcUrl]', root, fileURLToPath(url) );
-        // return path;
     }
 
     getDstUrl(appendPath?:string){

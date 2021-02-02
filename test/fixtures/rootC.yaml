@@ -1,5 +1,5 @@
 /component/src:
-  url: file:///pages/
+  url: file:///rootC/
 
 /component/dst:
   url: file:///dist/

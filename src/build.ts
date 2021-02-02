@@ -17,13 +17,15 @@ const log = (...args) => console.log('[odgn-ssg]', ...args);
 
 
 const [ config ] = process.argv.slice(2);
-const configPath = pathToFileURL( Path.resolve(config) ).href;
-const rootPath = process.cwd();// Path.resolve(__dirname);
+// const configPath = pathToFileURL( Path.resolve(config) ).href;
+const configPath = Path.resolve(config);
+// const rootPath = Path.dirname(Path.resolve(config));
 
-log('building from', {configPath, rootPath} );
+log('config', Path.resolve(config) );
+log('building from', {configPath} );
 
 
-Site.create({configPath:configPath, rootPath}).then( async site => {
+Site.create({configPath}).then( async site => {
 
     // log('created', site);
 

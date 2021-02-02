@@ -1,7 +1,7 @@
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { slugify } from "../../util/string";
-import { printEntity, Site } from '../ecs';
+import { Site } from '../site';
 import { extensionFromMime } from "./assign_mime";
 import { getDstUrl } from "./dst_url";
 

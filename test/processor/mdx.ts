@@ -38,9 +38,8 @@ test.before.each(async (tcx) => {
     let id = 1000;
     let idgen = () => ++id;
 
-    const target = `file://${rootPath}/dist/`;
-    tcx.site = new Site({ idgen, name: 'test', target });
-    await tcx.site.init();
+    const dst = `file://${rootPath}/dist/`;
+    tcx.site = await Site.create({ idgen, name: 'test', dst });
     // tcx.siteEntity = tcx.site.getSite();
     tcx.es = tcx.site.es;
 });
@@ -261,7 +260,7 @@ import 'file:///styles/main.scss';
 
     
 
-    await assignMime(site, es);
+    await assignMime(site);
     await renderScss(site);
 
     // printES(es);
@@ -290,7 +289,7 @@ import 'file:///styles/main.scss';
     `);
     await addScss(site, 'file:///styles/main.scss', `h2 { color: blue; }`);
 
-    await assignMime(site, es);
+    await assignMime(site);
     await renderScss(site);
     await renderMdx(site);
 
@@ -306,7 +305,7 @@ import 'file:///styles/alt.scss';
 ## Main page
     `);
 
-    await assignMime(site, es);
+    await assignMime(site);
     await renderScss(site);
     await renderMdx(site);
 
@@ -438,7 +437,7 @@ test('extract target slug from title', async({es,site}) => {
 });
 
 
-test.only('tags in mdx', async({es,site}) => {
+test('tags in mdx', async({es,site}) => {
     let e = await addMdx( site, 'file:///pages/main.mdx',`
 ---
 tags:

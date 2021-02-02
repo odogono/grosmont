@@ -84,10 +84,11 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
     [ $paths + paths ! ] addToPaths define
     
 
-    // ( es eid -- es str|undefined )
+    // ( es eid -- es str|false )
     // returns the target uri from an entity
     [
-        swap [ *^$1 @eid /component/dst#url @ca ] select pop?
+        
+        swap [ *^$1 @eid /component/dst#url @ca ] select pop? swap drop
         
         // swap [ *^$1 @eid /component/dst !bf @c ] select
         
@@ -96,24 +97,24 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
         dup [ drop false @! ] swap undefined == if
 
         @> // restart exec after @!
+        
     ] selectDst define
 
 
-    // selects the parent entity, or 0 if none is found
-    // ( es eid -- es eid )
-    [
-        
+    // selects the parent entity, or false if none is found
+    // ( es eid -- es eid|false )
+    [        
         swap
         [
-            /component/dep !bf
             /component/dep#src !ca *^$1 ==
             /component/dep#type !ca dir ==
             and
+            /component/dep !bf
             @c
         ] select
 
 
-        // if the size of the select result is 0, then return 0
+        // if the size of the select result is 0, then return false
         size 0 == [ drop false @! ] swap if
         pop!
         /dst pluck
@@ -127,46 +128,37 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
     [
         // to order eid es eid
         dup rot rot
-        
+
         selectDst
+        
         dup
         
         // if no /dst exists, return false
         [ drop swap false @! ] swap false == if
         
-        
         selectFilenameAndPath
         
-
-        // // if the filename exists then set it
-        // selectFilename
-        
-        // // if its a filename, return false
-        // dup [ filename ! swap false @! ] swap isFilename if
-
-        
-
         dup [ drop swap false @! ] swap size! 0 == if
         
         dup isAbsPath
         
         // if abs path, add to result, return true
         [ addToPaths swap "abs" @! ] swap if
-
+        
         // relative path
         addToPaths swap "rel"
         @>
-
+        
     ] handleDst define
 
 
-    
-    [
+    // es eid -- es eid|false
+    [   
         
         selectParent
 
         // if no parent, stop execution
-        dup [ drop @! ] swap false == if
+        dup [ @! ] swap false == if
 
     ] handleParent define
 
@@ -178,7 +170,9 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
 
     // takes a path, extracts the filename and sets it if exists
     // returns the path without filename
+    // str
     [
+        
         ~r/(.*\\/)?(.*)/ eval
         dup [ drop @! ] swap false == if
         
@@ -196,14 +190,20 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
     // iterate up the dir dependency tree
     $eid
     [
+        
         // examine /component/dst and add to the result
         // if it exists
         handleDst
         
-         
+        
+
         // if the dst exists and is absolute, then we have
         // finished
         dup [ drop drop @! ] swap "abs" == if
+        
+        
+
+        // es eid false
         
         
         drop // drop the false result
@@ -211,8 +211,11 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
         
         // swap // so we have es eid
         
+        
         // find the parent dir using deps
         handleParent
+
+         
 
         true // loop only continues while true
     ] loop

@@ -32,13 +32,6 @@ interface TestProps {
 
 test.before.each(async (tcx) => {
 
-
-    // const target = `file://${rootPath}/dist/`;
-    // tcx.site = new Site({ idgen, name: 'test', target });
-    // await tcx.site.init();
-    // // tcx.siteEntity = tcx.site.getSite();
-    // tcx.es = tcx.site.es;
-
     const configPath = `file://${rootPath}/test/fixtures/rootB/site.yaml`;
 
     // log( configPath );
