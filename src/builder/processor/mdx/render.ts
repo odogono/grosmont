@@ -145,7 +145,10 @@ async function applyCSSDependencies(es: EntitySet, e: Entity, child: TranspileRe
     let cssLinks = cssEntries.map(ent => ent.path);
     if (child !== undefined) {
         css = css + ' ' + child.css;
-        cssLinks = [...cssLinks, ...child.cssLinks];
+        // log('[applyCSSDependencies]', child.cssLinks);
+
+        cssLinks = Array.isArray(child.cssLinks) ? cssLinks.concat(child.cssLinks) : cssLinks;
+        // cssLinks = [...cssLinks, ...child.cssLinks];
     }
     return { ...props, css, cssLinks };
 }

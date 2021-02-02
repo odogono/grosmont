@@ -7,6 +7,7 @@ import { parseUri } from "../util/uri";
 import Day from 'dayjs';
 import { ProcessOptions } from './types';
 import { isString } from '../util/is';
+import { fileURLToPath } from 'url';
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
 
@@ -333,15 +334,23 @@ export interface FindEntityOptions {
 
 export async function findEntityBySrcUrl(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<EntityId> {
     const ref = options.siteRef ?? 0;
-
+    
+    // convert to an extension-less path
+    path = uriToPath( path );
+    const ext = Path.extname(path);
+    path = path.substring(0, path.length - ext.length);
+    // log('[findEntityBySrcUrl]', path,  );
+    
     const query = `
     // compose the RE
     ["^.*://"] $path + ".*" + "" join !r
+
     // make sure the ES is before the select
     swap
     [
         /component/site_ref#ref !ca $ref ==
         /component/src#url !ca *^$1 ==
+        // /component/src#url !ca $path ==
         and
         @eid
     ] select`;

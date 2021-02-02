@@ -129,6 +129,9 @@ function applyTitle(es: EntitySet, e: Entity, result: TranspileMeta) {
 
 async function applyLayout(es: EntitySet, e: Entity, result: TranspileMeta) {
     const { layout } = result;
+
+    // log('[applyLayout]', e.id, layout );
+
     if (layout === undefined) {
         await removeDependency(es, e.id, 'layout');
         return e;
@@ -141,7 +144,7 @@ async function applyLayout(es: EntitySet, e: Entity, result: TranspileMeta) {
     // find the entity matching the layout
     const layoutEid = await findEntityBySrcUrl(es, layout, { siteRef });
 
-    // log('[applyLayout]', 'found', layoutEid);
+    // log('[applyLayout]', e.id, 'found', layoutEid);
 
     // add a dependency from this entity to the layout entity
     if (layoutEid !== undefined) {
