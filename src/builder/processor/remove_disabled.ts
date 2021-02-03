@@ -1,6 +1,6 @@
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
-import { selectMetaDisabled } from "../util";
+import { selectMetaDisabled } from "../query";
 // import { selectDependencies, selectDirDependencies } from "./file_deps";
 
 

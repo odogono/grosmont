@@ -13,12 +13,17 @@ import { stringify } from 'odgn-entity/src/util/json';
 import { isString } from '../util/is';
 import { Site } from './site';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { slugify } from '../util/string';
+import { findEntityBySrcUrl, insertDependency, selectTagBySlug } from './query';
+import { createTracing } from 'trace_events';
+import { createTag, createTimes } from './util';
 
 
 const log = (...args) => console.log('[Config]', ...args);
 
 export interface ParseOptions {
     add?: boolean;
+    e?: Entity;
 }
 
 
@@ -59,8 +64,8 @@ export async function parse(site: Site, input: string|object, type: string = 'ya
         }
     }
 
-    let e = es.createEntity(eid);
-    // log('create e', e.id);
+    let e = options.e ?? es.createEntity(eid);
+    
     for (const [def, com] of coms) {
         e[def.name] = com;
     }
@@ -70,23 +75,39 @@ export async function parse(site: Site, input: string|object, type: string = 'ya
         for (const key of metaKeys) {
 
             if( key === 'title' ){
-                e.Title = { title: other[key] };
+                applyToCom( e, 'Title', {title: other[key] } );
+            }
+            else if( key === 'summary'){
+                applyToCom( e, 'Title', {summary: other[key] }, false );
             }
             else if( key === 'src'){
-                e.Src = {url: other[key] };
+                applyUrlToCom( e, 'Src', other[key] );
+                // e.Src = {url: other[key] };
             }
             else if( key === 'dst'){
-                e.Dst = {url: other[key] };
+                applyUrlToCom( e, 'Dst', other[key] );
+                // e.Dst = {url: other[key] };
             }
             else if( key === 'text'){
                 e.Text = {data: other[key] };
             }
+            else if( key === 'mime'){
+                e.Mime = {type: other[key] };
+            }
+            else if( key === 'tags' ){
+                await applyTags( site, e, other[key] );
+            }
+            else if( key === 'layout' ){
+                await applyLayout( site, e, other[key] );
+            }
             else {
                 meta[key] = other[key];
             }
-
         }
-        e.Meta = { meta };
+        if( Object.keys(meta).length > 0 ){
+            // e.Meta = { meta };
+            applyToCom( e, 'Meta', {meta}, false );
+        }
     }
 
     // log('!! done', e.id);
@@ -117,6 +138,60 @@ export async function parse(site: Site, input: string|object, type: string = 'ya
 
     return e;
 }
+
+function applyUrlToCom( e:Entity, name:string, url:string, overwrite:boolean = false ){
+    let com = e[name] ?? {};
+    if( /^.*:\/\//.exec(url) === null ){
+        url = pathToFileURL( url ).href;
+    }
+    com = overwrite ? {url} : {...com,url};
+    e[name] = com;
+    return e;
+}
+
+function applyToCom( e:Entity, name:string, attrs:any, overwrite:boolean = true ){
+    let com = e[name] ?? {};
+    com = overwrite ? {...attrs} : {...com,...attrs};
+    e[name] = com;
+    return e;
+}
+
+
+async function applyLayout( site:Site, e:Entity, url:string ) {
+    const siteRef = e.SiteRef?.ref;
+    // find the entity matching the layout
+    const layoutEid = await findEntityBySrcUrl(site.es, url, { siteRef });
+    
+    if (layoutEid !== undefined) {
+        await insertDependency(site.es, e.id, layoutEid, 'layout');
+    } else {
+        log('[applyLayout]', 'could not find layout for', url);
+    }
+}
+
+async function applyTags( site:Site, e:Entity, tags:string|string[]){
+    let names:string[] = isString(tags) ? [ tags as string ] : tags as string[];
+    
+    // get rid of duplicates
+    names = Object.values( names.reduce( (r,tag) => {
+        r[slugify(tag)] = tag;
+        return r;
+    }, {}) );
+
+    for( const tag of names ){
+        let etag = await selectTagBySlug(site, tag);
+        if( etag === undefined ){
+            etag = await createTag(site,tag);
+        }
+
+        await insertDependency(site.es, e.id, etag.id, 'tag');
+    }
+
+}
+
+
+
+
 
 // function parseUrl( rootPath:string, url:string ){
 //     if( url.startsWith('file://') ){

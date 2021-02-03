@@ -5,6 +5,7 @@ import * as t from "@babel/types";
 import unistVisit from 'unist-util-visit';
 import unistRemove from 'unist-util-remove';
 import {select,selectAll} from 'unist-util-select';
+import { isString } from '../../../util/is';
 
 /**
  * 
@@ -30,11 +31,12 @@ export function titlePlugin() {
                 pageProps.title = firstHeading.value;
             }
             if( !('description' in pageProps) ){
-                pageProps.description = description?.value ?? '';
+                let value = description?.value;
+                if( isString(value) && (value as string).length > 0 ){
+                    pageProps.description = value;
+                }
             }
         }
-
-        
 
         // re-apply with new properties
         pageProps = appendExport(tree, 'page', pageProps );
@@ -55,11 +57,27 @@ function appendExport(tree, name: string, additional: any = {}) {
         const propGather = {
             ObjectProperty(path) {
                 const key = path.node.key?.name ?? path.node.key?.value;
+                if( key === undefined ){
+                    return;
+                }
+                // if( key !== 'title' && key !== 'description' ){
+                //     return;
+                // }
                 // const value = path.node.value?.value;
-                let value = eval( babelGenerate(path.node.value).code );
+                path.skip(); // prevent going any further
+                try {
+                    // log('eval', key, path.node.type, JSON.parse(babelGenerate(path.node.value).code) );
+                    // log( path.node );
 
-                if (key !== undefined) {
+                    // let value = eval( babelGenerate(path.node.value).code );
+                    let value = JSON.parse( babelGenerate(path.node.value).code );
+                    
                     this.props[key] = value;
+                    
+                    // log('eval ok', key, value);
+
+                } catch( err ){
+                    // log('err', err.message, key, path.node.type, babelGenerate(path.node.value).code );
                 }
             }
         };
@@ -70,9 +88,11 @@ function appendExport(tree, name: string, additional: any = {}) {
                 // path.node.properties.map( p => babelGenerate(p).code ) );
 
                 let properties = Object.keys(this.props).map(key => {
+                    // log('[propSet]', key, this.props[key] );
                     return t.objectProperty(t.stringLiteral(key), t.valueToNode(this.props[key]));
                 })
                 path.node.properties = properties;
+                path.skip();
             }
         }
 
@@ -84,7 +104,7 @@ function appendExport(tree, name: string, additional: any = {}) {
                     path.traverse(propGather, { props });
                     // log('[traverse][VariableDeclarator]', name, props, babelGenerate(path.node).code );
 
-                    // log('[traverse][VariableDeclarator]', path.node);
+                    // log('[traverse][VariableDeclarator]', path.node.key?.name );
 
                     props = { ...props, ...additional };
                     path.traverse(propSet, { props });

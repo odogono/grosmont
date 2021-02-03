@@ -19,12 +19,12 @@ export const defs = [
             { name: 'url', type: 'string' },
         ]
     },
-    // {
-    //     uri: '/component/mime',
-    //     properties: [
-    //         { name: 'type', type: 'string' },
-    //     ]
-    // },
+    {
+        uri: '/component/mime',
+        properties: [
+            { name: 'type', type: 'string' },
+        ]
+    },
     {
         uri: '/component/status',
         properties: [
@@ -87,7 +87,8 @@ export const defs = [
         uri: '/component/title',
         properties: [ 
             { name: 'title', type: 'string' },
-            { name: 'description', type: 'string' } 
+            { name: 'description', type: 'string' },
+            { name: 'summary', type: 'string' } 
         ]
     },
     {

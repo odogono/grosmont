@@ -3,9 +3,10 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { StrictMode } from "react";
 import { slugify } from "../../../util/string";
+import { insertDependency, selectMeta, selectTagBySlug } from "../../query";
 
 import { Site } from "../../site";
-import { createTimes, insertDependency, selectDependency } from "../../util";
+import { createTag, createTimes } from "../../util";
 
 const log = (...args) => console.log('[ProcApplyTags]', ...args);
 
@@ -51,48 +52,4 @@ export async function process(site: Site, options = {}) {
     }
 
     return site;
-}
-
-
-async function createTag(site:Site, name:string){
-    let e = site.es.createEntity();
-    e.Tag = { slug: slugify(name) };
-    e.Title = { title:name };
-    e.SiteRef = { ref: site.e.id };
-    e.Times = createTimes();
-
-    return await site.update(e);
-}
-
-async function selectTagBySlug( site:Site, name:string ){
-    const slug = slugify(name);
-    const {es,e} = site;
-
-    const stmt = es.prepare(`
-    [
-        /component/tag#slug !ca $slug ==
-        /component/site_ref#ref !ca $ref ==
-        and
-        @e
-    ] select
-    `);
-
-    return await stmt.getEntity({ref:e.id, slug});
-}
-
-async function selectMeta( site:Site ){
-    const {es} = site;
-
-
-    const stmt = es.prepare(`
-    [
-        /component/site_ref#ref !ca $ref ==
-        /component/meta !bf
-        // [/component/meta /component/upd] !bf
-        // and
-        @c
-    ] select
-    `);
-
-    return await stmt.getResult({ref:site.e.id});
 }

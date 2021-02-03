@@ -32,11 +32,11 @@ import { titlePlugin } from '../../unified/plugin/title';
 import { Head } from '../../../components/head';
 import { isObject } from 'odgn-entity/src/util/is';
 
-import { 
-    TranspileProps, 
-    TranspileOptions, 
-    TranspileResult, 
-    PageLinks 
+import {
+    TranspileProps,
+    TranspileOptions,
+    TranspileResult,
+    PageLinks
 } from '../../types';
 
 const log = (...args) => console.log('[TranspileMDX]', ...args);
@@ -50,7 +50,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
 
     let meta = props.meta ?? {};
 
-    let {css, cssLinks:inputCssLinks, children, applyLinks} = props;
+    let { css, cssLinks: inputCssLinks, children, applyLinks } = props;
 
     let { data, path } = props;
     const { resolveImport } = options;
@@ -61,15 +61,15 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     const components = {
         Head,
         InlineCSS: (props) => {
-            return <style dangerouslySetInnerHTML={{__html:css}} />;
+            return <style dangerouslySetInnerHTML={{ __html: css }} />;
         },
         CSSLinks: () => {
             inputCssLinks = inputCssLinks.filter(Boolean);
             // if( inputCssLinks ) log('[transpile][CSSLinks]',inputCssLinks);
-            
+
             // { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)}
             return inputCssLinks ? <>
-                {inputCssLinks.map( c => <link key={c} rel="stylesheet" href={c} />)}
+                {inputCssLinks.map(c => <link key={c} rel="stylesheet" href={c} />)}
             </> : null;
         }
         // Layout,
@@ -81,31 +81,31 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
         //     return <a {...props}></a>
         // }
     }
-    if( path !== undefined ){
+    if (path !== undefined) {
         // data = await Fs.readFile(path, 'utf8');
     }
 
-    const inPageProps = { ...meta, css, cssLinks:inputCssLinks };
-    const mdxResult = await parseMdx(data, path, { pageProps:inPageProps,applyLinks, resolveImport } );
-    
+    const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
+    const mdxResult = await parseMdx(data, path, { pageProps: inPageProps, applyLinks, resolveImport });
+
     const { component, frontMatter,
-        code, jsx, ast, page, default: d, 
+        code, jsx, ast, page, default: d,
         requires, links, cssLinks,
         pageProps, ...rest } = mdxResult;
-        
+
     meta = { ...meta, ...pageProps };
 
     // log('[transpile]', 'meta', mdxResult );
 
-    let result:TranspileResult = {
-        path,  jsx, /* code, ast,*/ component, links, meta, cssLinks, additional:rest
+    let result: TranspileResult = {
+        path, jsx, /* code, ast,*/ component, links, meta, cssLinks, additional: rest
     };
 
     // log('[transpile]', 'requires', requires);
     // log('[transpile]', 'cssLinks', cssLinks);
 
     let depends = [];
-    for( let r of requires ){
+    for (let r of requires) {
         r = isObject(r) ? r.path : r;
         // r = await resolveRelativePath(path, r);
         depends.push(r);
@@ -117,17 +117,17 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     //     // resolve these to absolute
     //     result.cssLinks = await Promise.all( cssLinks.map( link => resolveRelativePath(path,link)) );
     // }
-    
+
     // console.log('[transpile]', path, 'and now', rest );
     if (!forceRender && (frontMatter !== undefined && frontMatter.enabled === false)) {
         return result;
         // return { code, jsx, ast, meta, component, requires:depends, links, ...rest };
     }
 
-    if( doRender ){
+    if (doRender) {
         result.html = renderHTML({ components, component, children });
     }
-    
+
     return result;
 }
 
@@ -155,21 +155,21 @@ function renderHTML({ components, component: Component, children }) {
 
 
 
-function parseMdx(data: string, path:string, options:ProcessMDXOptions) {
+function parseMdx(data: string, path: string, options: ProcessMDXOptions) {
     // let content = Fs.readFileSync(path, 'utf8');
 
     try {
         let [jsx, links, ast] = processMdx(data, options);
-        
+
         let code = transformJSX(jsx);
         let el = evalCode(code, path);
 
         // log('[parseMdx]', 'el', el );
-    
+
         return { ...el, code, jsx, ast, links };
 
-    } catch( err ){
-        log('[parseMdx]', `failed to process mdx ${path}`, err.stack );
+    } catch (err) {
+        log('[parseMdx]', `failed to process mdx ${path}`, err.stack);
         log('[parseMdx]', data);
         throw err;
     }
@@ -183,11 +183,11 @@ export type ProcessMDXOptions = {
     resolveImport?: (path) => string | undefined;
 }
 
-export type ProcessMDXResult = [ string, PageLinks, any];
+export type ProcessMDXResult = [string, PageLinks, any];
 
-export function processMdx(content: string, options:ProcessMDXOptions): ProcessMDXResult {
+export function processMdx(content: string, options: ProcessMDXOptions): ProcessMDXResult {
 
-    const {  pageProps, applyLinks, resolveImport } = options;
+    const { pageProps, applyLinks, resolveImport } = options;
     let links = new Map<string, any>();
     let ast;
 
@@ -200,10 +200,9 @@ export function processMdx(content: string, options:ProcessMDXOptions): ProcessM
     // remark-mdx has a really bad time with html comments even
     // if they are removed with the removeCommentPlugin, so a brute
     // force replace is neccesary here until i can figure it out
-    content = content.replace( /<!--(.*?)-->/, '' );
+    content = content.replace(/<!--(.*?)-->/, '');
 
     let output = unified()
-        // .use(() => console.dir)
         .use(parse)
         .use(stringify)
         .use(frontmatter)
@@ -214,11 +213,12 @@ export function processMdx(content: string, options:ProcessMDXOptions): ProcessM
         
         .use(linkProc, { links, applyLinks })
         // take a snap of the AST
-        .use( () => tree => {ast = JSON.stringify(tree,null,'\t')} )
+        .use(() => tree => { ast = JSON.stringify(tree, null, '\t') })
+        // .use(() => console.dir)
         .use(mdx)
         .use(mdxjs)
         .use(titlePlugin)
-        .use(importCSSPlugin, {resolve: resolveImport})
+        .use(importCSSPlugin, { resolve: resolveImport })
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
@@ -262,11 +262,11 @@ function evalCode(code: string, path: string) {
     const requireManual = (requirePath) => {
         log('[evalCode][requireManual]', requirePath);
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
-        
-        let extPath = findFileWithExt(fullPath, ['mdx'] );
-        
+
+        let extPath = findFileWithExt(fullPath, ['mdx']);
+
         if (Fs.existsSync(extPath) && extPath.endsWith('.mdx')) {
-            requires.push({path:extPath});
+            requires.push({ path: extPath });
             const data = Fs.readFileSync(path, 'utf8');
             const out = parseMdx(data, extPath, {});
             // console.log('[require]', requirePath, Object.keys(out), out);
@@ -275,14 +275,14 @@ function evalCode(code: string, path: string) {
             return out;
         }
 
-        extPath = findFileWithExt(fullPath, ['jsx', 'js'] );
-        if( extPath.endsWith('.jsx') ){
-            requires.push({path:extPath});
+        extPath = findFileWithExt(fullPath, ['jsx', 'js']);
+        if (extPath.endsWith('.jsx')) {
+            requires.push({ path: extPath });
             let jsx = Fs.readFileSync(extPath, 'utf8');
             let code = transformJSX(jsx);
             return evalCode(code, extPath);
         }
-        
+
         // the default behaviour - normal require
         const req = require(requirePath);
 
@@ -297,19 +297,19 @@ function evalCode(code: string, path: string) {
         require: requireManual,
         console: console
     });
-    
-    const {default:component, page:pageProps, ...rest} = out;
+
+    const { default: component, page: pageProps, ...rest } = out;
 
     return { ...rest, pageProps, requires, component };
 }
 
 
 
-function findFileWithExt( path:string, exts:string[] ){
-    exts = [ '', ...exts ];
-    for( const ext of exts ){
+function findFileWithExt(path: string, exts: string[]) {
+    exts = ['', ...exts];
+    for (const ext of exts) {
         let epath = path + `.${ext}`;
-        if( Fs.existsSync(epath) ){
+        if (Fs.existsSync(epath)) {
             return epath;
         }
     }

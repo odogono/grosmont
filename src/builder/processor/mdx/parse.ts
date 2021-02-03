@@ -10,15 +10,21 @@ import { transpile } from './transpile';
 import { parseUri } from "../../../util/uri";
 import {
     applyMeta,
+} from "../../util";
+import {
     getDependencies,
     findEntityBySrcUrl,
     findEntityByUrl,
     insertDependency,
     removeDependency,
-} from "../../util";
+    buildSrcIndex,
+    selectMdx,
+} from "../../query";
 import { toInteger } from "odgn-entity/src/util/to";
-import { buildSrcIndex, buildProps, getEntityImportUrlFromPath, selectMdx } from "./util";
-
+import { buildProps, getEntityImportUrlFromPath } from "./util";
+import { isString } from "../../../util/is";
+import { parse as parseConfig } from '../../config';
+import { printEntity } from "odgn-entity/src/util/print";
 
 
 const log = (...args) => console.log('[ProcMDXParse]', ...args);
@@ -43,7 +49,7 @@ export async function process(site: Site) {
 
     // first pass at parsing the mdx - pulling out links, local meta etc
     for (const e of ents) {
-        output.push(await preProcessMdx(es, e, { fileIndex, linkIndex }));
+        output.push(await preProcessMdx(site, e, { fileIndex, linkIndex }));
     }
 
     await es.add(output);
@@ -59,8 +65,8 @@ export async function process(site: Site) {
  * @param es 
  * @param e 
  */
-async function preProcessMdx(es: EntitySet, e: Entity, options: ProcessOptions) {
-
+async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
+    const { es } = site;
     const { fileIndex } = options;
     const resolveImport = (path: string) => getEntityImportUrlFromPath(fileIndex, path);
 
@@ -80,13 +86,21 @@ async function preProcessMdx(es: EntitySet, e: Entity, options: ProcessOptions) 
         // clear out empty/undefined values
         // Object.keys(meta).forEach((k) => meta[k] == null && delete meta[k]);
 
-        e = applyMeta(e, { ...meta });
+        await parseConfig(site, meta, undefined, {add:false, e} );
+
+        // log('[preProcessMdx]', 'parsed');
+        // printEntity( es, pe );
+
+        // e = applyMeta(e, { ...meta });
 
         // applies to /component/title
-        e = applyTitle(es, e, meta);
+        // e = applyTitle(es, e, meta);
+
+
+        // e = applyDst(es, e, meta);
 
         // adds a layout dependency if found
-        e = await applyLayout(es, e, meta);
+        // e = await applyLayout(es, e, meta);
 
         // creates css dependencies
         e = await applyCSSLinks(es, e, result);
@@ -106,6 +120,16 @@ async function preProcessMdx(es: EntitySet, e: Entity, options: ProcessOptions) 
     return e;
 }
 
+function applyDst(es:EntitySet, e:Entity, result:TranspileMeta ){
+    let dst = result['dst'];
+    if( dst === undefined ){
+        return e;
+    }
+
+    e.Dst = { url:dst };
+
+    return e;
+}
 
 function applyTitle(es: EntitySet, e: Entity, result: TranspileMeta) {
     let { title, description, ...rest } = result;
@@ -114,7 +138,7 @@ function applyTitle(es: EntitySet, e: Entity, result: TranspileMeta) {
     if (title !== undefined) {
         com.title = title;
     }
-    if (description !== undefined) {
+    if ( isString(description) && description.length > 0) {
         com.description = description;
     }
     if (Object.keys(com).length > 0) {

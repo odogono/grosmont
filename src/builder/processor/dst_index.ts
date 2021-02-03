@@ -4,10 +4,10 @@ import { getDefId } from "odgn-entity/src/component_def";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { slugify } from "../../util/string";
+import { selectDstTextIds } from '../query';
 
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
-import { createTimes, insertDependency, FindEntityOptions } from "../util";
 import { getDstUrl } from './dst_url';
 
 const log = (...args) => console.log('[ProcDstIndex]', ...args);
@@ -30,7 +30,7 @@ export async function process(site: Site, options:DstIndexOptions = {}) {
     const es = site.es;
 
     const dstIndex = site.getIndex('/index/dstUrl', true);
-    const eids = await select(es);
+    const eids = await selectDstTextIds(es);
 
     for( const eid of eids ){
         const url = await getDstUrl(es, eid);
@@ -42,13 +42,3 @@ export async function process(site: Site, options:DstIndexOptions = {}) {
     return site;
 }
 
-
-export async function select(es: EntitySet): Promise<EntityId[]> {
-
-    const q = `
-        [ [ /component/dst /component/text ] !bf @eid] select
-    `;
-
-    const stmt = es.prepare(q);
-    return await stmt.getResult();
-}

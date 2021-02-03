@@ -16,14 +16,14 @@ import { BitField, create as createBitField, toString as bfToString } from 'odgn
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 
-import { parseUri } from '../../../util/uri';
 import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
-import { insertDependency, isTimeSame } from '../../util';
+import { isTimeSame } from '../../util';
 import { process as buildDeps } from '../build_deps';
 import { selectSite, Site } from '../../site';
 import { parse } from '../../config';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { getDefId } from 'odgn-entity/src/component_def';
+import { applyUpdatesToDependencies, buildSrcUrlIndex } from '../../query';
 
 
 
@@ -77,77 +77,6 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     // }
 }
 
-
-/**
- * - select entity ids that are marked as updated
- * - for each eid, select /deps which have matching dst
- * - take the src eids, add upd coms with same op
- * - take the src eids add to update list
- * @param site 
- */
-export async function applyUpdatesToDependencies(site:Site){
-    const stmt = site.es.prepare(`
-
-        [
-            $es [ /component/upd !bf @c ] select
-            [ /@e /op ] pluck!
-        ] selectUpdates define
-
-        // selects /dep which match the eid and returns the src
-        // es eid -- es [ eid ]
-        [
-            swap [ 
-                /component/dep#dst !ca *^$1 ==
-                /component/dep#src @ca 
-            ] select
-        ] selectDepSrc define
-
-        // adds the op to each of the eids
-        // eids op -- [ eid, op ]
-        [
-            swap [ [] + *^%0 + ] map
-            swap drop
-        ] applyOp define
-
-        // adds a /upd to the e
-        // [eid,op] -- 
-        [
-            spread
-            [ op *^$0 @e *^$0 ] eval to_map
-            [] /component/upd + swap + $es swap !c + drop
-        ] addUpdCom define
-
-
-        // set the es as a word - makes easier to reference
-        es let
-
-        selectUpdates
-        
-        [ @! ] swap size 0 == rot swap if
-        
-        [
-            pop?
-            spread swap // op eid
-            *$3 swap // pull the es to the top
-            
-            selectDepSrc
-            rot applyOp
-            
-            // add upd coms to each e
-            dup
-            **addUpdCom map drop
-            
-            // add the result to the list
-            rot swap +
-            // continue to loop while there are still eids
-            size 0 !=
-        ] loop
-    `);
-
-    await stmt.run();
-
-    return site;
-}
 
 
 async function clearUpdated(es:EntitySet){
@@ -288,19 +217,6 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<Sr
 
 
 
-async function buildSrcUrlIndex(es: EntitySet): Promise<[string, EntityId, string, BitField][]> {
-    const query = `
-    [ [/component/src /component/times] !bf @e ] select
-    [ /component/src#/url /id /component/times#/mtime /bitField ] pluck!
-    `
-    const stmt = es.prepare(query);
-    let result = await stmt.getResult();
-    if (result.length === 0) {
-        return result;
-    }
-    // make sure we have an array of array
-    return Array.isArray(result[0]) ? result : [result];
-}
 
 
 

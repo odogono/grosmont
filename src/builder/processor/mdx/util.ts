@@ -3,9 +3,10 @@ import { Entity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { buildUrl } from "../../../util/uri";
 import { Site, SiteIndex } from "../../site";
-import { getDependencyEntities, uriToPath } from "../../util";
+import { uriToPath } from "../../util";
 import { getDstUrl } from "../dst_url";
 import { PageLink, PageLinks, TranspileProps } from "../../types";
+import { getDependencyEntities } from "../../query";
 
 
 const log = (...args) => console.log('[Util]', ...args);
@@ -13,7 +14,7 @@ const log = (...args) => console.log('[Util]', ...args);
 export function buildProps(e: Entity): TranspileProps {
     let data = e.Mdx.data;
     let eMeta = e.Meta?.meta ?? {};
-    let path = e.File?.uri ?? '';
+    let path = e.Dst?.url ?? '';
     let props: TranspileProps = { path, data, meta: eMeta };
 
     return props;
@@ -43,38 +44,6 @@ export async function buildPageLinks( es:EntitySet, linkIndex:SiteIndex ){
 }
 
 
-
-export async function buildSrcIndex(site: Site) {
-    // let es = site.es;
-    const siteEntity = site.getSite();
-
-    // select entities with /component/file AND /component/text (eg. have been rendered)
-    const query = `
-
-    [
-        /component/site_ref#ref !ca $ref ==
-        /component/src !bf
-        and
-        @e
-    ] select
-    [ /component/src#url /id /component/meta#/meta/mime ] pluck
-    `;
-
-    return await site.addQueryIndex('/index/srcUrl', query, { ref: siteEntity.id });
-}
-
-
-
-export async function selectMdx(es: EntitySet): Promise<Entity[]> {
-    const query = `[
-        /component/mdx !bf
-        @e
-    ] select`;
-
-    const stmt = es.prepare(query);
-
-    return await stmt.getEntities();
-}
 
 /**
  * Returns a url pointing to the value to import from a file path

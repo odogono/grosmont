@@ -43,9 +43,9 @@ export async function process(site: Site) {
         const url = e.Src.url;
         let filename = Path.basename(url);
 
-        const dstUrl = await getDstUrl(es, e.id);
+        // const dstUrl = await getDstUrl(es, e.id);
 
-        log('dstUrl', dstUrl);
+        // log('dstUrl', dstUrl);
 
         filename = filename.substr(0, filename.lastIndexOf(".")) + ".css";
         e.Dst = { url:filename };

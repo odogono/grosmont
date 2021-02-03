@@ -1,5 +1,8 @@
+import Path from 'path';
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
+import { printEntity } from "odgn-entity/src/util/print";
+import { isString } from "../../util/is";
 import { slugify } from "../../util/string";
 import { Site } from '../site';
 import { extensionFromMime } from "./assign_mime";
@@ -31,11 +34,16 @@ export async function process(site: Site) {
 
         let {title} = e.Title;
         let meta = e.Meta?.meta ?? {};
-        let target = e.Dst?.url ?? '';
+        let dst = e.Dst?.url;
+
+        // log('existing title', dst);
+        if( isString(dst) && dst.length > 0 && !dst.endsWith(Path.sep) ){
+            continue;
+        }
 
         let url = slugify(title);
-        if( target ){
-            url = `${target}${url}`;
+        if( dst ){
+            url = `${dst}${url}`;
         }
         
         if( meta.mime ){

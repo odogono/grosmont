@@ -2,9 +2,9 @@ import Path from 'path';
 
 import { EntitySetMem } from "odgn-entity/src/entity_set";
 import { Site } from "../site";
-import { selectFileSrc, selectComponentByUrl, insertDependency } from '../util';
 import { getComponentEntityId } from 'odgn-entity/src/component';
 import { ProcessOptions } from '../types';
+import { insertDependency, selectComponentByUrl, selectFileSrc } from '../query';
 
 
 const log = (...args) => console.log('[ProcBuildDeps]', ...args);

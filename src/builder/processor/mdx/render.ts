@@ -7,7 +7,8 @@ import { ProcessOptions, TranspileProps, TranspileResult } from '../../types';
 import { Site } from '../../site';
 
 import { transpile } from './transpile';
-import { buildSrcIndex, buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath, selectMdx } from "./util";
+import { buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath } from "./util";
+import { buildSrcIndex, selectMdx } from "../../query";
 
 
 const log = (...args) => console.log('[ProcMDXRender]', ...args);

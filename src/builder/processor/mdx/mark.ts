@@ -5,10 +5,10 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { StrictMode } from "react";
 import { slugify } from "../../../util/string";
+import { selectMdxSrc } from '../../query';
 
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
-import { createTimes, insertDependency, FindEntityOptions } from "../../util";
 
 const log = (...args) => console.log('[ProcApplyTags]', ...args);
 
@@ -69,18 +69,4 @@ export async function process(site: Site, options:ProcessMarkMdxOptions = {}) {
     await es.add( addComs );
 
     return site;
-}
-
-
-
-async function selectMdxSrc(es: EntitySet, options: FindEntityOptions = {}) {
-    const ref = options.siteRef ?? 0;
-
-    const stmt = es.prepare(`[
-        /component/src#url !ca ~r/.mdx$/ ==
-        /component/src !bf
-        @c
-    ] select`);
-
-    return await stmt.getResult({ ref });
 }
