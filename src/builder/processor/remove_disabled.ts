@@ -1,7 +1,7 @@
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { selectMetaDisabled } from "../util";
-import { selectDependencies, selectDirDependencies } from "./file_deps";
+// import { selectDependencies, selectDirDependencies } from "./file_deps";
 
 
 export async function process(es: EntitySet) {
@@ -11,13 +11,13 @@ export async function process(es: EntitySet) {
 
     // using the disabled entities, select entities that belong underneath
     // in the file hierarchy
-    let contents = await selectDirDependencies( es, disabled );
+    let contents = undefined; //await selectDirDependencies( es, disabled );
 
 
     let removeEids = Array.from(new Set([...disabled, ...contents]));
 
     // select dependency entities which feature any of the removed entities
-    const removeDepEids = await selectDependencies(es, removeEids);
+    const removeDepEids = undefined; //await selectDependencies(es, removeEids);
 
     removeEids = Array.from(new Set([...removeEids,...removeDepEids]));
 

@@ -47,9 +47,6 @@ import { isEmpty } from 'odgn-entity/src/util/is';
 import { TYPE_OR, BitField, get as bfGet } from 'odgn-entity/src/util/bitfield';
 import { slugify } from '../util/string';
 import { parseUri } from '../util/uri';
-import { createMdxAstCompiler } from '@mdx-js/mdx';
-import { selectDirByUri, selectFileByUri } from './processor/file';
-import { StatementArgs } from 'odgn-entity/src/query';
 
 interface SelectOptions {
     debug?: boolean;

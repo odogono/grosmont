@@ -39,11 +39,11 @@ async function selectSrc(es: EntitySet): Promise<Entity[]> {
 
 
 /**
- * Returns an absolute path for the given entity by looking at /component/file, 
- * and /component/target.
+ * Returns an absolute path for the given entity by looking at /component/src, 
+ * and /component/dst.
  * 
  * loop
-        select /target
+        select /dst
             if exists
                 if is absolute path, return and finish
                 add to result

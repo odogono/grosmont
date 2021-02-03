@@ -12,13 +12,13 @@ import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 
 import assert from 'uvu/assert';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { printAll } from '../../src/builder/util';
 import { getDstUrl } from '../../src/builder/processor/dst_url';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
+import { printAll } from 'odgn-entity/src/util/print';
 
 const log = (...args) => console.log('[TestProcMeta]', ...args);
 
-const printES = (es) => {
+const printES = async (es) => {
     console.log('\n\n---\n');
     printAll( es );
 }

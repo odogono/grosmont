@@ -16,11 +16,7 @@ import {
 import {
     EntitySetMem, EntitySet, EntitySetOptions
 } from 'odgn-entity/src/entity_set';
-import {
-    EntitySetSQL
-} from 'odgn-entity/src/entity_set_sql';
 
-import { selectDirByUri, selectFileByUri, selectSrcByUrl } from './processor/file';
 import { StatementArgs } from 'odgn-entity/src/query';
 import { parse } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
@@ -67,7 +63,6 @@ export class Site {
     static async create( options:SiteOptions = {} ){
         // read from the path
         
-
         let es = options.es ?? new EntitySetMem(undefined, options);
 
         let site = new Site();

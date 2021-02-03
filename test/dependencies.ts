@@ -13,7 +13,7 @@ import { EntitySet, EntitySetMem } from 'odgn-entity/src/entity_set';
 
 const log = (...args) => console.log('[TestFile]', ...args);
 
-const printES = (es) => {
+const printES = async (es) => {
     console.log('\n\n---\n');
     printAll(es);
 }

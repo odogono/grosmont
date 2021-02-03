@@ -18,7 +18,7 @@ import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 
 import { parseUri } from '../../../util/uri';
 import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
-import { insertDependency, isTimeSame, printAll } from '../../util';
+import { insertDependency, isTimeSame } from '../../util';
 import { process as buildDeps } from '../build_deps';
 import { selectSite, Site } from '../../site';
 import { parse } from '../../config';
@@ -31,23 +31,7 @@ import { getDefId } from 'odgn-entity/src/component_def';
 let logActive = true;
 const log = (...args) => logActive && console.log('[ProcFile]', ...args);
 
-// /**
-//  * Matches /site + /dir component and scans the directory for
-//  * files
-//  * 
-//  * @param es 
-//  */
-// export async function process(es: EntitySetMem) {
-//     // select site + dir components
-//     const sites = await selectSites(es);
 
-//     // start the crawl of each site
-//     for (const site of sites) {
-//         await gather(es, site);
-//     }
-
-//     return es;
-// }
 
 export interface ProcessOptions {
     debug?: true;
@@ -526,12 +510,7 @@ function buildGlobFilter(rootPath: string, include: Pattern[], exclude: Pattern[
  * @param options 
  */
 export async function selectSrcByUrl(es: EntitySet, url: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
-    // const bf = es.resolveComponentDefIds('/component/file');
-
-    // const com = es.findComponent(bf, (com) => {
-    //     return com['uri'] === uri;
-    // });
-
+    
     const stmt = es.prepare(`[ /component/src#url !ca $url == @c] select`);
     let com = await stmt.getResult({ url });
     com = com.length === 0 ? undefined : com[0];
@@ -590,131 +569,131 @@ function gatherPatterns(site: Site): [Pattern[], Pattern[]] {
  * @param es 
  * @param site 
  */
-async function gather(es: EntitySetMem, site: Entity) {
-    let rootPath = Process.cwd();
-    if (site.Dir !== undefined) {
-        const { path } = parseUri(site.Dir.uri);
-        rootPath = path;
-    }
+// async function gather(es: EntitySetMem, site: Entity) {
+//     let rootPath = Process.cwd();
+//     if (site.Dir !== undefined) {
+//         const { path } = parseUri(site.Dir.uri);
+//         rootPath = path;
+//     }
 
-    let include = [];
-    let exclude = [];
+//     let include = [];
+//     let exclude = [];
 
-    if (site.Patterns !== undefined) {
-        const { include: inc, exclude: exc } = site.Patterns;
-        if (inc !== undefined) { include = [...include, ...inc]; }
-        if (exc !== undefined) { exclude = [...exclude, ...exc]; }
-    }
+//     if (site.Patterns !== undefined) {
+//         const { include: inc, exclude: exc } = site.Patterns;
+//         if (inc !== undefined) { include = [...include, ...inc]; }
+//         if (exc !== undefined) { exclude = [...exclude, ...exc]; }
+//     }
 
-    include = include.map(p => {
-        return Globalyzer(p).isGlob ? { glob: p } : { name: p };
-    });
-    exclude = exclude.map(p => {
-        return Globalyzer(p).isGlob ? { glob: p } : { name: p };
-    });
+//     include = include.map(p => {
+//         return Globalyzer(p).isGlob ? { glob: p } : { name: p };
+//     });
+//     exclude = exclude.map(p => {
+//         return Globalyzer(p).isGlob ? { glob: p } : { name: p };
+//     });
 
-    // log('[crawlSite]', __dirname, Process.cwd() );
-    log('[crawlSite]', rootPath, { include, exclude });
+//     // log('[crawlSite]', __dirname, Process.cwd() );
+//     log('[crawlSite]', rootPath, { include, exclude });
 
-    // if (!await Fs.pathExists(rootPath)) {
-    //     log('[crawlSite]', 'not exist', rootPath);
-    //     return es;
-    // }
+//     // if (!await Fs.pathExists(rootPath)) {
+//     //     log('[crawlSite]', 'not exist', rootPath);
+//     //     return es;
+//     // }
 
-    // let stats = await Fs.stat(rootPath);
+//     // let stats = await Fs.stat(rootPath);
 
-    let files: Entity[] = [];
-
-
-    /**
-     * Filter that applies include and exclude glob patterns to the visited files
-     */
-    const globFilter = Through2.obj(function (item, enc, next) {
-
-        const relativePath = Path.relative(rootPath, item.path);
-        for (const { glob, name } of include) {
-            if (glob && Micromatch.isMatch(relativePath, glob) === false) {
-                // log('nope regex', glob, relativePath);
-                return next();
-            } else if (name !== undefined && name != Path.basename(relativePath)) {
-                // log('nope pattern', relativePath);
-                return next();
-            }
-        }
-
-        for (const { glob, name } of exclude) {
-            if (glob && Micromatch.isMatch(item.path, glob)) {
-                // log('glob exclude', item.path);
-                return next();
-            } else if (name == Path.basename(item.path)) {
-                // log('um,', Path.basename(item.path));
-                return next();
-            }
-        }
-        this.push(item);
-        next();
-    });
-
-    // gather the files/dirs
-    let matches: any[] = await new Promise((res, rej) => {
-        let items = [];
-        Klaw(rootPath)
-            .pipe(globFilter)
-            .on('data', item => items.push(item))
-            .on('end', () => {
-                res(items);
-            })
-    });
-
-    // ensure all matches have a directory - this may be missed
-    // if a glob include was used
-    matches = matches.reduce((result, { path, stats }) => {
-        if (stats.isFile()) {
-            const dirPath = Path.dirname(path);
-            const existsL = result.find(m => m.path === dirPath) !== undefined;
-            const exists = matches.find(m => m.path === dirPath) !== undefined;
-            // const exists = matches.indexOf( m => m.path === dirPath ) !== -1;
-            // log('file parent?', dirPath, existsL, result.map( ({path}) => path ) );
-            if (!existsL && !exists) {
-                const dirStats = Fs.statSync(dirPath);
-                // log('add', dirPath);
-                result.push({ path: dirPath, stats: dirStats });
-            }
-        }
-        result.push({ path, stats });
-        return result;
-    }, []);
-
-    // log('matches', matches.map( ({path}) => path ));
-
-    for (const file of matches) {
-        // for await (const file of Klaw(rootPath)) {
-        // log( 'file', file );
-
-        let relativePath = Path.relative(rootPath, file.path);
-        const uri = `file:///${relativePath}`;
-        const { ctime, mtime } = file.stats;
+//     let files: Entity[] = [];
 
 
-        let e: Entity;
+//     /**
+//      * Filter that applies include and exclude glob patterns to the visited files
+//      */
+//     const globFilter = Through2.obj(function (item, enc, next) {
 
-        if (file.stats.isDirectory()) {
+//         const relativePath = Path.relative(rootPath, item.path);
+//         for (const { glob, name } of include) {
+//             if (glob && Micromatch.isMatch(relativePath, glob) === false) {
+//                 // log('nope regex', glob, relativePath);
+//                 return next();
+//             } else if (name !== undefined && name != Path.basename(relativePath)) {
+//                 // log('nope pattern', relativePath);
+//                 return next();
+//             }
+//         }
 
-            e = await selectDirByUri(es, uri, { createIfNotFound: true }) as Entity;
-        } else {
-            e = await selectFileByUri(es, uri, { createIfNotFound: true }) as Entity;
-        }
+//         for (const { glob, name } of exclude) {
+//             if (glob && Micromatch.isMatch(item.path, glob)) {
+//                 // log('glob exclude', item.path);
+//                 return next();
+//             } else if (name == Path.basename(item.path)) {
+//                 // log('um,', Path.basename(item.path));
+//                 return next();
+//             }
+//         }
+//         this.push(item);
+//         next();
+//     });
 
-        e.Times = { ctime, mtime };
-        e.SiteRef = { ref: site.id };
+//     // gather the files/dirs
+//     let matches: any[] = await new Promise((res, rej) => {
+//         let items = [];
+//         Klaw(rootPath)
+//             .pipe(globFilter)
+//             .on('data', item => items.push(item))
+//             .on('end', () => {
+//                 res(items);
+//             })
+//     });
 
-        files.push(e);
-    }
+//     // ensure all matches have a directory - this may be missed
+//     // if a glob include was used
+//     matches = matches.reduce((result, { path, stats }) => {
+//         if (stats.isFile()) {
+//             const dirPath = Path.dirname(path);
+//             const existsL = result.find(m => m.path === dirPath) !== undefined;
+//             const exists = matches.find(m => m.path === dirPath) !== undefined;
+//             // const exists = matches.indexOf( m => m.path === dirPath ) !== -1;
+//             // log('file parent?', dirPath, existsL, result.map( ({path}) => path ) );
+//             if (!existsL && !exists) {
+//                 const dirStats = Fs.statSync(dirPath);
+//                 // log('add', dirPath);
+//                 result.push({ path: dirPath, stats: dirStats });
+//             }
+//         }
+//         result.push({ path, stats });
+//         return result;
+//     }, []);
 
-    // log('[crawlSite]', 'adding', files );
+//     // log('matches', matches.map( ({path}) => path ));
 
-    await es.add(files);
-}
+//     for (const file of matches) {
+//         // for await (const file of Klaw(rootPath)) {
+//         // log( 'file', file );
+
+//         let relativePath = Path.relative(rootPath, file.path);
+//         const uri = `file:///${relativePath}`;
+//         const { ctime, mtime } = file.stats;
+
+
+//         let e: Entity;
+
+//         if (file.stats.isDirectory()) {
+
+//             e = await selectDirByUri(es, uri, { createIfNotFound: true }) as Entity;
+//         } else {
+//             e = await selectFileByUri(es, uri, { createIfNotFound: true }) as Entity;
+//         }
+
+//         e.Times = { ctime, mtime };
+//         e.SiteRef = { ref: site.id };
+
+//         files.push(e);
+//     }
+
+//     // log('[crawlSite]', 'adding', files );
+
+//     await es.add(files);
+// }
 
 
 
@@ -722,16 +701,16 @@ async function gather(es: EntitySetMem, site: Entity) {
  * 
  * @param es 
  */
-async function selectSites(es: EntitySet): Promise<Entity[]> {
-    // const dids: BitField = es.resolveComponentDefIds(['/component/site']);
-    // return es.getEntity(dids, { populate: true });
+// async function selectSites(es: EntitySet): Promise<Entity[]> {
+//     // const dids: BitField = es.resolveComponentDefIds(['/component/site']);
+//     // return es.getEntity(dids, { populate: true });
 
-    const stmt = es.prepare(`
-        [ /component/site !bf @e ] select
-    `);
+//     const stmt = es.prepare(`
+//         [ /component/site !bf @e ] select
+//     `);
 
-    return stmt.getEntities();
-}
+//     return stmt.getEntities();
+// }
 
 
 
@@ -744,77 +723,72 @@ interface SelectOptions {
 
 
 
+// /**
+//  * 
+//  * @param es 
+//  * @param uri 
+//  * @param options 
+//  */
+// export async function selectDirByUri(es: EntitySet, uri: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
+//     if (!uri.endsWith('/')) {
+//         uri = uri + '/';
+//     }
+
+//     const stmt = es.prepare(`[ /component/dir#uri !ca $uri == @c] select`);
+//     let result = await stmt.getResult({ uri });
+//     let com = result.length > 0 ? result[0] : undefined;
+
+//     // const bf = es.resolveComponentDefIds('/component/dir');
+//     // const com = es.findComponent(bf, (com) => com['uri'] === uri );
+
+//     // console.log('[selectDirByUri]', 'existing', com );
+
+//     if (com === undefined) {
+//         if (options.createIfNotFound) {
+//             let e = es.createEntity();
+//             e.Dir = { uri };
+//             let ctime = new Date().toISOString();
+//             let mtime = ctime;
+//             e.Times = { ctime, mtime };
+//             return e;
+//         }
+//         return undefined;
+//     }
+
+//     const eid = getComponentEntityId(com);
+//     if (options.returnEid === true) { return eid; }
+//     const e = es.getEntity(eid);
+//     return e;
+// }
+
 /**
  * 
  * @param es 
  * @param uri 
  * @param options 
  */
-export async function selectDirByUri(es: EntitySet, uri: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
-    if (!uri.endsWith('/')) {
-        uri = uri + '/';
-    }
+// export async function selectFileByUri(es: EntitySet, uri: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
 
-    const stmt = es.prepare(`[ /component/dir#uri !ca $uri == @c] select`);
-    let result = await stmt.getResult({ uri });
-    let com = result.length > 0 ? result[0] : undefined;
+//     const stmt = es.prepare(`[ /component/file#uri !ca $uri == @c] select`);
+//     const com = await stmt.getResult({ uri });
 
-    // const bf = es.resolveComponentDefIds('/component/dir');
-    // const com = es.findComponent(bf, (com) => com['uri'] === uri );
+//     if (com === undefined) {
+//         if (options.createIfNotFound) {
+//             let e = es.createEntity();
+//             e.File = { uri };
+//             let ctime = new Date().toISOString();
+//             let mtime = ctime;
+//             e.Times = { ctime, mtime };
+//             return e;
+//         }
+//         return undefined;
+//     }
 
-    // console.log('[selectDirByUri]', 'existing', com );
-
-    if (com === undefined) {
-        if (options.createIfNotFound) {
-            let e = es.createEntity();
-            e.Dir = { uri };
-            let ctime = new Date().toISOString();
-            let mtime = ctime;
-            e.Times = { ctime, mtime };
-            return e;
-        }
-        return undefined;
-    }
-
-    const eid = getComponentEntityId(com);
-    if (options.returnEid === true) { return eid; }
-    const e = es.getEntity(eid);
-    return e;
-}
-
-/**
- * 
- * @param es 
- * @param uri 
- * @param options 
- */
-export async function selectFileByUri(es: EntitySet, uri: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
-    // const bf = es.resolveComponentDefIds('/component/file');
-
-    // const com = es.findComponent(bf, (com) => {
-    //     return com['uri'] === uri;
-    // });
-
-    const stmt = es.prepare(`[ /component/file#uri !ca $uri == @c] select`);
-    const com = await stmt.getResult({ uri });
-
-    if (com === undefined) {
-        if (options.createIfNotFound) {
-            let e = es.createEntity();
-            e.File = { uri };
-            let ctime = new Date().toISOString();
-            let mtime = ctime;
-            e.Times = { ctime, mtime };
-            return e;
-        }
-        return undefined;
-    }
-
-    const eid = getComponentEntityId(com);
-    if (options.returnEid === true) { return eid; }
-    const e = es.getEntity(eid);
-    return e;
-}
+//     const eid = getComponentEntityId(com);
+//     if (options.returnEid === true) { return eid; }
+//     const e = es.getEntity(eid);
+//     return e;
+// }
 
 
 export async function writeFile(path: string, content: string) {

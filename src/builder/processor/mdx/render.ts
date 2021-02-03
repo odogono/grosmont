@@ -8,8 +8,6 @@ import { Site } from '../../site';
 
 import { transpile } from './transpile';
 import { buildSrcIndex, buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath, selectMdx } from "./util";
-import { printAll } from "../../util";
-
 
 
 const log = (...args) => console.log('[ProcMDXRender]', ...args);

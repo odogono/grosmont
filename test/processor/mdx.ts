@@ -13,12 +13,12 @@ import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { parse } from '../../src/builder/config';
 
 import assert from 'uvu/assert';
-import { Entity } from 'odgn-entity/src/entity';
-import { printAll } from '../../src/builder/util';
+import { printAll } from 'odgn-entity/src/util/print';
+
 
 const log = (...args) => console.log('[TestProcMDX]', ...args);
 
-const printES = (es) => {
+const printES = async (es) => {
     console.log('\n\n---\n');
     printAll( es );
 }

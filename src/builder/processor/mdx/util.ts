@@ -48,18 +48,16 @@ export async function buildSrcIndex(site: Site) {
     // let es = site.es;
     const siteEntity = site.getSite();
 
-    // let files = await selectFiles(es, siteEntity.id);
-
     // select entities with /component/file AND /component/text (eg. have been rendered)
-    const query = `[
+    const query = `
+
+    [
         /component/site_ref#ref !ca $ref ==
-        [/component/src] !bf
+        /component/src !bf
         and
         @e
     ] select
-    
     [ /component/src#url /id /component/meta#/meta/mime ] pluck
-
     `;
 
     return await site.addQueryIndex('/index/srcUrl', query, { ref: siteEntity.id });
