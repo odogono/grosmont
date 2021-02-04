@@ -5,7 +5,7 @@ import { EntitySet } from "odgn-entity/src/entity_set";
 import { slugify } from "../util/string";
 import { Site } from "./site";
 import { uriToPath } from './util';
-import { ProcessOptions } from './types';
+import { DependencyType, ProcessOptions } from './types';
 import { parseUri } from '../util/uri';
 import { BitField } from 'odgn-entity/src/util/bitfield';
 
@@ -28,7 +28,12 @@ export async function selectTagBySlug( site:Site, name:string ){
 }
 
 
-
+/**
+ * 
+ * @param es 
+ * @param tags 
+ * @param options 
+ */
 export async function findEntitiesByTags(es: EntitySet, tags: string[], options: FindEntityOptions = {}): Promise<EntityId[]> {
     const ref = options.siteRef ?? 0;
 
@@ -45,6 +50,7 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
         @>
     ] selectTagBySlug define
 
+    // 
     [
         
         $es [
@@ -56,13 +62,19 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
         @>
     ] selectTagDepByDst define
 
-    es let
     $tags *selectTagBySlug map
     [ false != ] filter
 
+    
     *selectTagDepByDst map
-
+    
+    prints
     unique // get rid of dupes
+
+    "TODO" .
+    // collect a list of eids which have deps on the tag
+    // for each eid, select its children and add to list
+    // union each tag eid list for the result
 
     // prints
     // []
@@ -497,6 +509,88 @@ export async function applyUpdatesToDependencies(site:Site){
 }
 
 
+
+
+/**
+ * Removes all update components
+ * 
+ * @param es 
+ */
+export async function clearUpdates(site:Site){
+    const {es} = site;
+
+    // TODO - select only within the site
+    const stmt = es.prepare(`
+        [ /component/upd !bf @cid ] select
+    `);
+    let cids = await stmt.getResult();
+
+    await es.removeComponents( cids );
+
+    return site;
+}
+
+
+
+export async function selectTarget(es: EntitySet): Promise<Entity[]> {
+    const query = `[
+        /component/target !bf
+        @e
+    ] select`;
+
+    const stmt = es.prepare(query);
+    return await stmt.getEntities();
+}
+
+
+/**
+ * Finds a target Component for the given entity.
+ * If one doesn't belong to the entity, it uses Dir dependencies
+ * to find a parent with one.
+ * 
+ * @param es 
+ * @param eid 
+ */
+export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Component | undefined> {
+    const stmt = es.prepare(`
+    [
+        // ["💥 eid is" $eid] to_str! .
+        [ $eid @eid /component/target !bf @c ] select
+
+        
+        // if we have a result, then exit
+        dup [ @! ] rot size! 0 < if
+        
+        // remove the empty result
+        // es now on top
+        drop
+        
+        
+        // select the parent of the target
+        [
+            /component/dep !bf
+            /component/dep#src !ca $eid ==
+            /component/dep#type !ca dir ==
+            and
+            @c
+        ] select
+
+        // if there is no parent, then exit
+        dup [ @! ] rot size! 0 == if
+
+        // set eid to parent
+        /dst pluck! eid !
+
+        // keeps the loop looping
+        true
+    ] loop
+    `);
+
+    const dirCom = await stmt.getResult({ eid });
+    return dirCom.length > 0 ? dirCom[0] : undefined;
+}
+
+
 /**
  * Returns an array of Meta starting at the eid and working up the dir dependencies
  */
@@ -656,6 +750,33 @@ export async function getDependencyChildren(es: EntitySet, eid: EntityId, type: 
     `);
 
     return await stmt.getResult({ eid, type, depth });
+}
+
+
+/**
+ * Returns an array of EntityId which have parents but not children of the specified type
+ * @param es 
+ * @param type 
+ * @param options 
+ */
+export async function findLeafDependenciesByType(es:EntitySet, type:DependencyType, options: FindEntityOptions = {} ): Promise<EntityId[]> {
+    const ref = options.siteRef ?? 0;
+
+    // select dependency components by type
+    // build a list of all src and all dst
+    // remove from src all those that appear in dst
+    const stmt = es.prepare(`
+    [
+        /component/dep#type !ca $type ==
+        @c
+    ] select
+    
+    /src pluck unique
+    swap /dst pluck! unique
+    swap diff! // ids which are in src but not dst
+    `);
+
+    return await stmt.getResult({type,ref});
 }
 
 

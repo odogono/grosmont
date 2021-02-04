@@ -11,7 +11,7 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { printAll } from "../../ecs";
 import { joinPaths, writeFile } from '../file';
-import { resolveTarget, selectDirTarget } from '../clear_target';
+import { resolveTarget } from '../clear_target';
 import { applyMeta } from '../../util';
 import { Site } from '../../site';
 import { getDstUrl } from '../dst_url';

@@ -20,8 +20,7 @@ import { printAll } from 'odgn-entity/src/util/print';
 
 export async function build(site:Site) {
 
-    // log('created', site);
-
+    
     await scanSrc(site);
 
     await markMdx(site, { loadData: true });

@@ -1,4 +1,4 @@
-import { SiteIndex } from "./ecs";
+import { StatementArgs } from 'odgn-entity/src/query';
 
 
 
@@ -32,6 +32,13 @@ export interface TranspileResult {
     cssLinks?: string[];
 }
 
+
+
+export interface SiteIndex {
+    query?: string;
+    args?: StatementArgs;
+    index: Map<any, any[]>;
+}
 
 
 
@@ -118,3 +125,6 @@ export interface PageMeta {
     // _inlineCSS?: string[];
     // cssLinks: string[];
 }
+
+
+export type DependencyType = 'dir' | 'layout' | 'css' | 'tag';

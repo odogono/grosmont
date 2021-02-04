@@ -7,6 +7,7 @@ import { printAll } from "../ecs";
 import { Component } from 'odgn-entity/src/component';
 import { joinPaths, pathToUri, uriToPath } from './file';
 import { selectSiteTargetUri } from '../util';
+import { selectDirTarget, selectTarget } from '../query';
 
 
 /**
@@ -79,63 +80,7 @@ export async function resolveTarget(es: EntitySet, e: Entity) {
 }
 
 
-export async function selectTarget(es: EntitySet): Promise<Entity[]> {
-    const query = `[
-        /component/target !bf
-        @e
-    ] select`;
 
-    const stmt = es.prepare(query);
-    return await stmt.getEntities();
-}
-
-
-/**
- * Finds a target Component for the given entity.
- * If one doesn't belong to the entity, it uses Dir dependencies
- * to find a parent with one.
- * 
- * @param es 
- * @param eid 
- */
-export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Component | undefined> {
-    const stmt = es.prepare(`
-    [
-        // ["💥 eid is" $eid] to_str! .
-        [ $eid @eid /component/target !bf @c ] select
-
-        
-        // if we have a result, then exit
-        dup [ @! ] rot size! 0 < if
-        
-        // remove the empty result
-        // es now on top
-        drop
-        
-        
-        // select the parent of the target
-        [
-            /component/dep !bf
-            /component/dep#src !ca $eid ==
-            /component/dep#type !ca dir ==
-            and
-            @c
-        ] select
-
-        // if there is no parent, then exit
-        dup [ @! ] rot size! 0 == if
-
-        // set eid to parent
-        /dst pluck! eid !
-
-        // keeps the loop looping
-        true
-    ] loop
-    `);
-
-    const dirCom = await stmt.getResult({ eid });
-    return dirCom.length > 0 ? dirCom[0] : undefined;
-}
 
 
 /**

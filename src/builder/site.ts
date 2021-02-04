@@ -21,7 +21,8 @@ import { parse } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
 import { parseUri } from '../util/uri';
 import { getComponentEntityId } from 'odgn-entity/src/component';
-import { findEntitiesByTags } from './query';
+import { findEntitiesByTags, findLeafDependenciesByType } from './query';
+import { DependencyType, SiteIndex } from './types';
 
 
 const log = (...args) => console.log('[Site]', ...args);
@@ -33,13 +34,6 @@ interface SelectOptions {
     ext?: string;
 }
 
-
-
-export interface SiteIndex {
-    query?: string;
-    args?: StatementArgs;
-    index: Map<any, any[]>;
-}
 
 
 export interface SiteOptions extends EntitySetOptions {
@@ -282,7 +276,8 @@ export class Site {
 
     /**
      * Returns an array of Entity Ids that have dependencies on the given
-     * tags
+     * tags. The operation is an AND, meaning that the entities have all of
+     * the specified tags
      * 
      * @param tags 
      */
@@ -290,6 +285,24 @@ export class Site {
         return findEntitiesByTags(this.es, tags, { siteRef: this.e.id });
     }
 
+    /**
+     * Returns an array of EntityId which have parents of the given
+     * type, but no children.
+     * 
+     * @param type 
+     */
+    async getDependencyLeafEntityIds( type:DependencyType ){
+        return findLeafDependenciesByType(this.es, type, {siteRef:this.e.id} );
+    }
+
+
+    /**
+     * Returns an index with the given name, optionally creating one
+     * if it is not found
+     * 
+     * @param name 
+     * @param create 
+     */
     getIndex(name: string, create: boolean = false): SiteIndex {
         let index = this.indexes.get(name);
         if (index === undefined && create) {

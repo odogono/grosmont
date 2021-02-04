@@ -8,3 +8,6 @@ public
 .cache/
 yarn.lock
 .vscode/STORED_TEST
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

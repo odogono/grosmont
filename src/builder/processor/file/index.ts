@@ -23,7 +23,7 @@ import { selectSite, Site } from '../../site';
 import { parse } from '../../config';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { getDefId } from 'odgn-entity/src/component_def';
-import { applyUpdatesToDependencies, buildSrcUrlIndex } from '../../query';
+import { applyUpdatesToDependencies, buildSrcUrlIndex, clearUpdates } from '../../query';
 
 
 
@@ -45,7 +45,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     // const readFS = options.readFS ?? true;
 
     // TODO clear the updated component
-    await clearUpdated(site.es);
+    await clearUpdates(site);
 
     // if (readFS) {
         // create an es to put the scan into
@@ -78,16 +78,6 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 }
 
 
-
-async function clearUpdated(es:EntitySet){
-    // TODO - select component id
-    const stmt = es.prepare(`[ /component/upd !bf @cid ] select`);
-    let cids = await stmt.getResult();
-
-    await es.removeComponents( cids );
-
-    // log('[clearCompleted]', cids);
-}
 
 export async function cloneEntitySet(es: EntitySet) {
     const { idgen, eidEpoch, workerId } = es;
