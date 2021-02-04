@@ -127,4 +127,4 @@ export interface PageMeta {
 }
 
 
-export type DependencyType = 'dir' | 'layout' | 'css' | 'tag';
+export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link';

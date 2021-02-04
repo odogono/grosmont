@@ -1,3 +1,6 @@
+import { stringify } from "odgn-entity/src/util/json";
+import { isString } from "./is";
+
 export function truncate(str: string, len = 10) {
     return str === undefined ? '' : str.length <= len ? str : str.slice(0, len) + '...';
 }
@@ -9,6 +12,9 @@ export function truncate(str: string, len = 10) {
  * @param value 
  */
 export function slugify(value:string){
+    if( !isString(value) ){
+        value = stringify(value);
+    }
     value = value.replace(/^\s+|\s+$/g, '');
 
     // Make the string lowercase

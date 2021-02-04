@@ -29,6 +29,7 @@ export async function selectTagBySlug( site:Site, name:string ){
 
 
 /**
+ * Returns EntityIds which have all of the specified tags
  * 
  * @param es 
  * @param tags 
@@ -38,6 +39,7 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
     const ref = options.siteRef ?? 0;
 
     const q = `
+    es let
     [
         $es [
             /component/tag#slug !ca *^$1 ==
@@ -50,7 +52,6 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
         @>
     ] selectTagBySlug define
 
-    // 
     [
         
         $es [
@@ -58,7 +59,7 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
             @eid /component/dep#src @ca
         ] select swap drop
         [ drop false @! ] swap size 0 == rot swap if
-        pop!
+        
         @>
     ] selectTagDepByDst define
 
@@ -66,18 +67,13 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
     [ false != ] filter
 
     
-    *selectTagDepByDst map
+    [] // reduce result
+    [
+        swap *selectTagDepByDst
+        [ intersect! ] [ + ] *%3 size 0 == swap drop iif
+    ] reduce
     
-    prints
     unique // get rid of dupes
-
-    "TODO" .
-    // collect a list of eids which have deps on the tag
-    // for each eid, select its children and add to list
-    // union each tag eid list for the result
-
-    // prints
-    // []
     `;
 
     const stmt = es.prepare(q);
@@ -347,7 +343,7 @@ export async function selectComponentByUrl(es: EntitySet, url: string): Promise<
  * @param dst 
  * @param type 
  */
-export async function insertDependency(es: EntitySet, src: EntityId, dst: EntityId, type: string): Promise<EntityId> {
+export async function insertDependency(es: EntitySet, src: EntityId, dst: EntityId, type: DependencyType): Promise<EntityId> {
     if( src === 0 || dst === 0 ){
         return 0;
     }
@@ -373,7 +369,7 @@ export async function insertDependency(es: EntitySet, src: EntityId, dst: Entity
  * @param eid 
  * @param type 
  */
-export async function removeDependency(es: EntitySet, eid: EntityId, type: string) {
+export async function removeDependency(es: EntitySet, eid: EntityId, type: DependencyType) {
     const dstEid = await getDependency(es, eid, type);
     if (dstEid === undefined) {
         return false;
@@ -388,7 +384,7 @@ export async function removeDependency(es: EntitySet, eid: EntityId, type: strin
 /**
  * Selects a dependency entity
  */
-export async function selectDependency(es: EntitySet, src?: EntityId, dst?: EntityId, type?: string, asEntity: boolean = false) {
+export async function selectDependency(es: EntitySet, src?: EntityId, dst?: EntityId, type?: DependencyType, asEntity: boolean = false) {
     // const did:ComponentDefId = es.resolveComponentDefId('/component/dep');
 
     let conds = [];
@@ -430,7 +426,7 @@ export async function selectDependency(es: EntitySet, src?: EntityId, dst?: Enti
 /**
  *  
  */
-export async function getDependency(es: EntitySet, eid: EntityId, type: string): Promise<EntityId> {
+export async function getDependency(es: EntitySet, eid: EntityId, type: DependencyType): Promise<EntityId> {
     const depId = await getDependencies(es, eid, type);
     return depId.length > 0 ? depId[0] : undefined;
 }
@@ -657,7 +653,7 @@ export async function selectDependencyMeta(es: EntitySet, eid: EntityId) {
  * @param eid EntityId
  * @param type string
  */
-export async function getDependencyParents(es: EntitySet, eid: EntityId, type: string): Promise<EntityId[]> {
+export async function getDependencyParents(es: EntitySet, eid: EntityId, type: DependencyType): Promise<EntityId[]> {
     const stmt = es.prepare(`
     // selects the parent dir entity, or 0 if none is found
     // ( es eid -- es eid )
@@ -708,7 +704,7 @@ export async function getDependencyParents(es: EntitySet, eid: EntityId, type: s
  * @param type 
  * @param depth 
  */
-export async function getDependencyChildren(es: EntitySet, eid: EntityId, type: string, depth: number = 100): Promise<EntityId[]> {
+export async function getDependencyChildren(es: EntitySet, eid: EntityId, type: DependencyType, depth: number = 100): Promise<EntityId[]> {
     const stmt = es.prepare(`
 
     // selects child ids of the e, or false if none found
@@ -770,7 +766,7 @@ export async function findLeafDependenciesByType(es:EntitySet, type:DependencyTy
         /component/dep#type !ca $type ==
         @c
     ] select
-    
+
     /src pluck unique
     swap /dst pluck! unique
     swap diff! // ids which are in src but not dst
@@ -779,8 +775,33 @@ export async function findLeafDependenciesByType(es:EntitySet, type:DependencyTy
     return await stmt.getResult({type,ref});
 }
 
+/**
+ * Returns the EntityIds that the given EntityId is dependent on
+ * @param es 
+ * @param src 
+ * @param type 
+ */
+export async function getDepenendencyDst(es: EntitySet, src:EntityId, type:DependencyType ): Promise<EntityId[]> {
+    const stmt = es.prepare(`
+    [
+        /component/dep#type !ca $type ==
+        /component/dep#src !ca $src ==
+        and
+        @c
+    ] select
+    /dst pluck!
+    `);
+    return await stmt.getResult({src,type});
+}
 
-export async function getDependencies(es: EntitySet, eid: EntityId, type: string): Promise<EntityId[]> {
+/**
+ * Returns EntityIds of the dependency entities which match the given eid and type
+ * 
+ * @param es 
+ * @param eid 
+ * @param type 
+ */
+export async function getDependencies(es: EntitySet, eid: EntityId, type: DependencyType): Promise<EntityId[]> {
     const stmt = es.prepare(`
     [
         /component/dep#type !ca ${type} ==
@@ -792,7 +813,7 @@ export async function getDependencies(es: EntitySet, eid: EntityId, type: string
     return await stmt.getResult({ eid, type });
 }
 
-export async function getDependencyEntities(es: EntitySet, eid: EntityId, type: string): Promise<Entity[]> {
+export async function getDependencyEntities(es: EntitySet, eid: EntityId, type: DependencyType): Promise<Entity[]> {
     const stmt = es.prepare(`
     [
         /component/dep#type !ca ${type} ==
@@ -804,7 +825,7 @@ export async function getDependencyEntities(es: EntitySet, eid: EntityId, type: 
     return await stmt.getResult({ eid, type });
 }
 
-export async function getDependencyComponent(es: EntitySet, src: EntityId, dst: EntityId, type: string): Promise<Component> {
+export async function getDependencyComponent(es: EntitySet, src: EntityId, dst: EntityId, type: DependencyType): Promise<Component> {
     const stmt = es.prepare(`
     [
         /component/dep#src !ca ${src} ==
@@ -821,7 +842,7 @@ export async function getDependencyComponent(es: EntitySet, src: EntityId, dst: 
 }
 
 
-export async function getDependencyComponents(es: EntitySet, eid: EntityId, type: string): Promise<Component[]> {
+export async function getDependencyComponents(es: EntitySet, eid: EntityId, type: DependencyType): Promise<Component[]> {
     const stmt = es.prepare(`
     [
         /component/dep#type !ca ${type} ==

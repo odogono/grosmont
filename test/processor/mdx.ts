@@ -10,6 +10,8 @@ import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resol
 import { process as applyTags } from '../../src/builder/processor/mdx/apply_tags';
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
+import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
+
 import { parse } from '../../src/builder/config';
 
 import assert from 'uvu/assert';
@@ -20,7 +22,7 @@ const log = (...args) => console.log('[TestProcMDX]', ...args);
 
 const printES = async (es) => {
     console.log('\n\n---\n');
-    printAll( es );
+    await printAll( es );
 }
 
 const rootPath = Path.resolve(__dirname, "../../");
@@ -180,6 +182,34 @@ isEnabled: true
 });
 
 
+test('dst defined in meta is applied to entity', async ({es,site}) => {
+    await addMdx(site, 'file:///index.mdx', `
+---
+dst: intro.html
+tags: [ "one", "two" ]
+/component/url:
+  url: https://www.bbc.co.uk/news
+---
+# Welcome
+    `);
+
+
+    await mdxPreprocess(site);
+    await mdxResolveMeta(site);
+    
+    // await assignTitle(site);
+    // printES(es);
+    await mdxRender(site);
+
+    await buildDstIndex(site);
+
+    // await printES(site.es);
+
+    let e = await site.getEntityByDst('/intro.html');
+    assert.equal( e.Title.title, 'Welcome');
+});
+
+
 test('master page', async ({es,site}) => {
 
     // if an mdx references a layout, then render the mdx
@@ -234,10 +264,6 @@ Hello _world_
 
 
 })
-
-// test.only('lookup of url using regex', async ({es, site}) => {
-
-// })
 
 
 test('inlined css', async ({ es, site }) => {
@@ -453,12 +479,41 @@ test('extract target slug from title with dst', async({es,site}) => {
     await mdxRender(site);
     
 
+    // await printES(es);
+
     e = await site.getSrc('file:///pages/main.mdx');
 
     assert.equal( e.Dst.url, '/html/extracting-the-page-title.html');
 
-    // printES(es);
+});
 
+test('title does not override dst', async({es,site}) => {
+
+    await addMdx( site, 'file:///pages/main.mdx', `
+---
+dst: index.html
+---
+# Extracting the Page Title
+    `);
+    // e.Dst = { url:'/html/' };
+    // await site.update(e);
+
+    await assignMime(site);
+    await mdxPreprocess(site);
+    await mdxResolveMeta(site);
+    
+    await assignTitle(site);
+    await mdxRender(site);
+    await buildDstIndex(site);
+
+    let e = await site.getEntityByDst('/index.html');
+    assert.equal( e.Title.title, 'Extracting the Page Title');
+
+    // e = await site.getSrc('file:///pages/main.mdx');
+
+    // assert.equal( e.Dst.url, '/index.html');
+
+    // printES(es);
 });
 
 
@@ -480,13 +535,62 @@ tags:
     await mdxPreprocess(site);
 
     // convert /meta tags into dependencies
-    await applyTags(site);
+    // await applyTags(site);
 
-    // printES( es );
+    // await printES( es );
 
     let eids = await site.findByTags(['weeknotes', 'blog'] );
 
-    assert.equal( eids, [ 1002, 1003 ] );
+    assert.equal( eids, [ 1002 ] );
+});
+
+
+test('tags inherited from dir', async({es,site}) => {
+    await parse( site, `
+    id: 1998
+    src: /pages/
+    tags:
+        - blog
+        - odgn
+    `);
+
+    await parse( site, `
+    id: 1999
+    src: /pages/2021/
+    tags:
+        - 2021
+    `);
+
+    await addMdx( site, 'file:///pages/2021/main.mdx',`
+---
+tags:
+- things
+---
+# Things that happened
+    `);
+
+    await buildDeps(site);
+
+    await mdxPreprocess(site);
+
+    await applyTags(site);
+
+    // await printES(es);
+
+    assert.equal( 
+        await site.findByTags(['blog', 'odgn'] ),
+        [1008,1998,1999] );
+    assert.equal( 
+        await site.findByTags(['things'] ),
+        [1008] );
+    assert.equal( 
+        await site.findByTags(['2021', 'blog'] ),
+        [1008, 1999] );
+    assert.equal( 
+        await site.findByTags(['2021', 'things'] ),
+        [1008] );
+    // let eids = await site.findByTags(['2021', 'blog'] );
+    // log( eids );
 });
 
 

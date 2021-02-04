@@ -8,37 +8,62 @@ import Fs from 'fs-extra';
 import send from 'send';
 import url from 'url';
 import Mitt from 'mitt'
+import { Site } from '../builder/site';
+import { build } from '../builder';
 
 const log = (...args) => console.log('[server]', ...args);
 
 const app = express();
 const port = 3000;
 
-const emitter = Mitt()
+const emitter = Mitt();
 
-Chokidar.watch('.').on('all', (event, path) => {
-    if (event === 'change') {
-        console.log(event, path);
+let site:Site;
 
-        emitter.emit('sse', { event: event, path });
-    }
-});
+const [config] = process.argv.slice(2);
+const configPath = Path.resolve(config);
+
+
+// Chokidar.watch('.').on('all', (event, path) => {
+//     if (event === 'change') {
+//         console.log(event, path);
+
+//         emitter.emit('sse', { event: event, path });
+//     }
+// });
+
 
 
 async function onStart(){
-    log(`Example app listening at http://localhost:${port}`);
+    log(`listening at http://localhost:${port}`);
+    
+    site = await Site.create({configPath});
+    log('config', configPath );
+    log('root', site.getSrcUrl() );
+
+    await build(site);
+
+    log('index', site.getIndex('/index/dstUrl').index );
+
+    Chokidar.watch( site.getSrcUrl() ).on('all', (event, path) => {
+        let relPath = Path.sep + path.replace( site.getSrcUrl(), '' );
+        log( '[change]', event, relPath );
+    })
 }
 
-
-// app.use(serveStatic('dist') );
 
 app.use(async (req, res, next) => {
     let originalUrl = parseUrl.original(req)
     let path = parseUrl(req).pathname
 
-    // console.log('[ok]', originalUrl, path);
+    
+    log('[ok]', originalUrl, path);
 
     // let out = Path.join(__dirname, '../../dist', path );
+
+    const e = site.getIndex('/index/dstUrl').index.get(path);
+
+    log('found', e);
 
     const [exists, filePath] = await resolveRequestPath(path);
 

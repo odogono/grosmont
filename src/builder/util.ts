@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import { Site } from './site';
 import { slugify } from '../util/string';
 import { getDependencyComponent } from './query';
+import { stringify } from 'odgn-entity/src/util/json';
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
 
@@ -142,6 +143,9 @@ export function createTimes() {
 
 
 export async function createTag(site:Site, name:string){
+    if( !isString(name) ){
+        name = stringify(name);
+    }
     let e = site.es.createEntity();
     e.Tag = { slug: slugify(name) };
     e.Title = { title:name };

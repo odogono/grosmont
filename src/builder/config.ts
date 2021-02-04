@@ -85,8 +85,8 @@ export async function parse(site: Site, input: string|object, type: string = 'ya
                 // e.Src = {url: other[key] };
             }
             else if( key === 'dst'){
-                applyUrlToCom( e, 'Dst', other[key] );
-                // e.Dst = {url: other[key] };
+                // applyUrlToCom( e, 'Dst', other[key] );
+                e.Dst = {url: other[key] };
             }
             else if( key === 'text'){
                 e.Text = {data: other[key] };
@@ -142,7 +142,11 @@ export async function parse(site: Site, input: string|object, type: string = 'ya
 function applyUrlToCom( e:Entity, name:string, url:string, overwrite:boolean = false ){
     let com = e[name] ?? {};
     if( /^.*:\/\//.exec(url) === null ){
-        url = pathToFileURL( url ).href;
+        // url = pathToFileURL( url ).href;
+        if( !url.startsWith(Path.sep) ){
+            url = `${Path.sep}${url}`;
+        }
+        url = `file://${url}`;
     }
     com = overwrite ? {url} : {...com,url};
     e[name] = com;
