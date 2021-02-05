@@ -20,7 +20,7 @@ const log = (...args) => console.log('[ProcMDXRender]', ...args);
  * 
  * @param es 
  */
-export async function process(site: Site) {
+export async function process(site: Site, options:ProcessOptions = {}) {
     const es = site.es;
 
 
@@ -33,7 +33,7 @@ export async function process(site: Site) {
     const pageLinks = await buildPageLinks(es, linkIndex );
 
     // final pass - rendering the mdx into text
-    let ents = await selectMdx(es);
+    let ents = await selectMdx(es, {...options, siteRef: site.e.id});
     let output = [];
 
     for (const e of ents) {

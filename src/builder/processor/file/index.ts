@@ -23,7 +23,7 @@ import { selectSite, Site } from '../../site';
 import { parse } from '../../config';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { getDefId } from 'odgn-entity/src/component_def';
-import { applyUpdatesToDependencies, buildSrcUrlIndex, clearUpdates } from '../../query';
+import { applyUpdatesToDependencies, buildSrcUrlIndex, clearUpdates, selectMetaSrc } from '../../query';
 
 
 
@@ -64,7 +64,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     // }
 
     // resolve any meta.* files into their containing files
-    await readFileMeta(site);
+    await readFileMeta(site, options);
 
     // build dependencies
     await buildDeps(site);
@@ -211,11 +211,11 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<Sr
 
 
 
-async function readFileMeta(site: Site, es?: EntitySet) {
-    es = es ?? site.es;
+async function readFileMeta(site: Site, options:ProcessOptions = {}) {
+    const {es} = site;
 
     // find /src with meta.(yaml|toml) files
-    const metaEnts = await selectMeta(es);
+    const metaEnts = await selectMetaSrc(es, {...options, siteRef:site.e.id});
 
     // log('meta', metaEnts);
 
@@ -227,7 +227,7 @@ async function readFileMeta(site: Site, es?: EntitySet) {
 
         // find the parent dir
         const parentUrl = Path.dirname(e.Src.url) + Path.sep;
-        let parentE = await selectByUrl(es, parentUrl);
+        let parentE = await selectSrcByUrl(es, parentUrl);
 
         if (parentE === undefined) {
             parentE = es.createEntity();
@@ -260,29 +260,8 @@ async function readFileMeta(site: Site, es?: EntitySet) {
 }
 
 
-async function selectByUrl(es: EntitySet, url: string): Promise<Entity> {
-    const stmt = es.prepare(`[
-        /component/src#url !ca $url ==
-        @c
-    ] select`);
-
-    let res = await stmt.getEntities({ url });
-    return res.length > 0 ? res[0] : undefined;
-}
 
 
-
-
-async function selectMeta(es: EntitySet): Promise<Entity[]> {
-    const stmt = es.prepare(`[
-        /component/src#url !ca ~r/meta.(?:toml)?(?:yaml)?$/ ==
-        [/component/src /component/upd] !bf // ensure it has both components
-        and
-        @c
-    ] select`);
-
-    return await stmt.getEntities();
-}
 
 
 

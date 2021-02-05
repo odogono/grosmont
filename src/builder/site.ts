@@ -20,9 +20,10 @@ import { StatementArgs } from 'odgn-entity/src/query';
 import { parse } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
 import { parseUri } from '../util/uri';
-import { getComponentEntityId } from 'odgn-entity/src/component';
-import { findEntitiesByTags, findLeafDependenciesByType } from './query';
+import { getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
+import { findEntitiesByTags, findLeafDependenciesByType, selectUpdated } from './query';
 import { DependencyType, SiteIndex } from './types';
+import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 
 
 const log = (...args) => console.log('[Site]', ...args);
@@ -156,10 +157,37 @@ export class Site {
             let eid = this.es.getUpdatedEntities()[0];
             this.e = await this.es.getEntity(eid, true);
         }
-
-
     }
 
+    /**
+     * Marks an Entity with an update flag
+     * 
+     * @param eid 
+     * @param op 
+     */
+    async markUpdate( eid:EntityId|Entity, op:ChangeSetOp ):Promise<EntityId> {
+        if( eid === undefined ){
+            return undefined;
+        }
+        if( isEntity(eid) ){
+            eid = (eid as Entity).id;
+        }
+        let com = this.es.createComponent('/component/upd', {op} );
+        com = setEntityId(com, eid as EntityId);
+        await this.es.add( com );
+        return eid as EntityId;
+    }
+
+
+    async getUpdatedEntityIds(){
+        return await selectUpdated(this);
+    }
+
+    /**
+     * Returns the sites src url
+     * 
+     * @param appendPath 
+     */
     getSrcUrl(appendPath?: string) {
         let res = fileURLToPath(this.e.Src.url);
         if (appendPath) {
@@ -168,6 +196,11 @@ export class Site {
         return res;
     }
 
+    /**
+     * Returns the sites dst url
+     * 
+     * @param appendPath 
+     */
     getDstUrl(appendPath?: string) {
         let res = this.e.Dst.url;
 

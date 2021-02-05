@@ -4,7 +4,7 @@ import { EntitySetMem } from "odgn-entity/src/entity_set";
 import { Site } from "../site";
 import { getComponentEntityId } from 'odgn-entity/src/component';
 import { ProcessOptions } from '../types';
-import { insertDependency, selectComponentByUrl, selectFileSrc } from '../query';
+import { insertDependency, selectFileSrc, selectSrcByUrl } from '../query';
 
 
 const log = (...args) => console.log('[ProcBuildDeps]', ...args);
@@ -37,7 +37,7 @@ export async function process(site: Site, options: BuildDepsOptions = {}) {
 
         // find the parent
         const parentUrl = Path.dirname(url) + Path.sep;
-        const parent = await selectComponentByUrl(es, parentUrl);
+        const parent = await selectSrcByUrl(es, parentUrl);
 
         const eid = getComponentEntityId(com);
         const pid = getComponentEntityId(parent);

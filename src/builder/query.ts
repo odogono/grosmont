@@ -11,6 +11,13 @@ import { BitField } from 'odgn-entity/src/util/bitfield';
 
 
 
+
+export interface FindEntityOptions {
+    siteRef?: EntityId;
+    title?: string;
+    onlyUpdated?: boolean;
+}
+
 export async function selectTagBySlug( site:Site, name:string ){
     const slug = slugify(name);
     const {es,e} = site;
@@ -100,6 +107,40 @@ export async function selectMeta( site:Site ){
 }
 
 
+export async function selectMetaSrc(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
+    const ref = options.siteRef ?? 0;
+    const onlyUpdated = options.onlyUpdated ?? false;
+
+    const q = onlyUpdated ? `
+    [
+                /component/src#url !ca ~r/meta.(?:toml)?(?:yaml)?$/ ==
+                [/component/src /component/upd] !bf // ensure it has both components
+            and
+                    /component/upd#op !ca 1 ==
+                    /component/upd#op !ca 2 ==
+                or
+                /component/site_ref#ref !ca $ref ==
+            and
+        and
+        @c
+    ] select
+    ` : `
+    [
+                /component/src#url !ca ~r/meta.(?:toml)?(?:yaml)?$/ ==
+                [/component/src /component/upd] !bf // ensure it has both components
+            and
+            /component/site_ref#ref !ca $ref ==
+        and
+        @c
+    ] select
+    `;
+
+
+    return await es.prepare(q).getEntities({ref});
+}
+
+
+
 export async function selectMetaDisabled(es: EntitySet): Promise<EntityId[]> {
     const stmt = es.prepare(`[
         /component/enabled#is !ca false ==
@@ -111,15 +152,34 @@ export async function selectMetaDisabled(es: EntitySet): Promise<EntityId[]> {
 }
 
 
-export async function selectMdx(es: EntitySet): Promise<Entity[]> {
-    const query = `[
-        /component/mdx !bf
-        @e
-    ] select`;
+export async function selectMdx(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
+    const ref = options.siteRef ?? 0;
+    const onlyUpdated = options.onlyUpdated ?? false;
 
-    const stmt = es.prepare(query);
+    let q = onlyUpdated ? `
+        [
+            /component/mdx !bf
+                    /component/upd#op !ca 1 ==
+                    /component/upd#op !ca 2 ==
+                or
+                /component/site_ref#ref !ca $ref ==
+            and
+        and
+        
+        @e ] select` : 
+        `[
+                /component/mdx !bf
+                /component/site_ref#ref !ca $ref ==
+            and
+            @e
+        ] select`;
 
-    return await stmt.getEntities();
+    // const query = `[
+    //     /component/mdx !bf
+    //     @e
+    // ] select`;
+
+    return await es.prepare(q).getEntities({ref});
 }
 
 
@@ -127,15 +187,86 @@ export async function selectMdx(es: EntitySet): Promise<Entity[]> {
 
 export async function selectMdxSrc(es: EntitySet, options: FindEntityOptions = {}) {
     const ref = options.siteRef ?? 0;
+    const onlyUpdated = options.onlyUpdated ?? false;
 
-    const stmt = es.prepare(`[
-        /component/src#url !ca ~r/.mdx$/ ==
+    let q = onlyUpdated ? `
+        [
+            /component/src#url !ca ~r/.mdx$/ ==
+                    /component/upd#op !ca 1 ==
+                    /component/upd#op !ca 2 ==
+                or
+                /component/site_ref#ref !ca $ref ==
+            and
+        and
         /component/src !bf
-        @c
-    ] select`);
+        @c ] select` : `
+        [
+                /component/src#url !ca ~r/.mdx$/ ==
+                /component/site_ref#ref !ca $ref ==
+            and
+            /component/src !bf
+            @c
+        ] select`;
 
-    return await stmt.getResult({ ref });
+    return await es.prepare(q).getResult({ ref });
 }
+
+
+
+export async function selectScss(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
+    const ref = options.siteRef ?? 0;
+    const onlyUpdated = options.onlyUpdated ?? false;
+
+    let q = onlyUpdated ? `
+        [
+            /component/scss !bf
+                    /component/upd#op !ca 1 ==
+                    /component/upd#op !ca 2 ==
+                or
+                /component/site_ref#ref !ca $ref ==
+            and
+        and
+        @e 
+        ] select` : 
+        `[
+                /component/scss !bf
+                /component/site_ref#ref !ca $ref ==
+            and
+            @e
+        ] select`;
+
+    return await es.prepare(q).getEntities({ ref });
+}
+
+
+
+
+export async function selectScssSrc(es: EntitySet, options: FindEntityOptions = {}) {
+    const ref = options.siteRef ?? 0;
+    const onlyUpdated = options.onlyUpdated ?? false;
+
+    let q = onlyUpdated ? `
+        [
+            /component/src#url !ca ~r/.scss$/ ==
+                    /component/upd#op !ca 1 ==
+                    /component/upd#op !ca 2 ==
+                or
+                /component/site_ref#ref !ca $ref ==
+            and
+        and
+        /component/src !bf
+        @c ] select` : `
+        [
+                /component/src#url !ca ~r/.scss$/ ==
+                /component/site_ref#ref !ca $ref ==
+            and
+            /component/src !bf
+            @c
+        ] select`;
+
+    return await es.prepare(q).getResult({ ref });
+}
+
 
 export async function selectDstTextIds(es: EntitySet): Promise<EntityId[]> {
 
@@ -148,11 +279,6 @@ export async function selectDstTextIds(es: EntitySet): Promise<EntityId[]> {
 }
 
 
-
-export interface FindEntityOptions {
-    siteRef?: EntityId;
-    title?: string;
-}
 
 export async function findEntityBySrcUrl(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<EntityId> {
     const ref = options.siteRef ?? 0;
@@ -324,7 +450,7 @@ export async function selectFileSrc(es: EntitySet, options: ProcessOptions = {})
 }
 
 
-export async function selectComponentByUrl(es: EntitySet, url: string): Promise<Component> {
+export async function selectSrcByUrl(es: EntitySet, url: string): Promise<Component> {
     const stmt = es.prepare(`[
         /component/src#url !ca $url ==
         /component/src !bf
@@ -438,6 +564,7 @@ export async function getDependency(es: EntitySet, eid: EntityId, type: Dependen
  * - for each eid, select /deps which have matching dst
  * - take the src eids, add upd coms with same op
  * - take the src eids add to update list
+ * 
  * @param site 
  */
 export async function applyUpdatesToDependencies(site:Site){
@@ -505,6 +632,29 @@ export async function applyUpdatesToDependencies(site:Site){
 }
 
 
+/**
+ * Returns EntityIds of Entities that have been marked as updated
+ * 
+ * @param site 
+ */
+export async function selectUpdated(site:Site ){
+    const {es} = site;
+    const ref = site.e.id;
+
+    const stmt = es.prepare(`
+        [
+            /component/upd#op !ca 2 ==
+            /component/upd#op !ca 1 ==
+            or
+            // this clause is evaled first
+            /component/site_ref#ref !ca $ref ==
+            and
+            @eid
+        ] select
+    `);
+
+    return await stmt.getResult({ref});
+}
 
 
 /**

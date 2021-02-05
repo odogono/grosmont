@@ -131,6 +131,9 @@ export async function parse(site: Site, input: string|object, type: string = 'ya
     // log( e );
 
     if( addToES ){
+        if( site && site.e ){
+            e.SiteRef = { ref:site.e.id};
+        }
         await es.add( e );
         eid = es.getUpdatedEntities()[0];
         return es.getEntity(eid);

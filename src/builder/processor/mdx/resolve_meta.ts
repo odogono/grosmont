@@ -30,7 +30,7 @@ export async function process(site: Site, options: ResolveMetaOptions = {}) {
     // second pass - resolving meta with dependencies
     let ents = eid !== undefined ?
         [await es.getEntity(eid)]
-        : await selectMdx(es);
+        : await selectMdx(es, {...options, siteRef: site.e.id});
 
     let output = [];
 

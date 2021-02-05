@@ -3,12 +3,11 @@ import { Component, getComponentEntityId, setEntityId, toComponentId } from "odg
 import { getDefId } from "odgn-entity/src/component_def";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
-import { StrictMode } from "react";
-import { slugify } from "../../../util/string";
+import { FindEntityOptions } from '../../query';
 
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
-import { createTimes, insertDependency, FindEntityOptions } from "../../util";
+import {  selectScssSrc } from "../../query";
 
 const log = (...args) => console.log('[ProcMarkScss]', ...args);
 
@@ -30,7 +29,7 @@ export async function process(site: Site, options:ProcessMarkScssOptions = {}) {
     const loadData = options.loadData ?? false;
 
     // select /component/src with a .mdx extension
-    const coms = await selectScssSrc( site.es, {siteRef:site.e.id} );
+    const coms = await selectScssSrc( site.es, {...options, siteRef:site.e.id} );
 
     // log('coms', coms);
     const def = es.getByUri('/component/scss');
@@ -73,14 +72,3 @@ export async function process(site: Site, options:ProcessMarkScssOptions = {}) {
 
 
 
-async function selectScssSrc(es: EntitySet, options: FindEntityOptions = {}) {
-    const ref = options.siteRef ?? 0;
-
-    const stmt = es.prepare(`[
-        /component/src#url !ca ~r/.scss$/ ==
-        /component/src !bf
-        @c
-    ] select`);
-
-    return await stmt.getResult({ ref });
-}

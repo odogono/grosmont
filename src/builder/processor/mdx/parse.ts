@@ -36,7 +36,7 @@ const log = (...args) => console.log('[ProcMDXParse]', ...args);
  * 
  * @param es 
  */
-export async function process(site: Site) {
+export async function process(site: Site, options:ProcessOptions = {}) {
     const es = site.es;
 
     // build an index of /src#url
@@ -44,7 +44,7 @@ export async function process(site: Site) {
     let linkIndex = site.getIndex('/index/links', true);
 
     // select scss entities
-    let ents = await selectMdx(es);
+    let ents = await selectMdx(es, {...options, siteRef: site.e.id});
     let output: Entity[] = [];
 
     // first pass at parsing the mdx - pulling out links, local meta etc
@@ -95,7 +95,6 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
 
         // applies to /component/title
         // e = applyTitle(es, e, meta);
-
 
         // e = applyDst(es, e, meta);
 
