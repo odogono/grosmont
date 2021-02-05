@@ -23,24 +23,24 @@ export async function build(site:Site) {
     
     await scanSrc(site);
 
-    await markMdx(site, { loadData: true });
+    await markMdx(site, { onlyUpdated:true });
     
-    await markScss(site, { loadData: true });
+    await markScss(site, { onlyUpdated:true });
 
     await assignMime(site);
 
-    await renderScss(site);
+    await renderScss(site, { onlyUpdated:true });
 
     // mdx
-    await mdxPreprocess(site);
-    await mdxResolveMeta(site);
-    await mdxRender(site);
+    await mdxPreprocess(site, { onlyUpdated:true });
+    await mdxResolveMeta(site, { onlyUpdated:true });
+    await mdxRender(site, { onlyUpdated:true });
 
-    await assignTitle(site);
+    await assignTitle(site, { onlyUpdated:true });
 
     await buildDstIndex(site);
 
-    await write(site);
+    await write(site, {onlyUpdated: true});
 
     return site;
 }

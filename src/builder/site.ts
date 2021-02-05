@@ -227,6 +227,25 @@ export class Site {
         return await Fs.readFile( path, 'utf-8' );
     }
 
+    /**
+     * 
+     * @param path 
+     * @param data 
+     */
+    async writeToUrl( path:string, data:string ){
+        if (data === undefined) {
+            throw new Error(`${path} data is undefined`);
+        }
+        // log('writing', path);
+        if( path.startsWith('file://') ){
+            path = fileURLToPath( path );
+        }
+        // log('writing', path);
+        await Fs.ensureDir(Path.dirname(path));
+        await Fs.writeFile(path, data);
+
+        return true;
+    }
 
     /**
      * Returns the site entity

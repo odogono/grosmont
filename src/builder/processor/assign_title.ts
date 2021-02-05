@@ -7,6 +7,8 @@ import { slugify } from "../../util/string";
 import { Site } from '../site';
 import { extensionFromMime } from "./assign_mime";
 import { getDstUrl } from "./dst_url";
+import { ProcessOptions } from '../types';
+import { selectTitleAndMeta } from '../query';
 
 
 
@@ -21,10 +23,10 @@ const log = (...args) => console.log('[ProcAssignTitle]', ...args);
  * 
  * @param es 
  */
-export async function process(site: Site) {
+export async function process(site: Site, options:ProcessOptions = {}) {
     
     // select /meta and /title
-    const ents = await select(site.es);
+    const ents = await selectTitleAndMeta(site.es);
 
     // log('input', ents);
     let output:Entity[] = [];
@@ -62,18 +64,3 @@ export async function process(site: Site) {
     return site;
 }
 
-
-export async function select(es: EntitySet): Promise<Entity[]> {
-
-    // select components which have /title AND /meta but also optionally
-    // /dst
-    const query = `
-        [ [ /component/title /component/meta ] !bf @c] select
-        /@e pluck
-        rot [ *^$1 /component/dst !bf @c ] select rot +    
-    `;
-
-    const stmt = es.prepare(query);
-
-    return await stmt.getEntities();
-}

@@ -8,6 +8,8 @@ import { Site } from "../site";
 import { Component, getComponentEntityId } from 'odgn-entity/src/component';
 import { getDstUrl } from './dst_url';
 import { fileURLToPath } from 'url';
+import { ProcessOptions } from '../types';
+import { selectTextWithDst } from '../query';
 
 const log = (...args) => console.log('[ProcWrite]', ...args);
 
@@ -18,10 +20,10 @@ const log = (...args) => console.log('[ProcWrite]', ...args);
  * 
  * @param es 
  */
-export async function process(site: Site) {
+export async function process(site: Site, options:ProcessOptions = {}) {
     const es = site.es;
 
-    const coms = await select(es);
+    const coms = await selectTextWithDst(es);
     // log('eids', eids);
 
     for( const com of coms ){
@@ -31,32 +33,8 @@ export async function process(site: Site) {
         let path = site.getDstUrl( dst );
         // log('com', com);
 
-        await writeFile( path, com.data );
+        await site.writeToUrl( path, com.data );
     }
 
     return site;
-}
-
-async function writeFile( path:string, data:string ){
-    if (data === undefined) {
-        throw new Error(`${path} data is undefined`);
-    }
-    // log('writing', path);
-    if( path.startsWith('file://') ){
-        path = fileURLToPath( path );
-    }
-    // log('writing', path);
-    await Fs.ensureDir(Path.dirname(path));
-    await Fs.writeFile(path, data);
-}
-
-export async function select(es: EntitySet): Promise<Component[]> {
-
-    const q = `
-        [ [ /component/dst /component/text /component/upd ] !bf @eid] select
-        swap [ *^$1 @eid /component/text !bf @c ] select
-    `;
-
-    const stmt = es.prepare(q);
-    return await stmt.getResult();
 }

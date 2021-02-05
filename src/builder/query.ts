@@ -18,6 +18,13 @@ export interface FindEntityOptions {
     onlyUpdated?: boolean;
 }
 
+
+function parseOptions(options:FindEntityOptions = {}){
+    const ref = options.siteRef ?? 0;
+    const onlyUpdated = options.onlyUpdated ?? false;
+    return {ref,onlyUpdated};
+}
+
 export async function selectTagBySlug( site:Site, name:string ){
     const slug = slugify(name);
     const {es,e} = site;
@@ -43,7 +50,7 @@ export async function selectTagBySlug( site:Site, name:string ){
  * @param options 
  */
 export async function findEntitiesByTags(es: EntitySet, tags: string[], options: FindEntityOptions = {}): Promise<EntityId[]> {
-    const ref = options.siteRef ?? 0;
+    const {ref} = parseOptions(options);
 
     const q = `
     es let
@@ -107,9 +114,45 @@ export async function selectMeta( site:Site ){
 }
 
 
+
+export async function selectTitleAndMeta(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
+    const {ref, onlyUpdated} = parseOptions(options);
+
+    // select components which have /title AND /meta but also optionally
+    // /dst
+    const query = `
+        [ 
+            [ /component/title /component/meta ] !bf 
+            /component/site_ref#ref !ca $ref ==
+            @c
+        ] select
+        /@e pluck
+        rot [ *^$1 /component/dst !bf @c ] select rot +    
+    `;
+
+    return await es.prepare(query).getEntities({ref});
+}
+
+
+export async function selectTextWithDst(es: EntitySet, options:FindEntityOptions = {}): Promise<Component[]> {
+    const {ref, onlyUpdated} = parseOptions(options);
+
+    const q = `
+        [ 
+            [ /component/dst /component/text /component/upd ] !bf 
+            /component/site_ref#ref !ca $ref ==
+            @eid
+        ] select
+        swap [ *^$1 @eid /component/text !bf @c ] select
+    `;
+
+    return await es.prepare(q).getResult({ref});
+}
+
+
+
 export async function selectMetaSrc(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
-    const ref = options.siteRef ?? 0;
-    const onlyUpdated = options.onlyUpdated ?? false;
+    const {ref, onlyUpdated} = parseOptions(options);
 
     const q = onlyUpdated ? `
     [
@@ -153,8 +196,7 @@ export async function selectMetaDisabled(es: EntitySet): Promise<EntityId[]> {
 
 
 export async function selectMdx(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
-    const ref = options.siteRef ?? 0;
-    const onlyUpdated = options.onlyUpdated ?? false;
+    const {ref, onlyUpdated} = parseOptions(options);
 
     let q = onlyUpdated ? `
         [
@@ -186,8 +228,7 @@ export async function selectMdx(es: EntitySet, options:FindEntityOptions = {}): 
 
 
 export async function selectMdxSrc(es: EntitySet, options: FindEntityOptions = {}) {
-    const ref = options.siteRef ?? 0;
-    const onlyUpdated = options.onlyUpdated ?? false;
+    const {ref, onlyUpdated} = parseOptions(options);
 
     let q = onlyUpdated ? `
         [
@@ -214,8 +255,7 @@ export async function selectMdxSrc(es: EntitySet, options: FindEntityOptions = {
 
 
 export async function selectScss(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
-    const ref = options.siteRef ?? 0;
-    const onlyUpdated = options.onlyUpdated ?? false;
+    const {ref, onlyUpdated} = parseOptions(options);
 
     let q = onlyUpdated ? `
         [
@@ -242,8 +282,7 @@ export async function selectScss(es: EntitySet, options:FindEntityOptions = {}):
 
 
 export async function selectScssSrc(es: EntitySet, options: FindEntityOptions = {}) {
-    const ref = options.siteRef ?? 0;
-    const onlyUpdated = options.onlyUpdated ?? false;
+    const {ref, onlyUpdated} = parseOptions(options);
 
     let q = onlyUpdated ? `
         [
@@ -281,7 +320,7 @@ export async function selectDstTextIds(es: EntitySet): Promise<EntityId[]> {
 
 
 export async function findEntityBySrcUrl(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<EntityId> {
-    const ref = options.siteRef ?? 0;
+    const {ref, onlyUpdated} = parseOptions(options);
 
     // convert to an extension-less path
     path = uriToPath(path);
@@ -310,7 +349,7 @@ export async function findEntityBySrcUrl(es: EntitySet, path: string, options: F
 
 
 export async function getEntityBySrcUrl(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<Entity> {
-    const ref = options.siteRef ?? 0;
+    const {ref, onlyUpdated} = parseOptions(options);
 
     const query = `
     [
