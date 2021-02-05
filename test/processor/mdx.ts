@@ -11,18 +11,20 @@ import { process as applyTags } from '../../src/builder/processor/mdx/apply_tags
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
+import { process as markMdx } from '../../src/builder/processor/mdx/mark';
 
 import { parse } from '../../src/builder/config';
 
 import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
+import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 
 
 const log = (...args) => console.log('[TestProcMDX]', ...args);
 
-const printES = async (es) => {
+const printES = async (site:Site) => {
     console.log('\n\n---\n');
-    await printAll( es );
+    await printAll( site.es );
 }
 
 const rootPath = Path.resolve(__dirname, "../../");
@@ -595,9 +597,110 @@ tags:
 
 
 
-// processor - extract title meta data from first h1 or h2
 
-// processor - create target using create date and title
+test('mark will only consider updated', async({es,site}) => {
+    await parse( site, `
+    id: 2000
+    src: alpha.mdx
+    `);
+    await parse( site, `
+    id: 2001
+    src: beta.mdx
+    /component/upd:
+        op: 2
+    `);
+
+    await markMdx( site, {onlyUpdated:true} );
+
+    // await printES( site.es );
+    
+
+    let e = await site.es.getEntity(2000);
+    assert.equal( e.Mdx, undefined );
+});
+
+test('preprocess will only consider updated', async({es,site}) => {
+    await parse( site, `
+    id: 2000
+    src: alpha.mdx
+    /component/mdx:
+        data: "# Alpha"
+    `);
+    await parse( site, `
+    id: 2001
+    src: beta.mdx
+    /component/mdx:
+        data: "# Beta"
+    /component/upd:
+        op: 2
+    `);
+
+    await markMdx( site, {onlyUpdated:true} );
+
+    await mdxPreprocess(site, {onlyUpdated:true});
+
+    // await printES( site.es );
+    
+
+    let e = await site.es.getEntity(2000);
+    assert.equal( e.Title, undefined );
+});
+
+test('render will only consider updated', async({es,site}) => {
+    await parse( site, `
+    id: 2000
+    src: alpha.mdx
+    /component/mdx:
+        data: "# Alpha"
+    `);
+    await parse( site, `
+    id: 2001
+    src: beta.mdx
+    /component/mdx:
+        data: "# Beta"
+    /component/upd:
+        op: 1
+    `);
+
+    // await markMdx( site, {onlyUpdated:true} );
+
+    await mdxRender(site, {onlyUpdated:true});
+
+    // await printES( site.es );
+    
+
+    let e = await site.es.getEntity(2000);
+    assert.equal( e.Text, undefined );
+});
+
+
+
+test('process directly from file', async () => {
+    let id = 1000;
+    const idgen = () => ++id;
+
+    const configPath = `file://${rootPath}/test/fixtures/rootC.yaml`;
+    const site = await Site.create({ idgen, configPath });
+
+    await parse( site, `
+    src: file:///weeknotes/2021-01-10.mdx
+    dst: weeknotes.html
+    `);
+
+    await markMdx( site );
+
+    await mdxRender(site);
+
+    await assignTitle(site);
+
+    await buildDstIndex(site);
+
+    // await printES(site);
+
+    let e = await site.getEntityByDst('/weeknotes.html');
+    assert.is.not( e.Text, undefined );
+
+});
 
 
 

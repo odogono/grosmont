@@ -22,9 +22,9 @@ import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 
 const log = (...args) => console.log('[TestProcSCSS]', ...args);
 
-const printES = async (es) => {
+const printES = async (site:Site) => {
     console.log('\n\n---\n');
-    await printAll( es );
+    await printAll( site.es );
 }
 
 const rootPath = Path.resolve(__dirname, "../../");
@@ -83,12 +83,35 @@ test('render will only consider updated', async({es,site}) => {
     await markScss( site, {onlyUpdated:true} );
     await renderScss( site, {onlyUpdated:true} );
 
-    await printES( site.es );
+    // await printES( site );
     
     let e = await site.es.getEntity(2000);
     assert.equal( e.Text, undefined );
 });
 
+test('process directly from file', async () => {
+    let id = 1000;
+    const idgen = () => ++id;
+
+    const configPath = `file://${rootPath}/test/fixtures/rootC.yaml`;
+    const site = await Site.create({ idgen, configPath });
+
+    await parse( site, `
+    src: file:///styles/main.scss
+    `);
+
+    await markScss( site );
+
+    await renderScss(site);
+
+    await buildDstIndex(site);
+
+    // await printES(site);
+
+    let e = await site.getEntityByDst('/main.css');
+    assert.is.not( e.Text, undefined );
+
+});
 
 
 test.run();

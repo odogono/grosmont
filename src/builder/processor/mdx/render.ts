@@ -37,7 +37,13 @@ export async function process(site: Site, options:ProcessOptions = {}) {
     let output = [];
 
     for (const e of ents) {
-        output.push(await renderMdx(es, e, undefined, { fileIndex, pageLinks }));
+        let data = await renderMdx(site, e, { fileIndex, pageLinks });
+        if( data === undefined ){
+            continue;
+        }
+        e.Text = { data, mime:'text/html' };
+
+        output.push(e);
     }
 
     await es.add(output);
@@ -48,38 +54,34 @@ export async function process(site: Site, options:ProcessOptions = {}) {
 
 
 
-async function renderMdx(es: EntitySet, e: Entity, child: TranspileResult, options: ProcessOptions): Promise<Entity> {
-
-
+async function renderMdx(site: Site, e: Entity, options: ProcessOptions): Promise<string> {
+    
     try {
-        let result = await renderEntity(es, e, undefined, options);
+        let result = await renderEntity(site, e, undefined, options);
 
         const { html, meta } = result;
         const { isEnabled, isRenderable } = meta;
 
         if (isEnabled === false) {
-            return e;
+            return undefined;
         }
 
-        // log('[renderMdx]', e.Src.url, meta);
-
-        // if( isRenderable !== false ){
-        e.Text = { data: html, mime: 'text/html' };
-        // }
+        return html;
 
     } catch (err) {
         log('[preProcessMdx]', 'error', err);
     }
 
-    return e;
+    return undefined;
 }
 
 
-async function renderEntity(es: EntitySet, src: Entity, child: TranspileResult, options: ProcessOptions) {
+async function renderEntity(site: Site, src: Entity, child: TranspileResult, options: ProcessOptions) {
+    const { es } = site;
     const { fileIndex } = options;
     const resolveImport = (path: string) => getEntityImportUrlFromPath(fileIndex, path);
 
-    let props = buildProps(src);
+    let props = await buildProps(site, src);
 
     if (child !== undefined) {
         props.children = child.component;
@@ -101,12 +103,14 @@ async function renderEntity(es: EntitySet, src: Entity, child: TranspileResult, 
     result.css = props.css;
     result.cssLinks = props.cssLinks;
 
-    result = await renderLayoutEntity(es, src, result, options);
+    result = await renderLayoutEntity(site, src, result, options);
 
     return result;
 }
 
-async function renderLayoutEntity(es: EntitySet, src: Entity, child: TranspileResult, options: ProcessOptions) {
+async function renderLayoutEntity(site: Site, src: Entity, child: TranspileResult, options: ProcessOptions) {
+    const { es } = site;
+
     if (child === undefined || child.meta.layout === undefined) {
         return child;
     }
@@ -125,7 +129,7 @@ async function renderLayoutEntity(es: EntitySet, src: Entity, child: TranspileRe
 
     // log('[renderLayoutEntity]', 'child', child);
 
-    return await renderEntity(es, layoutE, child, options);
+    return await renderEntity(site, layoutE, child, options);
 }
 
 

@@ -71,7 +71,7 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
     const resolveImport = (path: string) => getEntityImportUrlFromPath(fileIndex, path);
 
     try {
-        let props = buildProps(e);
+        let props = await buildProps(site, e);
         let result = await transpile(props, { render: false, resolveImport });
 
         const { meta } = result;

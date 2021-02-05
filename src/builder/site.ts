@@ -212,6 +212,21 @@ export class Site {
         return res;
     }
 
+    /**
+     * Attempts to read data from the specified path
+     * 
+     * @param path 
+     */
+    async readUrl( path:string ){
+        if( !(await Fs.pathExists(path)) ){
+            path = this.getSrcUrl( path );
+            if( !(await Fs.pathExists(path)) ){
+                return undefined;
+            }
+        }
+        return await Fs.readFile( path, 'utf-8' );
+    }
+
 
     /**
      * Returns the site entity

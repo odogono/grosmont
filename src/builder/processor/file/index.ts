@@ -227,7 +227,7 @@ async function readFileMeta(site: Site, options:ProcessOptions = {}) {
 
         // find the parent dir
         const parentUrl = Path.dirname(e.Src.url) + Path.sep;
-        let parentE = await selectSrcByUrl(es, parentUrl);
+        let parentE = await selectSrcByUrl(es, parentUrl) as Entity;
 
         if (parentE === undefined) {
             parentE = es.createEntity();

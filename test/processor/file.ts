@@ -9,7 +9,6 @@ import {
     cloneEntitySet,
     diffEntitySets,
     applyEntitySetDiffs,
-    applyUpdatesToDependencies,
 } from '../../src/builder/processor/file';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
@@ -21,21 +20,29 @@ import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse'
 import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as markMdx } from '../../src/builder/processor/mdx/mark';
+import { process as markScss } from '../../src/builder/processor/scss/mark';
+import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 
 import { Entity } from 'odgn-entity/src/entity';
-import { getDependencyParents, getDependencyChildren, printAll, printEntity } from '../../src/builder/util';
 import { EntitySet, EntitySetMem } from 'odgn-entity/src/entity_set';
 import { exportEntitySet } from 'odgn-entity/src/util/export/insts';
 import { isDate } from '../../src/util/is';
 import Day from 'dayjs';
 import { setEntityId } from 'odgn-entity/src/component';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
+import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
+import { sqlClear } from 'odgn-entity/src/entity_set_sql/sqlite';
+import { printAll } from 'odgn-entity/src/util/print';
+import { 
+    clearUpdates,
+    applyUpdatesToDependencies 
+} from '../../src/builder/query';
 
 const log = (...args) => console.log('[TestFile]', ...args);
 
-const printES = (es) => {
+const printES = async (es) => {
     console.log('\n\n---\n');
-    printAll(es);
+    await printAll(es);
 }
 
 const rootPath = Path.resolve(__dirname, "../../");
@@ -70,6 +77,51 @@ async function loadRootB(site: Site) {
     await buildDeps(site);
 }
 
+
+test.only('using sql es', async () => {
+    id = 1000;
+    const configPath = `file://${rootPath}/test/fixtures/rootC.yaml`;
+    const liveDB = { path: `${rootPath}/test/fixtures/rootC.sqlite`, isMemory: false };
+    const testDB = { uuid: 'TEST-1', isMemory: true };
+
+    // sqlClear( liveDB.path );
+    // const es = new EntitySetSQL({...testDB});
+    const es = new EntitySetMem(undefined, {idgen});
+    const site = await Site.create({es, idgen, configPath});
+
+    await scanSrc(site); // dont use updates - in fact skip when only updating
+    await markMdx(site, {loadData:true}); // use updates ✓
+    await markScss(site, { loadData: true }); // use updates ✓
+    await renderScss(site); // use updates ✓
+    await mdxPreprocess( site ); // use updates ✓
+    await mdxResolveMeta( site ); // use updates ✓
+    await mdxRender( site ); // use updates ✓
+
+    await buildDstIndex(site); // remove with update = remove
+
+    await clearUpdates(site);
+
+    let eid = await site.getEntityIdByDst('/blah');
+    await site.markUpdate( eid, ChangeSetOp.Update );
+    
+    await applyUpdatesToDependencies(site);
+
+    await printES( es );
+
+    log('>---');
+    const eids = await site.getUpdatedEntityIds();
+    log('updated', eid, eids);
+
+    // a file is updated
+    // scanSrc is run
+    // entities which are marked are rendered
+    // a note is made of which e were updated
+
+
+    // returns an array of entity ids which have parents but no children
+    // ignore orphans. obey update rules
+    // const eids = await site.getDependencyLeafEntityIds( 'dir' );
+});
 
 
 test('reading a site entity', async ({ es, site }) => {

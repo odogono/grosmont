@@ -109,7 +109,15 @@ export async function renderScss(site: Site, e: Entity, options:ProcessOptions =
     // log('dstPath', dstPath);
 
     const srcPath = '/';
-    const scss = e.Scss.data;
+    let scss = e.Scss?.data;
+    if( scss === undefined ){
+        scss = await site.readUrl( e.Src?.url );
+        if( scss === undefined ){
+            throw new Error(`scss data not found for ${e.id}`);
+        }
+    }
+
+    
 
     const css = await render(scss, srcPath, dstPath, true);
 

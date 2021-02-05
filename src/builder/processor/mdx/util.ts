@@ -6,12 +6,28 @@ import { uriToPath } from "../../util";
 import { getDstUrl } from "../dst_url";
 import { PageLink, PageLinks, SiteIndex, TranspileProps } from "../../types";
 import { getDependencyEntities } from "../../query";
+import { Site } from "../../site";
 
 
 const log = (...args) => console.log('[Util]', ...args);
 
-export function buildProps(e: Entity): TranspileProps {
+export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> {
+
     let data = e.Mdx.data;
+
+    if( data === undefined ){
+        // attempt to load from src
+        const src = e.Src?.url;
+
+        if( src === undefined ){
+            throw new Error(`mdx data not found for ${e.id}`);
+        }
+
+        data = await site.readUrl( src );
+
+        // e.Mdx.data = data;
+    }
+
     let eMeta = e.Meta?.meta ?? {};
     let path = e.Dst?.url ?? '';
     let props: TranspileProps = { path, data, meta: eMeta };
