@@ -1,3 +1,5 @@
+import { EntityId } from 'odgn-entity/src/entity';
+import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { StatementArgs } from 'odgn-entity/src/query';
 
 
@@ -48,6 +50,8 @@ export interface ProcessOptions {
     linkIndex?: SiteIndex;
     pageLinks?: PageLinks;
 }
+
+export type EntityUpdate = [ EntityId, ChangeSetOp ];
 
 
 

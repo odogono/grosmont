@@ -10,9 +10,8 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 
 import { joinPaths} from '../file';
 import { Site } from '../../site';
-import { getDstUrl } from '../dst_url';
 import { ProcessOptions } from '../../types';
-import { selectScss, FindEntityOptions } from '../../query';
+import { selectScss, FindEntityOptions, getDstUrl } from '../../query';
 
 
 

@@ -1,10 +1,10 @@
 import { suite } from 'uvu';
 import Path from 'path';
 import { Site } from '../../src/builder/site';
-import { getDstUrl } from '../../src/builder/processor/dst_url';
 import { parse } from '../../src/builder/config';
 import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
+import { getDstUrl } from '../../src/builder/query';
 
 const log = (...args) => console.log('[TestProcTargetPath]', ...args);
 

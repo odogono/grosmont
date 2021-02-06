@@ -1,5 +1,6 @@
 import { suite } from 'uvu';
 import Path from 'path';
+import Beautify from 'js-beautify';
 import { Site } from '../../src/builder/site';
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
@@ -12,6 +13,10 @@ import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 import { process as markMdx } from '../../src/builder/processor/mdx/mark';
+import { 
+    process as processJSX, 
+    preprocess as preProcessJSX 
+} from '../../src/builder/processor/jsx';
 
 import { parse } from '../../src/builder/config';
 
@@ -701,7 +706,6 @@ test('process directly from file', async () => {
     assert.is.not( e.Text, undefined );
 
 });
-
 
 
 

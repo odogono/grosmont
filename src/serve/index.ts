@@ -10,6 +10,12 @@ import url from 'url';
 import Mitt from 'mitt'
 import { Site } from '../builder/site';
 import { build } from '../builder';
+import { process as scanSrc } from '../builder/processor/file';
+import { debounce } from '../util/debounce';
+import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
+import { printAll, printEntity } from 'odgn-entity/src/util/print';
+import { EntityUpdate } from '../builder/types';
+import { clearUpdates } from '../builder/query';
 
 const log = (...args) => console.log('[server]', ...args);
 
@@ -43,11 +49,63 @@ async function onStart(){
 
     await build(site);
 
+    await printAll(site.es);
+
     log('index', site.getIndex('/index/dstUrl').index );
 
-    Chokidar.watch( site.getSrcUrl() ).on('all', (event, path) => {
+    let changeQueue:EntityUpdate[] = [];
+
+    
+    let processChangeQueue = debounce( async () => {
+        // log('[cq]', changeQueue );
+        await clearUpdates(site);
+        // await build(site, {updates:changeQueue});
+        await scanSrc(site, {updates: changeQueue});
+
+
+        const eids = await site.getUpdatedEntityIds();
+        log('updated:');
+        for( const eid of eids ){
+            let url = await site.getEntityDstUrl( eid );
+            let srcUrl = await site.getEntitySrcUrl( eid );
+            log( eid, srcUrl, url );
+            // printEntity( site.es, await site.es.getEntity(eid) );
+        }
+
+        const events = eids.map( async eid => {
+            let url = await site.getEntityDstUrl( eid );
+            let srcUrl = await site.getEntitySrcUrl( eid );
+            return [ url, srcUrl, eid ];
+        });
+
+        emitter.emit( '/serve/e/update', events );
+        
+
+        changeQueue = [];
+    } )
+
+    Chokidar.watch( site.getSrcUrl() ).on('all', async (event, path) => {
         let relPath = Path.sep + path.replace( site.getSrcUrl(), '' );
-        log( '[change]', event, relPath );
+        // log( '[change]', event, relPath );
+
+        let op = ChangeSetOp.None;
+        if( event === 'change' ){
+            op = ChangeSetOp.Update;
+        } else if( event === 'add' || event === 'addDir' ){
+            op = ChangeSetOp.Add;
+        } else if( event === 'unlink' || event === 'unlinkDir' ){
+            op = ChangeSetOp.Remove;
+        }
+        
+        const eid = await site.getEntityIdBySrc( 'file://' + relPath );
+        
+        log('[change]', 'file://' + relPath, eid, op);
+        
+        if( eid !== undefined ){
+            changeQueue.push( [eid,op] );
+            processChangeQueue();
+        }
+        
     })
 }
 
@@ -102,6 +160,10 @@ app.get('/sseEvents', function (req, res) {
             res.write(`event: ${event}\n`);
             res.write("data: " + JSON.stringify(rest) + "\n\n")
             console.log('[sseEvents]', e);
+        });
+        
+        emitter.on('/serve/e/update', (updates) => {
+
         });
 
         setTimeout(() => {

@@ -3,7 +3,6 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { slugify } from "../../util/string";
 import { Site } from '../site';
 import { extensionFromMime } from "./assign_mime";
-import { getDstUrl } from "./dst_url";
 import { ProcessOptions } from '../types';
 import { selectTitleAndMeta } from '../query';
 import { isString } from 'odgn-entity/src/util/is';

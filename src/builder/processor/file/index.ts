@@ -76,7 +76,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
         await applyEntitySetDiffs(site.es, incoming, diffs, true);
     // }
 
-    // resolve any meta.* files into their containing files
+    // resolve any meta.* files into their containing dirs
     await readFileMeta(site, options);
 
     // build dependencies
@@ -265,13 +265,16 @@ async function readFileMeta(site: Site, options: ProcessOptions = {}) {
     const { es } = site;
 
     // find /src with meta.(yaml|toml) files
-    const metaEnts = await selectMetaSrc(es, { ...options, siteRef: site.e.id });
+    const ents = await selectMetaSrc(es, { ...options, siteRef: site.e.id });
 
-    // log('meta', metaEnts);
+    if( ents.length > 0 ) {
+        log('[readFileMeta]', ents.map(e => e.id));
+        // ents.map( e => printEntity(es, e) );
+    }
 
     let coms = [];
 
-    for (const e of metaEnts) {
+    for (const e of ents) {
         let path = site.getSrcUrl(e);
         let ext = Path.extname(path).substring(1);
 
@@ -291,9 +294,13 @@ async function readFileMeta(site: Site, options: ProcessOptions = {}) {
 
         // fold this entity into the parent
         for (let [, com] of metaE.components) {
-
             com = setEntityId(com, parentE.id);
             coms.push(com);
+        }
+
+        // add the update flag if present
+        if( e.Upd ){
+            coms.push(setEntityId(e.Upd, parentE.id));
         }
 
         // copy over the stat times
@@ -301,6 +308,10 @@ async function readFileMeta(site: Site, options: ProcessOptions = {}) {
     }
 
     await es.add(coms);
+
+    // if( metaEnts.length > 0 ) {
+    //     log('[readFileMeta]', coms);
+    // }
 
     // dont remove the meta files - we will need them to compare
     // for updates
@@ -314,7 +325,13 @@ async function readFileMeta(site: Site, options: ProcessOptions = {}) {
 
 
 
-
+/**
+ * Scans through the site src path and creates entities for files and dirs
+ * 
+ * @param site 
+ * @param es 
+ * @param options 
+ */
 async function readFileSystem(site: Site, es?: EntitySet, options: ProcessFileOptions = {}) {
     let rootPath = site.getSrcUrl();
     const siteEntity = site.getEntity();

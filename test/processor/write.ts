@@ -9,10 +9,7 @@ import { process as slugifyTitle } from '../../src/builder/processor/assign_titl
 import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
 import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
-
-import assert from 'uvu/assert';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { getDstUrl } from '../../src/builder/processor/dst_url';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 import { process as write } from '../../src/builder/processor/write';
 import { printAll } from 'odgn-entity/src/util/print';

@@ -3,9 +3,8 @@ import { Entity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { buildUrl } from "../../../util/uri";
 import { uriToPath } from "../../util";
-import { getDstUrl } from "../dst_url";
 import { PageLink, PageLinks, SiteIndex, TranspileProps } from "../../types";
-import { getDependencyEntities } from "../../query";
+import { getDependencyEntities, getDstUrl } from "../../query";
 import { Site } from "../../site";
 
 

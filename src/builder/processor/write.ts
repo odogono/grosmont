@@ -1,15 +1,7 @@
-import Fs from 'fs-extra';
-import Path from 'path';
-
-import { Entity, EntityId } from "odgn-entity/src/entity";
-import { EntitySet } from "odgn-entity/src/entity_set";
-
 import { Site } from "../site";
 import { Component, getComponentEntityId } from 'odgn-entity/src/component';
-import { getDstUrl } from './dst_url';
-import { fileURLToPath } from 'url';
 import { ProcessOptions } from '../types';
-import { selectTextWithDst } from '../query';
+import { getDstUrl, selectTextWithDst } from '../query';
 
 const log = (...args) => console.log('[ProcWrite]', ...args);
 

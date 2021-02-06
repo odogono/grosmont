@@ -15,19 +15,31 @@ import { process as assignTitle } from './processor/assign_title';
 import { process as write } from './processor/write';
 import { process as buildDstIndex } from './processor/dst_index';
 import { printAll } from 'odgn-entity/src/util/print';
+import { EntityUpdate, ProcessOptions } from './types';
+import { clearUpdates } from './query';
 
 
+export interface BuildProcessOptions extends ProcessOptions {
+    updates?: EntityUpdate[];
+}
 
-export async function build(site:Site) {
 
-    
-    await scanSrc(site);
+/**
+ * 
+ * @param site 
+ */
+export async function build(site:Site, options:BuildProcessOptions = {}) {
+
+    // clear /component/update from site
+    await clearUpdates(site);
+
+    await scanSrc(site, options);
 
     await markMdx(site, { onlyUpdated:true });
     
     await markScss(site, { onlyUpdated:true });
 
-    await assignMime(site);
+    // await assignMime(site);
 
     await renderScss(site, { onlyUpdated:true });
 
@@ -44,6 +56,9 @@ export async function build(site:Site) {
 
     return site;
 }
+
+
+
 
 // export async function processPages(rootPath: string, dstPath: string, targetPage?: string): Promise<BuildContext> {
 

@@ -4,11 +4,10 @@ import { getDefId } from "odgn-entity/src/component_def";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { slugify } from "../../util/string";
-import { selectDstTextIds } from '../query';
+import { getDstUrl, selectDstTextIds } from '../query';
 
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
-import { getDstUrl } from './dst_url';
 
 const log = (...args) => console.log('[ProcDstIndex]', ...args);
 

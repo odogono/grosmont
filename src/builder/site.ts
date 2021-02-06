@@ -20,10 +20,20 @@ import { StatementArgs } from 'odgn-entity/src/query';
 import { parse } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
 import { parseUri } from '../util/uri';
-import { getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
-import { findEntitiesByTags, findLeafDependenciesByType, selectUpdated } from './query';
+import {  setEntityId } from 'odgn-entity/src/component';
+import { 
+    findEntitiesByTags, 
+    findLeafDependenciesByType, 
+    getDstUrl, 
+    selectEntityBySrc, 
+    selectSrcByEntity, 
+    selectSrcByUrl, 
+    selectUpdated
+} from './query';
 import { DependencyType, SiteIndex } from './types';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
+import { isString } from 'odgn-entity/src/util/is';
+
 
 
 const log = (...args) => console.log('[Site]', ...args);
@@ -188,10 +198,11 @@ export class Site {
      * 
      * @param appendPath 
      */
-    getSrcUrl(appendPath?: string) {
+    getSrcUrl(appendPath?: string|Entity) {
         let res = fileURLToPath(this.e.Src.url);
         if (appendPath) {
-            res = Path.join(res, appendPath.startsWith('file://') ? fileURLToPath(appendPath) : appendPath);
+            let path = isString(appendPath) ? appendPath : (appendPath as Entity).Src?.url ?? '';
+            res = Path.join(res, path.startsWith('file://') ? fileURLToPath(path) : path);
         }
         return res;
     }
@@ -211,6 +222,22 @@ export class Site {
 
         return res;
     }
+
+    /**
+     * Returns the computed dst url for an entity
+     * @param e 
+     * @param appendRoot 
+     */
+    async getEntityDstUrl(eid:EntityId|Entity, appendRoot: boolean = false){
+        return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id  : eid as EntityId );
+    }
+
+    async getEntitySrcUrl(eid:EntityId|Entity, appendRoot: boolean = false){
+        return await selectSrcByEntity(this.es, eid );
+        // return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id  : eid as EntityId );
+    }
+
+    
 
     /**
      * Attempts to read data from the specified path
@@ -277,17 +304,24 @@ export class Site {
      * @param url 
      */
     async addSrc(url: string): Promise<Entity> {
-        return selectSiteSrcByUrl(this, url, { createIfNotFound: true }) as Promise<Entity>;
+        return selectEntityBySrc(this, url, { createIfNotFound: true }) as Promise<Entity>;
     }
 
     /**
-     * Returns an entity by /component/src#url
-     * @param uri 
+     * Returns an EntityId by /component/src#url
+     * @param url
      */
-    async getSrc(uri: string): Promise<Entity> {
-        return selectSiteSrcByUrl(this, uri) as Promise<Entity>;
+    async getEntityIdBySrc(url:string): Promise<EntityId> {
+        return selectEntityBySrc(this, url, {returnEid:true, createIfNotFound:false}) as Promise<EntityId>;
     }
 
+    /**
+     * Returns an Entity by /component/src#url
+     * @param url
+     */
+    async getEntityBySrc(url:string): Promise<Entity> {
+        return selectEntityBySrc(this, url, {returnEid:false, createIfNotFound:false}) as Promise<Entity>;
+    }
 
     /**
      * Returns an entity by its dst url
@@ -463,39 +497,3 @@ export async function selectSite(es: EntitySet) {
 //     return undefined;
 // }
 
-async function selectSiteSrcByUrl(site: Site, url: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
-    const { es } = site;
-    const ref = site.e.id;
-    const stmt = es.prepare(`
-        [
-            /component/src#/url !ca $url ==
-            /component/site_ref#/ref !ca $ref ==
-            and
-            @c
-        ] select
-    `);
-    let com = await stmt.getResult({ url, ref });
-    com = com.length === 0 ? undefined : com[0];
-
-    // log('[selectSiteSrcByUrl]', url, com );
-    if (com === undefined) {
-        if (!options.createIfNotFound) {
-            // log('[selectSiteSrcByUrl]', 'nope', {url,ref});
-            // log( stmt );
-            return undefined;
-        }
-        let e = es.createEntity();
-        e.Src = { url };
-        let ctime = new Date().toISOString();
-        let mtime = ctime;
-        e.Times = { ctime, mtime };
-        e.SiteRef = { ref };
-        return e;
-    }
-
-    const eid = getComponentEntityId(com);
-    if (options.returnEid === true) { return eid; }
-
-    const e = es.getEntity(eid);
-    return e;
-}
