@@ -98,7 +98,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     // log('[transpile]', 'meta', mdxResult );
 
     let result: TranspileResult = {
-        path, jsx, /* code, ast,*/ component, links, meta, cssLinks, additional: rest
+        path, jsx, code, ast, /* code, ast,*/ component, links, meta, cssLinks, additional: rest
     };
 
     // log('[transpile]', 'requires', requires);
@@ -163,8 +163,6 @@ function parseMdx(data: string, path: string, options: ProcessMDXOptions) {
 
         let code = transformJSX(jsx);
         let el = evalCode(code, path);
-
-        // log('[parseMdx]', 'el', el );
 
         return { ...el, code, jsx, ast, links };
 
@@ -257,6 +255,12 @@ function transformJSX(jsx: string) {
     return Babel.transform(jsx, { presets, plugins }).code;
 }
 
+
+/**
+ * 
+ * @param code 
+ * @param path 
+ */
 function evalCode(code: string, path: string) {
     let requires = [];
     const requireManual = (requirePath) => {

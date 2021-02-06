@@ -195,6 +195,30 @@ export async function selectMetaDisabled(es: EntitySet): Promise<EntityId[]> {
 }
 
 
+export async function selectJsx(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
+    const {ref, onlyUpdated} = parseOptions(options);
+
+    let q = onlyUpdated ? `
+        [
+            /component/jsx !bf
+                    /component/upd#op !ca 1 ==
+                    /component/upd#op !ca 2 ==
+                or
+                /component/site_ref#ref !ca $ref ==
+            and
+        and
+        
+        @e ] select` : 
+        `[
+                /component/jsx !bf
+                /component/site_ref#ref !ca $ref ==
+            and
+            @e
+        ] select`;
+
+    return await es.prepare(q).getEntities({ref});
+}
+
 export async function selectMdx(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
     const {ref, onlyUpdated} = parseOptions(options);
 
@@ -215,11 +239,6 @@ export async function selectMdx(es: EntitySet, options:FindEntityOptions = {}): 
             and
             @e
         ] select`;
-
-    // const query = `[
-    //     /component/mdx !bf
-    //     @e
-    // ] select`;
 
     return await es.prepare(q).getEntities({ref});
 }

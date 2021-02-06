@@ -250,6 +250,18 @@ export const defs = [
             {name:'data', type:'string'}
         ]
     },
+    {
+        uri: '/component/jsx',
+        properties: [
+            {name:'data', type:'string'}
+        ]
+    },
+    {
+        uri: '/component/error',
+        properties: [
+            {name:'message'}
+        ]
+    },
     // {
     //     // DEPRECATED marks a page as being css
     //     uri: '/component/css',

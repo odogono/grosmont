@@ -2,10 +2,8 @@ import Path from 'path';
 import Mime from 'mime-types';
 
 
-import { Entity, EntityId } from "odgn-entity/src/entity";
+import { Entity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
-import { printAll } from "../ecs";
-import { Component } from 'odgn-entity/src/component';
 import { Site } from '../site';
 import { applyMeta } from '../util';
 

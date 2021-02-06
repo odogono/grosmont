@@ -1,5 +1,5 @@
+import { isString } from "odgn-entity/src/util/is";
 import { stringify } from "odgn-entity/src/util/json";
-import { isString } from "./is";
 
 export function truncate(str: string, len = 10) {
     return str === undefined ? '' : str.length <= len ? str : str.slice(0, len) + '...';

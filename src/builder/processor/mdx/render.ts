@@ -14,13 +14,16 @@ import { buildSrcIndex, selectMdx } from "../../query";
 const log = (...args) => console.log('[ProcMDXRender]', ...args);
 
 
+export interface ProcessMDXRenderOptions extends ProcessOptions {
+    target? : 'text/html' | 'text/javascript' | 'text/jsx' | 'text/ast';
+}
 
 /**
  * Renders /component/mdx into /component/text
  * 
  * @param es 
  */
-export async function process(site: Site, options:ProcessOptions = {}) {
+export async function process(site: Site, options:ProcessMDXRenderOptions = {}) {
     const es = site.es;
 
 
@@ -37,11 +40,11 @@ export async function process(site: Site, options:ProcessOptions = {}) {
     let output = [];
 
     for (const e of ents) {
-        let data = await renderMdx(site, e, { fileIndex, pageLinks });
+        let [data, mime] = await renderMdx(site, e, { ...options, fileIndex, pageLinks });
         if( data === undefined ){
             continue;
         }
-        e.Text = { data, mime:'text/html' };
+        e.Text = { data, mime };
 
         output.push(e);
     }
@@ -54,19 +57,33 @@ export async function process(site: Site, options:ProcessOptions = {}) {
 
 
 
-async function renderMdx(site: Site, e: Entity, options: ProcessOptions): Promise<string> {
-    
+async function renderMdx(site: Site, e: Entity, options: ProcessMDXRenderOptions): Promise<[string,string]> {
+    const target = options.target ?? 'text/html';
+
     try {
         let result = await renderEntity(site, e, undefined, options);
 
-        const { html, meta } = result;
+        const { html, code, jsx, ast, meta } = result;
         const { isEnabled, isRenderable } = meta;
+
+        // log('[renderMdx]', result);
 
         if (isEnabled === false) {
             return undefined;
         }
 
-        return html;
+        if( target === 'text/ast' ){
+            return [ ast, target ];
+        }
+        if( target === 'text/jsx' ){
+            return [ jsx, target ];
+        }
+        if( target === 'text/javascript' ){
+            return [ code, target ];
+        }
+        
+            
+        return [ html, target ];
 
     } catch (err) {
         log('[preProcessMdx]', 'error', err);

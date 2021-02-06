@@ -264,6 +264,12 @@ export class Site {
         return this.e.id;
     }
 
+    /**
+     * Returns the sites host url
+     */
+    getUrl(): string {
+        return this.e.Url?.url ?? 'http://localhost/';
+    }
 
     /**
      * Convenience function for adding an entity with a /component/src

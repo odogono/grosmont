@@ -12,8 +12,7 @@ import { Site } from "../../site";
 const log = (...args) => console.log('[Util]', ...args);
 
 export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> {
-
-    let data = e.Mdx.data;
+    let data = e.Mdx?.data;
 
     if( data === undefined ){
         // attempt to load from src

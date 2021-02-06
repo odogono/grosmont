@@ -11,8 +11,8 @@
 //     };
 // }
 
+import { isString } from "odgn-entity/src/util/is";
 import { stringify } from "odgn-entity/src/util/json";
-import { isString } from "./is";
 import { toBoolean } from "./to";
 
 export interface UriStructure {

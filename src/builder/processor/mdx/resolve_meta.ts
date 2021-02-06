@@ -1,6 +1,4 @@
 import { Entity, EntityId } from "odgn-entity/src/entity";
-import { EntitySet } from "odgn-entity/src/entity_set";
-import { isString } from "../../../util/is";
 import { selectMdx } from "../../query";
 import { Site } from '../../site';
 import { ProcessOptions } from "../../types";

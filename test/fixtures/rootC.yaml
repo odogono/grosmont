@@ -7,6 +7,10 @@
 /component/title:
   title: Open Door Go North
 
+/component/url:
+  url: https://www.opendoorgonorth.com/
+
+
 /component/patterns:
   include: 
     - '**/*'

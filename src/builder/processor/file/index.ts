@@ -24,6 +24,9 @@ import { parse } from '../../config';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { getDefId } from 'odgn-entity/src/component_def';
 import { applyUpdatesToDependencies, buildSrcUrlIndex, clearUpdates, selectMetaSrc } from '../../query';
+import { EntityUpdate, ProcessOptions } from '../../types';
+import { printEntity } from 'odgn-entity/src/util/print';
+import Day from 'dayjs';
 
 
 
@@ -33,21 +36,31 @@ const log = (...args) => logActive && console.log('[ProcFile]', ...args);
 
 
 
-export interface ProcessOptions {
+export interface ProcessFileOptions extends ProcessOptions {
     debug?: true;
     readFS?: boolean;
     readFSResult?: EntitySetMem;
+    updates?: EntityUpdate[];
 }
 
 
-export async function process(site: Site, options: ProcessOptions = {}) {
-    // logActive = options.debug ?? false;
-    // const readFS = options.readFS ?? true;
+/**
+ * 
+ * @param site 
+ * @param options 
+ */
+export async function process(site: Site, options: ProcessFileOptions = {}) {
+    let { updates } = options;
 
-    // TODO clear the updated component
-    await clearUpdates(site);
+    
+    // // if we are passed updated entities, then just flag them
+    // if (updates !== undefined && updates.length > 0) {
+        
+    //     await applyUpdateToEntities( site.es, updates );
 
-    // if (readFS) {
+    // // otherwise, scan the entire src looking for differences
+    // } else {
+
         // create an es to put the scan into
         let incoming = await cloneEntitySet(site.es);
 
@@ -67,12 +80,12 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     await readFileMeta(site, options);
 
     // build dependencies
-    await buildDeps(site);
+    await buildDeps(site, options);
 
     // any dependencies of entities marked as updated should also
     // be marked as updated
     // if( options.debug ){
-        // printAll(site.es as EntitySetMem);
+    // printAll(site.es as EntitySetMem);
     await applyUpdatesToDependencies(site);
     // }
 }
@@ -114,6 +127,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 
         if (op === ChangeSetOp.Remove) {
             removeEids.push(aEid);
+            log('[applyEntitySetDiffs]','[remove]', aEid);
             // add eid to remove list
             continue;
         }
@@ -121,6 +135,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
             let e = await esB.getEntity(bEid, true);
             if (e === undefined) {
                 log('[applyEntitySetDiffs]', 'could not find', bEid);
+                continue;
             }
             let eid = op === ChangeSetOp.Add ? esA.createEntityId() : aEid;
             for (const [, com] of e.components) {
@@ -128,6 +143,12 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
             }
             if (addDiff) {
                 diffComs.push(setEntityId(esA.createComponent(diffDefId, { op }), eid));
+            }
+
+            if( op === ChangeSetOp.Add ){
+                log('[applyEntitySetDiffs]','[add]', aEid);
+            } else {
+                log('[applyEntitySetDiffs]','[update]', aEid);
             }
             // e.Upd = {op};
             // updateEs.push( e );
@@ -145,8 +166,22 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
     await esA.add(diffComs, { retain: true });
     // await esA.add( updateEs, {retain:true} );
 
-    esA.getUpdatedEntities
+    // esA.getUpdatedEntities
     return esA;
+}
+
+
+async function applyUpdateToEntities( es:EntitySet, updates:EntityUpdate[] ){
+    const diffDefId = getDefId(es.getByUri('/component/upd'));
+
+    let coms:Component[] = [];
+    for( const [eid, op] of updates ){
+        let com = es.createComponent( diffDefId, {op} );
+        coms.push( setEntityId(com, eid) );
+    }
+
+    await es.add( coms );
+    return es;
 }
 
 
@@ -181,13 +216,23 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<Sr
         if (!isTimeSame(mtime, bTime)) {
             // b has a different timestamp (updated)
             result.push([eid, ChangeSetOp.Update, bEid]);
+            let at = Day(mtime).toISOString()
+            let bt = Day(bTime).toISOString()
+            log('[diffEntitySets]', '[update]', bEid, `different timestamp to ${bEid} - ${at} != ${bt}`);
+            
             // log(`e ${eid} has different timestamp to ${bEid} - ${mtime} != ${bTime}`);
             continue;
         }
 
-        if (bfToString(bf) != bfToString(bBf)) {
-            result.push([eid, ChangeSetOp.Update, bEid]);
-        }
+        // comparing components doesnt work, since the incoming changes only consider src
+        // if (bfToString(bf) != bfToString(bBf)) {
+        //     result.push([eid, ChangeSetOp.Update, bEid]);
+        //     log('[diffEntitySets]', '[update]', bEid, `com change`,bfToString(bf), bfToString(bBf) );
+        //     let ea = await esA.getEntity(eid,true);
+        //     let eb = await esB.getEntity(bEid,true);
+        //     printEntity(esA, ea);
+        //     printEntity(esB, eb);
+        // }
     }
 
     for (let [url, eid, mtime] of idxB) {
@@ -196,6 +241,7 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<Sr
         if (row === undefined) {
             // b does not exist in a (added)
             result.push([undefined, ChangeSetOp.Add, eid]);
+            log('[diffEntitySets]', '[add]', eid); 
             continue;
         }
     }
@@ -210,19 +256,23 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<Sr
 
 
 
-
-async function readFileMeta(site: Site, options:ProcessOptions = {}) {
-    const {es} = site;
+/**
+ * 
+ * @param site 
+ * @param options 
+ */
+async function readFileMeta(site: Site, options: ProcessOptions = {}) {
+    const { es } = site;
 
     // find /src with meta.(yaml|toml) files
-    const metaEnts = await selectMetaSrc(es, {...options, siteRef:site.e.id});
+    const metaEnts = await selectMetaSrc(es, { ...options, siteRef: site.e.id });
 
     // log('meta', metaEnts);
 
     let coms = [];
 
     for (const e of metaEnts) {
-        let path = site.getSrcUrl(e.Src.url);
+        let path = site.getSrcUrl(e);
         let ext = Path.extname(path).substring(1);
 
         // find the parent dir
@@ -265,13 +315,13 @@ async function readFileMeta(site: Site, options:ProcessOptions = {}) {
 
 
 
-async function readFileSystem(site: Site, es?: EntitySet, options: ProcessOptions = {}) {
+async function readFileSystem(site: Site, es?: EntitySet, options: ProcessFileOptions = {}) {
     let rootPath = site.getSrcUrl();
     const siteEntity = site.getEntity();
     es = es ?? site.es;
 
-    if( options.readFSResult ){
-        let ents = Array.from( options.readFSResult.components.values() );
+    if (options.readFSResult) {
+        let ents = Array.from(options.readFSResult.components.values());
         await es.add(ents);
         return es;
     }
@@ -395,7 +445,7 @@ function buildGlobFilter(rootPath: string, include: Pattern[], exclude: Pattern[
  * @param options 
  */
 export async function selectSrcByUrl(es: EntitySet, url: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
-    
+
     const stmt = es.prepare(`[ /component/src#url !ca $url == @c] select`);
     let com = await stmt.getResult({ url });
     com = com.length === 0 ? undefined : com[0];

@@ -3,9 +3,8 @@ import babelGenerate from '@babel/generator';
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import unistVisit from 'unist-util-visit';
-import unistRemove from 'unist-util-remove';
 import {select,selectAll} from 'unist-util-select';
-import { isString } from '../../../util/is';
+import { isString } from 'odgn-entity/src/util/is';
 
 /**
  * 

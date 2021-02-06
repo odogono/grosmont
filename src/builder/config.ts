@@ -10,13 +10,13 @@ import { getEntityAttribute } from "odgn-entity/src/util/entity";
 import { Component, getComponentDefId } from 'odgn-entity/src/component';
 import { ComponentDef, getDefId } from 'odgn-entity/src/component_def';
 import { stringify } from 'odgn-entity/src/util/json';
-import { isString } from '../util/is';
 import { Site } from './site';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { slugify } from '../util/string';
 import { findEntityBySrcUrl, insertDependency, selectTagBySlug } from './query';
 import { createTracing } from 'trace_events';
 import { createTag, createTimes } from './util';
+import { isString } from 'odgn-entity/src/util/is';
 
 
 const log = (...args) => console.log('[Config]', ...args);

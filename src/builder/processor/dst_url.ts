@@ -5,8 +5,7 @@ import Fs from 'fs-extra';
 import { Component } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
-import { printAll } from "../ecs";
-import { BitField } from 'odgn-entity/src/util/bitfield';
+
 
 
 /**

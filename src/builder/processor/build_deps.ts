@@ -28,7 +28,7 @@ export async function process(site: Site, options: BuildDepsOptions = {}) {
     let es = site.es;
 
     // select /src entities with a file url
-    const coms = await selectFileSrc(es);
+    const coms = await selectFileSrc(es, {...options, siteRef:site.e.id});
 
     // log('coms', coms);
 

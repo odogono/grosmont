@@ -22,9 +22,9 @@ import {
 } from "../../query";
 import { toInteger } from "odgn-entity/src/util/to";
 import { buildProps, getEntityImportUrlFromPath } from "./util";
-import { isString } from "../../../util/is";
 import { parse as parseConfig } from '../../config';
-import { printEntity } from "odgn-entity/src/util/print";
+import { isString } from "odgn-entity/src/util/is";
+
 
 
 const log = (...args) => console.log('[ProcMDXParse]', ...args);
