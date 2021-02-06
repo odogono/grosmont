@@ -533,6 +533,18 @@ export async function selectSrcByEntity(es: EntitySet, e: EntityId|Entity): Prom
     return res.length > 0 ? res[0] : undefined;
 }
 
+export async function selectTextByEntity(es: EntitySet, e: EntityId|Entity): Promise<[string, string]> {
+    const eid = isEntity(e) ? (e as Entity).id : e as EntityId;
+    const stmt = es.prepare(`[
+        $eid @eid
+        /component/text !bf
+        @c
+    ] select [/data /mime] pluck!`);
+
+    let res = await stmt.getResult({ eid });
+    return res.length > 0 ? res[0] : undefined;
+}
+
 
 
 

@@ -16,7 +16,10 @@ import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { EntityUpdate } from '../builder/types';
 import { clearUpdates } from '../builder/query';
-
+import Day from 'dayjs';
+import { EntityId } from 'odgn-entity/src/entity';
+import { toInteger } from 'odgn-entity/src/util/to';
+import { parseUri } from '../util/uri';
 const log = (...args) => console.log('[server]', ...args);
 
 const app = express();
@@ -38,6 +41,14 @@ const configPath = Path.resolve(config);
 //     }
 // });
 
+// __dirname, '../../dist'
+
+const clientHandlerPath = Path.join(__dirname, 'client.js');
+const debugHTMLPath = Path.join(__dirname, 'debug.html');
+
+const clientHandler = '<script>' + Fs.readFileSync( clientHandlerPath, 'utf-8' ) + '</script>';
+
+const debugHTML = Fs.readFileSync( debugHTMLPath, 'utf-8' );
 
 
 async function onStart(){
@@ -49,7 +60,7 @@ async function onStart(){
 
     await build(site);
 
-    await printAll(site.es);
+    // await printAll(site.es);
 
     log('index', site.getIndex('/index/dstUrl').index );
 
@@ -58,27 +69,23 @@ async function onStart(){
     
     let processChangeQueue = debounce( async () => {
         // log('[cq]', changeQueue );
-        await clearUpdates(site);
-        // await build(site, {updates:changeQueue});
-        await scanSrc(site, {updates: changeQueue});
+        // await clearUpdates(site);
+        await build(site, {updates:changeQueue});
+        // await scanSrc(site, {updates: changeQueue});
 
 
         const eids = await site.getUpdatedEntityIds();
         log('updated:');
+        let updates = [];
         for( const eid of eids ){
             let url = await site.getEntityDstUrl( eid );
             let srcUrl = await site.getEntitySrcUrl( eid );
             log( eid, srcUrl, url );
+            updates.push( [url, srcUrl, eid ] );
             // printEntity( site.es, await site.es.getEntity(eid) );
         }
 
-        const events = eids.map( async eid => {
-            let url = await site.getEntityDstUrl( eid );
-            let srcUrl = await site.getEntitySrcUrl( eid );
-            return [ url, srcUrl, eid ];
-        });
-
-        emitter.emit( '/serve/e/update', events );
+        emitter.emit( '/serve/e/update', updates );
         
 
         changeQueue = [];
@@ -109,19 +116,92 @@ async function onStart(){
     })
 }
 
+// https://stackoverflow.com/a/50594265/2377677
+app.get('/sseEvents', function (req, res) {
+    let originalUrl = parseUrl.original(req)
+    let path = parseUrl(req).pathname;
+    let query = parseUri(originalUrl.href).queryKey;
+
+    try {
+        log('[sseEvents]', 'connect', originalUrl.href);
+        let {e:rEid,path:rPath} = query;
+        rEid = toInteger(rEid);
+
+
+        res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+        });
+
+        req.on('close', () => {
+            log('[sseEvents]', 'disconnected.');
+            // clearTimeout(manualShutdown)  // prevent shutting down the connection twice
+          })
+
+        emitter.on('sse', e => {
+            const { event, ...rest } = e;
+            res.write(`event: ${event}\n`);
+            res.write("data: " + JSON.stringify(rest) + "\n\n")
+            log('[/sse]', e);
+        });
+
+        emitter.on('/serve/e/update', (updates) => {
+            log('[/serve/e/update]', updates);
+            const update = updates.find( ([url,srcUrl,eid]) => eid === rEid );
+            if( update !== undefined ){
+                res.write(`event: reload\n`);
+                res.write("data: " + JSON.stringify(update) + "\n\n");
+            }
+        });
+
+        setTimeout(() => {
+            res.write(`event: initial\n`)
+            res.write('data: ' + JSON.stringify({ evt: 'connected' }) + '\n\n');
+        }, 1000);
+
+        heartbeat(res);
+
+        // countdown(res, 15);
+    } catch (err) {
+        console.warn('[sseEvents]', err);
+    }
+})
+
+function heartbeat( res ){
+    // log('[heartbeat]');
+    res.write("event: ping\n");
+    res.write(`data: ${Day().toISOString()}\n\n`);
+    setTimeout( () => heartbeat(res), 10000);
+}
 
 app.use(async (req, res, next) => {
     let originalUrl = parseUrl.original(req)
     let path = parseUrl(req).pathname
 
     
-    log('[ok]', originalUrl, path);
+    log('[ok]', originalUrl.href, path);
+
 
     // let out = Path.join(__dirname, '../../dist', path );
 
-    const e = site.getIndex('/index/dstUrl').index.get(path);
+    const e = site.getEntityIdByDst(path);
 
-    log('found', e);
+    if( e !== undefined ){
+        log('found', e);
+        let text = await site.getEntityText( e );
+        if( text !== undefined ){
+            let [data,mime] = text;
+
+            if( mime === 'text/html' ){
+                res.send( data + debugHTML + clientIdHeader(e,path) + clientHandler );
+            } else {
+                res.send( data );
+            }
+
+            return;
+        }
+    }
 
     const [exists, filePath] = await resolveRequestPath(path);
 
@@ -135,47 +215,19 @@ app.use(async (req, res, next) => {
     if (filePath.endsWith('.html')) {
         const data = await Fs.readFile(filePath, 'utf8');
 
-        res.send(data + clientDebug + clientHandler);
+        res.send(data + debugHTML + clientHandler);
     }
     else {
         res.sendFile(filePath);
     }
 })
 
-// https://stackoverflow.com/a/50594265/2377677
-app.get('/sseEvents', function (req, res) {
+function clientIdHeader(eid:EntityId, path:string){
+    return `
+    <script>window.odgnServe = { eid: ${eid}, path:'${path}' };</script>
+    `;
+}
 
-    try {
-
-
-        console.log('[sseEvents]', 'connect');
-
-        res.writeHead(200, {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
-        })
-        emitter.on('sse', e => {
-            const { event, ...rest } = e;
-            res.write(`event: ${event}\n`);
-            res.write("data: " + JSON.stringify(rest) + "\n\n")
-            console.log('[sseEvents]', e);
-        });
-        
-        emitter.on('/serve/e/update', (updates) => {
-
-        });
-
-        setTimeout(() => {
-            res.write(`event: initial\n`)
-            res.write('data: ' + JSON.stringify({ evt: 'connected' }) + '\n\n');
-        }, 1000);
-
-        // countdown(res, 15);
-    } catch (err) {
-        console.warn('[sseEvents]', err);
-    }
-})
 
 function countdown(res, count) {
     res.write("data: " + count + "\n\n")
@@ -211,57 +263,6 @@ async function resolveRequestPath(path: string): Promise<[boolean, string]> {
 
     return [true, out];
 }
-
-const clientDebug = `
-<h1>SSE: <span id="state"></span></h1>
-<h3>Data: <span id="data"></span></h3>
-`;
-
-const clientHandler = `
-<script>
-  if (!!window.EventSource) {
-    var source = new EventSource('/sseEvents')
-
-    source.addEventListener('message', function(e) {
-        console.log('[sse][message]', e);
-      document.getElementById('data').innerHTML = e.data
-    }, false)
-
-    source.addEventListener('initial', function(e) {
-        console.log('[sse][initial]', e);
-      document.getElementById('data').innerHTML = e.data
-    }, false)
-    
-    source.addEventListener('change', function(e) {
-        console.log('[sse][change]', e);
-      document.getElementById('data').innerHTML = JSON.parse(e.data);
-    }, false)
-
-    source.onmessage = (evt) => {
-        console.log('[sseEvents]', evt );
-    }
-
-    source.addEventListener('open', function(e) {
-      document.getElementById('state').innerHTML = "Connected"
-    }, false)
-
-    source.addEventListener('error', function(e) {
-        console.log('[sseEvents][error]', e );
-      const id_state = document.getElementById('state')
-      if (e.eventPhase == EventSource.CLOSED)
-        source.close()
-      if (e.target.readyState == EventSource.CLOSED) {
-        id_state.innerHTML = "Disconnected"
-      }
-      else if (e.target.readyState == EventSource.CONNECTING) {
-        id_state.innerHTML = "Connecting..."
-      }
-    }, false)
-  } else {
-    console.log("Your browser doesn't support SSE")
-  }
-  </script>
-`
 
 
 /**

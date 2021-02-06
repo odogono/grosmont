@@ -14,8 +14,6 @@ import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as renderMdx } from '../../src/builder/processor/mdx';
-import { getDstUrl } from '../../src/builder/processor/dst_url';
-import { process as slugifyTitle } from '../../src/builder/processor/assign_title';
 import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
 import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
@@ -26,7 +24,6 @@ import { process as buildDstIndex } from '../../src/builder/processor/dst_index'
 import { Entity } from 'odgn-entity/src/entity';
 import { EntitySet, EntitySetMem } from 'odgn-entity/src/entity_set';
 import { exportEntitySet } from 'odgn-entity/src/util/export/insts';
-import { isDate } from '../../src/util/is';
 import Day from 'dayjs';
 import { setEntityId } from 'odgn-entity/src/component';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
@@ -37,6 +34,7 @@ import {
     clearUpdates,
     applyUpdatesToDependencies 
 } from '../../src/builder/query';
+import { isDate } from 'odgn-entity/src/util/is';
 
 const log = (...args) => console.log('[TestFile]', ...args);
 

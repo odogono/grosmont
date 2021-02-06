@@ -146,7 +146,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
             }
 
             if( op === ChangeSetOp.Add ){
-                log('[applyEntitySetDiffs]','[add]', aEid);
+                log('[applyEntitySetDiffs]','[add]', bEid);
             } else {
                 log('[applyEntitySetDiffs]','[update]', aEid);
             }

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "test": "uvu",
-    "serve": "nodemon -w ./src/serve/*.ts -e ts-node ./src/serve/index.ts"
+    "serve": "nodemon --watch src --ext js,ts,tsx --exec ts-node ./src/serve/index.ts test/fixtures/rootC.yaml"
   },
   "dependencies": {
     "@babel/core": "^7.12.10",
