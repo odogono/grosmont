@@ -4,14 +4,14 @@ import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import unistVisit from 'unist-util-visit';
 import {select,selectAll} from 'unist-util-select';
-import { isString } from 'odgn-entity/src/util/is';
+import { isString } from "@odgn/utils";
 
 /**
  * 
  * @param options 
  */
 export function titlePlugin() {
-    return (tree, file) => {
+    return (tree, vFile) => {
         
         let pageProps = appendExport(tree, 'page', { });
         // log('ok', pageProps);

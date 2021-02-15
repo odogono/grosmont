@@ -13,7 +13,7 @@ export interface ImportCSSPluginOptions {
  * @param options 
  */
 export function importCSSPlugin(options: ImportCSSPluginOptions = {}) {
-    return (tree, file) => {
+    return (tree, vFile) => {
         let cssPaths = [];
         unistVisit(tree, ['import'], (node) => {
             const ast = babelParser(node.value as string, { sourceType: 'module' });

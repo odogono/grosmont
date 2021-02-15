@@ -1,7 +1,7 @@
 import unistRemove from 'unist-util-remove';
 
 export function removeCommentPlugin() {
-    return (tree, file) => {
+    return (tree, vFile) => {
         unistRemove(tree, { cascade: false }, (node, idx, parent) => {
             // console.log('[removeCommentPlugin]', node);
             if( node.type === 'html' ){

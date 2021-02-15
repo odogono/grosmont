@@ -10,7 +10,7 @@ export interface LinkProcProps {
 
 export function linkProc({ links, applyLinks }: LinkProcProps) {
     
-    return (tree, file, ...args) => {
+    return (tree, vFile) => {
         // let links =  {};
         // console.log('[linkProc]', tree);
 

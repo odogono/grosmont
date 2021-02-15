@@ -8,7 +8,7 @@ import unistRemove from 'unist-util-remove';
  * @param options 
  */
 export function configPlugin(options) {
-    return (tree, file, ...rest) => {
+    return (tree, vFile) => {
         unistVisit(tree, { type: 'yaml' }, (node, index, parent) => {
 
             const config = (node as any).value;
