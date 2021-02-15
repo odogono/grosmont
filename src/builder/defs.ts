@@ -20,6 +20,12 @@ export const defs = [
         ]
     },
     {
+        uri: '/component/uuid',
+        properties: [
+            { name: 'uuid', type: 'string' },
+        ]
+    },
+    {
         uri: '/component/mime',
         properties: [
             { name: 'type', type: 'string' },

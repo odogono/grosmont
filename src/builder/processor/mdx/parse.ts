@@ -7,10 +7,6 @@ import { ProcessOptions, TranspileMeta, TranspileResult } from '../../types';
 import { Site } from '../../site';
 
 import { transpile } from './transpile';
-import { parseUri } from "../../../util/uri";
-import {
-    applyMeta,
-} from "../../util";
 import {
     getDependencies,
     findEntityBySrcUrl,
@@ -20,10 +16,10 @@ import {
     buildSrcIndex,
     selectMdx,
 } from "../../query";
-import { toInteger } from "odgn-entity/src/util/to";
+import { parseUri, toInteger } from "@odgn/utils";
 import { buildProps, getEntityImportUrlFromPath } from "./util";
 import { parse as parseConfig } from '../../config';
-import { isString } from "odgn-entity/src/util/is";
+import { isString } from "@odgn/utils";
 
 
 
@@ -36,23 +32,37 @@ const log = (...args) => console.log('[ProcMDXParse]', ...args);
  * 
  * @param es 
  */
-export async function process(site: Site, options:ProcessOptions = {}) {
+export async function process(site: Site, options: ProcessOptions = {}) {
     const es = site.es;
+
 
     // build an index of /src#url
     let fileIndex = await buildSrcIndex(site);
     let linkIndex = site.getIndex('/index/links', true);
 
     // select scss entities
-    let ents = await selectMdx(es, {...options, siteRef: site.e.id});
+    let ents = await selectMdx(es, { ...options, siteRef: site.e.id });
     let output: Entity[] = [];
 
+    
     // first pass at parsing the mdx - pulling out links, local meta etc
     for (const e of ents) {
-        output.push(await preProcessMdx(site, e, { fileIndex, linkIndex }));
+        try {
+
+            output.push(await preProcessMdx(site, e, { fileIndex, linkIndex }));
+            
+        } catch (err) {
+            
+            
+            e.Error = { message: err.message, stack: err.stack };
+            output.push(e);
+            log('error', err);
+        }
+        
     }
 
     await es.add(output);
+
 
     return es;
 }
@@ -70,9 +80,13 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
     const { fileIndex } = options;
     const resolveImport = (path: string) => getEntityImportUrlFromPath(fileIndex, path);
 
+    
     try {
         let props = await buildProps(site, e);
+        
         let result = await transpile(props, { render: false, resolveImport });
+
+        
 
         const { meta } = result;
         // const { isEnabled } = meta;
@@ -86,7 +100,7 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
         // clear out empty/undefined values
         // Object.keys(meta).forEach((k) => meta[k] == null && delete meta[k]);
 
-        await parseConfig(site, meta, undefined, {add:false, e} );
+        await parseConfig(site, meta, undefined, { add: false, e });
 
         // log('[preProcessMdx]', 'parsed');
         // printEntity( es, pe );
@@ -119,13 +133,13 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
     return e;
 }
 
-function applyDst(es:EntitySet, e:Entity, result:TranspileMeta ){
+function applyDst(es: EntitySet, e: Entity, result: TranspileMeta) {
     let dst = result['dst'];
-    if( dst === undefined ){
+    if (dst === undefined) {
         return e;
     }
 
-    e.Dst = { url:dst };
+    e.Dst = { url: dst };
 
     return e;
 }
@@ -137,7 +151,7 @@ function applyTitle(es: EntitySet, e: Entity, result: TranspileMeta) {
     if (title !== undefined) {
         com.title = title;
     }
-    if ( isString(description) && description.length > 0) {
+    if (isString(description) && description.length > 0) {
         com.description = description;
     }
     if (Object.keys(com).length > 0) {
@@ -245,9 +259,9 @@ async function applyLinks(es: EntitySet, e: Entity, result: TranspileResult, opt
 
     // log('[applyLinks]', links );
 
-    for (let [ linkUrl, { url, child }] of links) {
+    for (let [linkUrl, { url, child }] of links) {
 
-        const linkE = await findEntityByUrl(es, url, { siteRef, title:child });
+        const linkE = await findEntityByUrl(es, url, { siteRef, title: child });
 
         if (linkE === undefined) {
             continue;

@@ -1,11 +1,11 @@
 import Path from 'path';
 import { Entity, EntityId } from "odgn-entity/src/entity";
-import { slugify } from "../../util/string";
 import { Site } from '../site';
 import { extensionFromMime } from "./assign_mime";
 import { ProcessOptions } from '../types';
 import { selectTitleAndMeta } from '../query';
-import { isString } from 'odgn-entity/src/util/is';
+import { isString, slugify } from "@odgn/utils";
+import { printEntity } from 'odgn-entity/src/util/print';
 
 
 
@@ -16,16 +16,15 @@ const log = (...args) => console.log('[ProcAssignTitle]', ...args);
 
 /**
  * Takes title from /component/meta slugifies it and places
- * it in the target, taking care of existing target paths
+ * it in /dst, taking care of existing target paths
  * 
  * @param es 
  */
 export async function process(site: Site, options:ProcessOptions = {}) {
     
     // select /meta and /title
-    const ents = await selectTitleAndMeta(site.es);
+    const ents = await selectTitleAndMeta(site.es, {siteRef:site.e.id});
 
-    // log('input', ents);
     let output:Entity[] = [];
 
     for( let e of ents ){

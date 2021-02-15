@@ -15,25 +15,26 @@ import {
 import {
     EntitySetMem, EntitySet, EntitySetOptions
 } from 'odgn-entity/src/entity_set';
-
+import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { StatementArgs } from 'odgn-entity/src/query';
-import { parse } from './config';
+import { getPtr, parse, parseConfigString } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
-import { parseUri } from '../util/uri';
-import {  setEntityId } from 'odgn-entity/src/component';
-import { 
-    findEntitiesByTags, 
-    findLeafDependenciesByType, 
-    getDstUrl, 
-    selectEntityBySrc, 
-    selectSrcByEntity, 
-    selectSrcByUrl, 
-    selectTextByEntity, 
+import { setEntityId } from 'odgn-entity/src/component';
+import {
+    findEntitiesByTags,
+    findLeafDependenciesByType,
+    getDstUrl,
+    selectEntityBySrc,
+    selectSrcByEntity,
+    selectSrcByUrl,
+    selectTextByEntity,
     selectUpdated
 } from './query';
 import { DependencyType, SiteIndex } from './types';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
-import { isString } from 'odgn-entity/src/util/is';
+import { isString, parseUri } from '@odgn/utils';
+import { printEntity } from 'odgn-entity/src/util/print';
+import { createUUID } from '@odgn/utils';
 
 
 
@@ -49,13 +50,16 @@ interface SelectOptions {
 
 
 export interface SiteOptions extends EntitySetOptions {
+    uuid?: string;
     name?: string;
     dst?: string;
     dir?: string;
     es?: EntitySet;
     configPath?: string;
     rootPath?: string;
+    data?: any;
 }
+
 
 
 export class Site {
@@ -67,107 +71,26 @@ export class Site {
 
     static async create(options: SiteOptions = {}) {
         // read from the path
-
-        let es = options.es ?? new EntitySetMem(undefined, options);
-
         let site = new Site();
 
-        site.es = options.es ?? new EntitySetMem(undefined, options);
+        // log('[create]', options);
 
-        for (const def of defs) {
-            await site.es.register(def);
-        }
+        // attempt to initialise the ES from the configPath
+        await initialiseES(site, options);
 
-        await site.parseOptions(options);
-
-        await site.readConfig(options);
+        // await readConfig(site, options);
 
         return site;
     }
 
     private constructor() { }
 
-    /**
-     * 
-     * @param options 
-     */
-    async readConfig(options: SiteOptions = {}) {
-        let { configPath, rootPath } = options;
 
-        if (configPath === undefined) {
-            return;
-        }
-        if (configPath.startsWith('file://')) {
-            configPath = fileURLToPath(configPath);
-        }
-
-        if (rootPath === undefined) {
-            rootPath = Path.dirname(configPath);
-        }
-        if (rootPath.startsWith('file://')) {
-            rootPath = fileURLToPath(rootPath);
-        }
-        rootPath = rootPath.endsWith(Path.sep) ? rootPath : rootPath + Path.sep;
-
-        // const path = fileURLToPath(options.configPath);
-        let config = await Fs.readFile(configPath, 'utf8');
-
-        this.rootPath = pathToFileURL(rootPath).href;
-
-        if (config) {
-            // log('parsing', config);
-            let e = await parse(this, config, 'yaml', { add: true });
-
-            // resolve the src and dst paths
-            let url = e.Src?.url ?? pathToFileURL(rootPath).href;
-            url = url.startsWith('file://') ? fileURLToPath(url) : url;
-            url = pathToFileURL(Path.join(rootPath, url)).href;
-            e.Src = { url };
-
-            // log('[readConfig]', 'src', url);
-
-            url = e.Dst?.url ?? pathToFileURL(rootPath).href;;
-            url = url.startsWith('file://') ? fileURLToPath(url) : url;
-            // log('[readConfig]', 'dst', Path.join(rootPath,url) );
-            url = pathToFileURL(Path.join(rootPath, url)).href;
-            e.Dst = { url };
-            // log('[readConfig]', 'dst', url);
-
-
-            if (e.Site === undefined) {
-                e.Site = {};
-            }
-
-            this.e = await this.update(e);
-        }
-    }
 
     async run(script: string) {
         const stmt = this.es.prepare(script);
         await stmt.run();
         return true;
-    }
-
-    async parseOptions(options: SiteOptions = {}) {
-        // await parse(this.es, options, undefined);
-        const { name, dst, dir, rootPath } = options;
-        this.rootPath = rootPath;
-
-        let e = this.es.createEntity();
-        if (name !== undefined) {
-            e.Site = { name };
-        }
-        if (dir !== undefined) {
-            e.Src = { url: dir };
-        }
-        if (dst !== undefined) {
-            e.Dst = { url: dst };
-        }
-        if (e.size > 0) {
-            await this.es.add(e);
-            let eid = this.es.getUpdatedEntities()[0];
-            this.e = await this.es.getEntity(eid, true);
-        }
     }
 
     /**
@@ -176,21 +99,21 @@ export class Site {
      * @param eid 
      * @param op 
      */
-    async markUpdate( eid:EntityId|Entity, op:ChangeSetOp ):Promise<EntityId> {
-        if( eid === undefined ){
+    async markUpdate(eid: EntityId | Entity, op: ChangeSetOp): Promise<EntityId> {
+        if (eid === undefined) {
             return undefined;
         }
-        if( isEntity(eid) ){
+        if (isEntity(eid)) {
             eid = (eid as Entity).id;
         }
-        let com = this.es.createComponent('/component/upd', {op} );
+        let com = this.es.createComponent('/component/upd', { op });
         com = setEntityId(com, eid as EntityId);
-        await this.es.add( com );
+        await this.es.add(com);
         return eid as EntityId;
     }
 
 
-    async getUpdatedEntityIds(){
+    async getUpdatedEntityIds() {
         return await selectUpdated(this);
     }
 
@@ -199,7 +122,7 @@ export class Site {
      * 
      * @param appendPath 
      */
-    getSrcUrl(appendPath?: string|Entity) {
+    getSrcUrl(appendPath?: string | Entity) {
         let res = fileURLToPath(this.e.Src.url);
         if (appendPath) {
             let path = isString(appendPath) ? appendPath : (appendPath as Entity).Src?.url ?? '';
@@ -229,8 +152,8 @@ export class Site {
      * @param e 
      * @param appendRoot 
      */
-    async getEntityDstUrl(eid:EntityId|Entity, appendRoot: boolean = false){
-        return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id  : eid as EntityId );
+    async getEntityDstUrl(eid: EntityId | Entity, appendRoot: boolean = false) {
+        return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id : eid as EntityId);
     }
 
     /**
@@ -239,8 +162,8 @@ export class Site {
      * @param eid 
      * @param appendRoot 
      */
-    async getEntitySrcUrl(eid:EntityId|Entity, appendRoot: boolean = false){
-        return await selectSrcByEntity(this.es, eid );
+    async getEntitySrcUrl(eid: EntityId | Entity, appendRoot: boolean = false) {
+        return await selectSrcByEntity(this.es, eid);
         // return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id  : eid as EntityId );
     }
     /**
@@ -249,26 +172,26 @@ export class Site {
      * @param eid 
      * @param appendRoot 
      */
-    async getEntityText(eid:EntityId|Entity){
-        return selectTextByEntity(this.es, eid );
+    async getEntityText(eid: EntityId | Entity) {
+        return selectTextByEntity(this.es, eid);
         // return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id  : eid as EntityId );
     }
 
-    
+
 
     /**
      * Attempts to read data from the specified path
      * 
      * @param path 
      */
-    async readUrl( path:string ){
-        if( !(await Fs.pathExists(path)) ){
-            path = this.getSrcUrl( path );
-            if( !(await Fs.pathExists(path)) ){
+    async readUrl(path: string) {
+        if (!(await Fs.pathExists(path))) {
+            path = this.getSrcUrl(path);
+            if (!(await Fs.pathExists(path))) {
                 return undefined;
             }
         }
-        return await Fs.readFile( path, 'utf-8' );
+        return await Fs.readFile(path, 'utf-8');
     }
 
     /**
@@ -276,13 +199,13 @@ export class Site {
      * @param path 
      * @param data 
      */
-    async writeToUrl( path:string, data:string ){
+    async writeToUrl(path: string, data: string) {
         if (data === undefined) {
             throw new Error(`${path} data is undefined`);
         }
         // log('writing', path);
-        if( path.startsWith('file://') ){
-            path = fileURLToPath( path );
+        if (path.startsWith('file://')) {
+            path = fileURLToPath(path);
         }
         // log('writing', path);
         await Fs.ensureDir(Path.dirname(path));
@@ -328,16 +251,16 @@ export class Site {
      * Returns an EntityId by /component/src#url
      * @param url
      */
-    async getEntityIdBySrc(url:string): Promise<EntityId> {
-        return selectEntityBySrc(this, url, {returnEid:true, createIfNotFound:false}) as Promise<EntityId>;
+    async getEntityIdBySrc(url: string): Promise<EntityId> {
+        return selectEntityBySrc(this, url, { returnEid: true, createIfNotFound: false }) as Promise<EntityId>;
     }
 
     /**
      * Returns an Entity by /component/src#url
      * @param url
      */
-    async getEntityBySrc(url:string): Promise<Entity> {
-        return selectEntityBySrc(this, url, {returnEid:false, createIfNotFound:false}) as Promise<Entity>;
+    async getEntityBySrc(url: string): Promise<Entity> {
+        return selectEntityBySrc(this, url, { returnEid: false, createIfNotFound: false }) as Promise<Entity>;
     }
 
     /**
@@ -347,9 +270,9 @@ export class Site {
      * @param url 
      * @param populate 
      */
-    async getEntityByDst(url:string, populate:boolean = true): Promise<Entity> {
-        const eid = this.getEntityIdByDst( url );
-        return eid !== undefined ? this.es.getEntity( eid, populate ) : undefined;
+    async getEntityByDst(url: string, populate: boolean = true): Promise<Entity> {
+        const eid = this.getEntityIdByDst(url);
+        return eid !== undefined ? this.es.getEntity(eid, populate) : undefined;
     }
 
     /**
@@ -358,13 +281,13 @@ export class Site {
      * 
      * @param url 
      */
-    getEntityIdByDst(url:string): EntityId {
+    getEntityIdByDst(url: string): EntityId {
         const idx = this.getIndex('/index/dstUrl');
-        if( idx === undefined ){
+        if (idx === undefined) {
             return undefined;
         }
         const entry = idx.index.get(url);
-        if( entry === undefined ){
+        if (entry === undefined) {
             return undefined;
         }
         return entry[0];
@@ -415,8 +338,8 @@ export class Site {
      * 
      * @param type 
      */
-    async getDependencyLeafEntityIds( type:DependencyType ){
-        return findLeafDependenciesByType(this.es, type, {siteRef:this.e.id} );
+    async getDependencyLeafEntityIds(type: DependencyType) {
+        return findLeafDependenciesByType(this.es, type, { siteRef: this.e.id });
     }
 
 
@@ -482,35 +405,196 @@ export async function selectSite(es: EntitySet) {
 }
 
 
-// async function selectSiteFileByUri( es:EntitySet, siteE:Entity, uri:string, options: SelectOptions = {} ){
-//     const stmt = es.prepare(`[
-//         /component/file#uri !ca $uri ==
-//         /component/site_ref#ref !ca $ref ==
-//         and
-//         @e
-//     ] select`);
 
-//     const ents = await stmt.getEntities({uri, ref:siteE.id});
+/**
+ * Reads the config data from file if it exists
+ * 
+ * @param options 
+ */
+async function loadConfig(options: SiteOptions): Promise<SiteOptions> {
+    let { configPath, rootPath, data } = options;
+    let uuid = options.uuid ?? createUUID();
 
-//     if( ents && ents.length > 0 ){
-//         let e = ents[0];
-//         return options.returnEid === true ? e.id : e;
-//     }
+    if (configPath === undefined) {
+        return {...options, uuid};
+    }
+    if (configPath.startsWith('file://')) {
+        configPath = fileURLToPath(configPath);
+    }
+    if (rootPath === undefined) {
+        rootPath = Path.dirname(configPath);
+    }
+    if (rootPath.startsWith('file://')) {
+        rootPath = fileURLToPath(rootPath);
+    }
+    rootPath = rootPath.endsWith(Path.sep) ? rootPath : rootPath + Path.sep;
 
-//     // log('[selectSiteByUri]', 'found', ents, options );
-//     if (options.createIfNotFound) {
-//         let e = es.createEntity();
-//         e.File = { uri };
-//         let ctime = new Date().toISOString();
-//         let mtime = ctime;
-//         e.Times = { ctime, mtime };
-//         e.SiteRef = { ref:siteE.id };
+    if (data === undefined) {
+        data = await Fs.readFile(configPath, 'utf8');
+    }
 
-//         await es.add( e );
 
-//         let eid = es.getUpdatedEntities()[0];
-//         return es.getEntity(eid);
-//     }
-//     return undefined;
-// }
+    return { ...options, configPath, rootPath, data, uuid };
+}
+
+
+
+/**
+ * Initialises the EntitySet according to config from options
+ * 
+ * @param site 
+ * @param options 
+ */
+async function initialiseES(site: Site, options: SiteOptions) {
+    options = await loadConfig(options);
+    let { data, rootPath, configPath } = options;
+    // let { configPath, rootPath, data } = await loadConfig(options);
+
+    
+    
+    let es: EntitySet;
+
+    // attempt to initialise an es from the loaded config data
+    if (data !== undefined) {
+        let config = parseConfigString(data);
+        const defsPath = getPtr(config, '/~1component~1meta/meta/defs');
+        const esData = getPtr(config, '/~1component~1meta/meta/es');
+
+        let uuid = getPtr(config, '/~1component~1uuid/uuid');
+        if (uuid !== undefined) {
+            options.uuid = uuid;
+        }
+        // log('config', config);
+
+        if (esData !== undefined && es === undefined) {
+            let esUrl = esData.url;
+            let { protocol, host, path } = parseUri(esUrl);
+            // log('metaUrl', {protocol, host, path});
+
+            // log('es path', path);
+            if (path !== undefined) {
+                path = Path.join(rootPath, path);
+            }
+
+            // log('es path', path);
+            if (protocol === 'es') {
+                if (host === 'sqlite') {
+                    es = new EntitySetSQL({ path, ...esData });
+                }
+            }
+        }
+    }
+
+
+    if (options.es !== undefined) {
+        es = options.es;
+    }
+
+    
+
+    if (es === undefined) {
+        es = new EntitySetMem(undefined, options);
+    }
+
+    site.es = es;
+
+    // register defs against the entityset
+    for (const def of defs) {
+        await es.register(def);
+    }
+
+    // ensure the site entity
+    await initialiseSiteEntity(site, options);
+
+
+
+    // log('root:', rootPath);
+    // log('config:', configPath);
+    // log('[initialiseES]', es.getUrl());
+
+    return site;
+}
+
+
+async function initialiseSiteEntity(site: Site, options: SiteOptions) {
+    const { name, dst, dir, uuid, data } = options;
+    const {es} = site;
+
+    const stmt = es.prepare(`
+    [ 
+        /component/site !bf 
+        /component/uuid#/uuid !ca $uuid ==
+        @e 
+    ] select
+    `);
+
+    let e = await stmt.getEntity({ uuid });
+
+    if (e === undefined) {
+        e = es.createEntity();
+        e.Site = {};
+        e.Uuid = { uuid };
+    }
+
+    if (data !== undefined) {
+        e = await readSiteFromConfig(site, e, options);
+    }
+
+    // let e = this.es.createEntity();
+    if (name !== undefined) {
+        e.Site = { name };
+    }
+    if (dir !== undefined) {
+        e.Src = { url: dir };
+    }
+    if (dst !== undefined) {
+        e.Dst = { url: dst };
+    }
+
+    if (e.size > 0) {
+        await es.add(e);
+        let eid = es.getUpdatedEntities()[0];
+        site.e = await es.getEntity(eid, true);
+    }
+
+    return e;
+}
+
+
+
+/**
+ * 
+ * @param site 
+ * @param options 
+ */
+async function readSiteFromConfig(site: Site, e: Entity, options: SiteOptions = {}) {
+    let { configPath, data, rootPath } = options;
+
+    if (!data) {
+        return e;
+    }
+
+    e = await parse(site, data, 'yaml', { add: false, e });
+
+    // resolve the src and dst paths
+    let url = e.Src?.url ?? pathToFileURL(rootPath).href;
+    url = url.startsWith('file://') ? fileURLToPath(url) : url;
+    url = pathToFileURL(Path.join(rootPath, url)).href;
+    e.Src = { url };
+
+    // log('[readConfig]', 'src', url);
+
+    url = e.Dst?.url ?? pathToFileURL(rootPath).href;;
+    url = url.startsWith('file://') ? fileURLToPath(url) : url;
+    // log('[readConfig]', 'dst', Path.join(rootPath,url) );
+    url = pathToFileURL(Path.join(rootPath, url)).href;
+    e.Dst = { url };
+    // log('[readConfig]', 'dst', url);
+
+    // log('[readConfig]');
+    // printEntity(this.es, e);
+    // site.e = await this.update(e);
+
+    return e;
+}
 

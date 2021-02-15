@@ -30,7 +30,7 @@ import { titlePlugin } from '../../unified/plugin/title';
 
 
 import { Head } from '../../../components/head';
-import { isObject } from 'odgn-entity/src/util/is';
+import { isObject } from "@odgn/utils";
 
 import {
     TranspileProps,
@@ -87,7 +87,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
 
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
     const mdxResult = await parseMdx(data, path, { pageProps: inPageProps, applyLinks, resolveImport });
-
+    
     const { component, frontMatter,
         code, jsx, ast, page, default: d,
         requires, links, cssLinks,
@@ -100,6 +100,8 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     let result: TranspileResult = {
         path, jsx, code, ast, /* code, ast,*/ component, links, meta, cssLinks, additional: rest
     };
+
+    
 
     // log('[transpile]', 'requires', requires);
     // log('[transpile]', 'cssLinks', cssLinks);
@@ -155,11 +157,11 @@ function renderHTML({ components, component: Component, children }) {
 
 
 
-function parseMdx(data: string, path: string, options: ProcessMDXOptions) {
-    // let content = Fs.readFileSync(path, 'utf8');
-
+async function parseMdx(data: string, path: string, options: ProcessMDXOptions) {
+    
     try {
-        let [jsx, links, ast] = processMdx(data, options);
+        let [jsx, links, ast] = await processMdx(data, options);
+        
 
         let code = transformJSX(jsx);
         let el = evalCode(code, path);
@@ -183,29 +185,22 @@ export type ProcessMDXOptions = {
 
 export type ProcessMDXResult = [string, PageLinks, any];
 
-export function processMdx(content: string, options: ProcessMDXOptions): ProcessMDXResult {
+export async function processMdx(content: string, options: ProcessMDXOptions): Promise<ProcessMDXResult> {
 
     const { pageProps, applyLinks, resolveImport } = options;
     let links = new Map<string, any>();
     let ast;
 
-    // const resolveCSS = (path) => {
-    //     log('[resolveCSS]', path);
-    //     return true;
-    // }
-
-    // log('[processMdx]', 'content:', content );
     // remark-mdx has a really bad time with html comments even
     // if they are removed with the removeCommentPlugin, so a brute
     // force replace is neccesary here until i can figure it out
     content = content.replace(/<!--(.*?)-->/, '');
 
-    let output = unified()
+    let output = await unified()
         .use(parse)
         .use(stringify)
         .use(frontmatter)
         .use(emoji)
-        
         .use(configPlugin, { page: pageProps })
         .use(removeCommentPlugin)
         
@@ -222,8 +217,10 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
         .use(mdxHastToJsx)
         // .use(() => console.dir)
         // .use( () => console.log('💦doh') )
-        .processSync(content);
+        .process(content);
     // console.log( output.toString());
+
+    
 
     return ['/* @jsx mdx */\n' + output.toString(), links, ast];
 }
@@ -263,7 +260,7 @@ function transformJSX(jsx: string) {
  */
 function evalCode(code: string, path: string) {
     let requires = [];
-    const requireManual = (requirePath) => {
+    const requireManual = async (requirePath) => {
         log('[evalCode][requireManual]', requirePath);
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
 
@@ -271,12 +268,14 @@ function evalCode(code: string, path: string) {
 
         if (Fs.existsSync(extPath) && extPath.endsWith('.mdx')) {
             requires.push({ path: extPath });
+            console.log('[require]', requirePath);
             const data = Fs.readFileSync(path, 'utf8');
-            const out = parseMdx(data, extPath, {});
+            // const out = await parseMdx(data, extPath, {});
             // console.log('[require]', requirePath, Object.keys(out), out);
-            out.__esModule = true;
+            // out.__esModule = true;
 
-            return out;
+            // return out;
+            throw new Error('not yet supported');
         }
 
         extPath = findFileWithExt(fullPath, ['jsx', 'js']);

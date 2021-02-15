@@ -1,10 +1,6 @@
 import Fs from 'fs-extra';
-import { Component, getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
+import { getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
 import { getDefId } from "odgn-entity/src/component_def";
-import { Entity, EntityId } from "odgn-entity/src/entity";
-import { EntitySet } from "odgn-entity/src/entity_set";
-import { StrictMode } from "react";
-import { slugify } from "../../../util/string";
 import { selectMdxSrc } from '../../query';
 
 import { Site } from "../../site";

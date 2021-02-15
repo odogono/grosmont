@@ -28,28 +28,26 @@ export async function process(site: Site, options:ProcessOptions = {}) {
 
     for (let e of ents) {
 
-        // const path = await selectTargetPath(es, e.id);
-        // log('targetPath', e.id, path);
-        // const filename = await selectTargetFilename(es, e.id);
+        try {
+            const {css, srcPath, dstPath} = await renderScss( site, e, options );
+            e.Text = { data:css, mime: 'text/css' };
+    
+    
+            // alter the target filename
+            const url = e.Src.url;
+            let filename = Path.basename(url);
+    
+            // const dstUrl = await getDstUrl(es, e.id);
+    
+            // log('dstUrl', dstUrl);
+    
+            filename = filename.substr(0, filename.lastIndexOf(".")) + ".css";
+            e.Dst = { url:filename };
 
-        const {css, srcPath, dstPath} = await renderScss( site, e, options );
-        e.Text = { data:css, mime: 'text/css' };
-
-
-        // alter the target filename
-        const url = e.Src.url;
-        let filename = Path.basename(url);
-
-        // const dstUrl = await getDstUrl(es, e.id);
-
-        // log('dstUrl', dstUrl);
-
-        filename = filename.substr(0, filename.lastIndexOf(".")) + ".css";
-        e.Dst = { url:filename };
-        
+        } catch( err ){
+            e.Error = {message:err.message, stack:err.stack};
+        }
     }
-
-    // printAll(es, ents);
 
     // apply changes
     await es.add( ents );
@@ -81,28 +79,14 @@ export async function renderScss(site: Site, e: Entity, options:ProcessOptions =
         return { css: undefined, srcPath: undefined, dstPath: undefined };
     }
 
-    // const siteTargetUri = await selectSiteTarget(es, e.SiteRef.ref);
-
     const dst = await getDstUrl(site.es, e.id);
     let dstUrl = site.getDstUrl( dst );
 
-    // const targetUri = await resolveTarget(es, e);
-
-    // // determine target using dir deps
-    // const targetCom = await selectDirTarget(es, e.id);
-
     const filename = getSrcUrl(e);
 
-    // let dstPath = targetCom !== undefined ?
-    //     joinPaths(siteTargetUri, targetCom?.uri) :
-    //     siteTargetUri;
-
-    // log('[renderScss]', {targetUri, filename});
 
     let dstPath = joinPaths(dstUrl, filename);
 
-    // log('siteTargetUri', siteTargetUri);
-    // log('dstPath', dstPath);
 
     const srcPath = '/';
     let scss = e.Scss?.data;
@@ -112,8 +96,6 @@ export async function renderScss(site: Site, e: Entity, options:ProcessOptions =
             throw new Error(`scss data not found for ${e.id}`);
         }
     }
-
-    
 
     const css = await render(scss, srcPath, dstPath, true);
 

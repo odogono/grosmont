@@ -4,9 +4,8 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import Day from 'dayjs';
 import { Site } from './site';
-import { slugify } from '../util/string';
-import { stringify } from 'odgn-entity/src/util/json';
-import { isString } from 'odgn-entity/src/util/is';
+import { buildQueryString, slugify, stringify, toBoolean } from "@odgn/utils";
+import { isString } from "@odgn/utils";
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
 
@@ -151,74 +150,24 @@ export async function createTag(site:Site, name:string){
 }
 
 
-// export function printAll(es: EntitySetMem, ents?: Entity[], dids?: string[]) {
-//     let result = ents || selectAll(es);
-//     for (const e of result) {
-//         printEntity(es, e, dids);
-//     }
-// }
 
-// // export async function printQuery(ctx: SiteContext, q: string) {
-// //     let result = await ctx.es.queryEntities(q);
-// //     for (const e of result) {
-// //         printEntity(ctx.es, e);
-// //     }
-// // }
+export interface BuildUrlOptions {
+    ignoreEmptyValues?: boolean;
+}
 
-// export function printEntity(es: EntitySet, e: Entity, dids?: string[]) {
-//     let bf: BitField;
-//     if (es === undefined || e === undefined) {
-//         console.log('(undefined e)');
-//         return;
-//     }
-//     if (dids !== undefined) {
-//         bf = es.resolveComponentDefIds(dids);
-//     }
-//     console.log(`- e(${e.id})`);
-//     for (const [did, com] of e.components) {
-//         if (bf && bfGet(bf, did) === false) {
-//             continue;
-//         }
-//         const { '@e': eid, '@d': _did, ...rest } = com;
-//         const def = es.getByDefId(did);
-//         console.log(`   ${def.name}`, JSON.stringify(rest));
-//     }
-// }
+/**
+ * 
+ * @param {*} action 
+ * @param {*} qs 
+ */
+export function buildUrl(action: string, qs = {}, options: BuildUrlOptions = {}): string {
+    const ignoreEmptyValues = toBoolean(options.ignoreEmptyValues);
 
-// var asyncIterable = {
-//     [Symbol.asyncIterator]() {
-//         let i = 0;
-//         return {
-//             next() {
-//                 if (i < 3) {
-//                     return Promise.resolve({ value: i++, done: false });
-//                 }
+    const queryString = buildQueryString(qs, ignoreEmptyValues);
 
-//                 return Promise.resolve({ value: i, done: true });
-//             }
-//         };
-//     }
-// };
-
-// let testIt = {
-//     [Symbol.asyncIterator]: test
-// };
-
-// async function* test() {
-//     for (let i = 0; i < 10; ++i) {
-//         // yield i > 5 ? `Greater than 5: (${i})` : `Less than 5: (${i})`;
-//         let value = i > 5 ? `Greater than 5: (${i})` : `Less than 5: (${i})`;
-//         yield { value, done: false }
-//     }
-
-//     yield {done:true};
-// }
-
-
-// export async function printAES(es: EntitySet) {
-//     for await (let num of es.getEntityIterator() ) {
-//         console.log(num);
-//     }
-// }
-
-
+    if (queryString) {
+        return `${action}?${queryString}`;
+    } else {
+        return action;
+    }
+}

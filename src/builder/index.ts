@@ -14,7 +14,6 @@ import { process as renderScss } from './processor/scss';
 import { process as assignTitle } from './processor/assign_title';
 import { process as write } from './processor/write';
 import { process as buildDstIndex } from './processor/dst_index';
-import { printAll } from 'odgn-entity/src/util/print';
 import { EntityUpdate, ProcessOptions } from './types';
 import { clearUpdates } from './query';
 

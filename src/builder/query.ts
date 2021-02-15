@@ -2,12 +2,11 @@ import Path from 'path';
 import { Component, getComponentEntityId } from "odgn-entity/src/component";
 import { Entity, EntityId, isEntity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
-import { slugify } from "../util/string";
 import { Site } from "./site";
 import { uriToPath } from './util';
 import { DependencyType, ProcessOptions } from './types';
-import { parseUri } from '../util/uri';
-import { BitField } from 'odgn-entity/src/util/bitfield';
+import { BitField } from "@odgn/utils/bitfield";
+import { parseUri, slugify } from '@odgn/utils';
 
 
 
@@ -128,6 +127,7 @@ export async function selectTitleAndMeta(es: EntitySet, options:FindEntityOption
             /component/site_ref#ref !ca $ref ==
             @c
         ] select
+        
         /@e pluck
         rot [ *^$1 /component/dst !bf @c ] select rot +    
     `;

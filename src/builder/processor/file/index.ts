@@ -12,7 +12,6 @@ import Through2 from 'through2';
 import Globalyzer from 'globalyzer';
 import Micromatch from 'micromatch';
 
-import { BitField, create as createBitField, toString as bfToString } from 'odgn-entity/src/util/bitfield';
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 
@@ -20,12 +19,11 @@ import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/co
 import { isTimeSame } from '../../util';
 import { process as buildDeps } from '../build_deps';
 import { selectSite, Site } from '../../site';
-import { parse } from '../../config';
+import { parse, ParseType } from '../../config';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { getDefId } from 'odgn-entity/src/component_def';
 import { applyUpdatesToDependencies, buildSrcUrlIndex, clearUpdates, selectMetaSrc } from '../../query';
 import { EntityUpdate, ProcessOptions } from '../../types';
-import { printEntity } from 'odgn-entity/src/util/print';
 import Day from 'dayjs';
 
 
@@ -290,7 +288,7 @@ async function readFileMeta(site: Site, options: ProcessOptions = {}) {
         let content = await Fs.readFile(path, 'utf8');
 
         // parse the meta into an entity
-        let metaE = await parse(site, content, ext, { add: false });
+        let metaE = await parse(site, content, ext as ParseType, { add: false });
 
         // fold this entity into the parent
         for (let [, com] of metaE.components) {

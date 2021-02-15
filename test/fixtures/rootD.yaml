@@ -1,23 +1,17 @@
 /component/title:
-  title: Open Door Go North
+  title: Test D
 
 /component/url:
   url: https://www.opendoorgonorth.com/
 
 /component/uuid:
-  uuid: ED07584D-7070-4C04-A90B-1F79AAFBC26F
+  uuid: E9EDCA64-E7BC-4B45-AF86-B14073E8F264
 
 /component/src:
-  url: file:///rootC/
+  url: file:///rootD/
 
 /component/dst:
   url: file:///dist/
-
-/component/meta:
-  meta:
-    defs: file:///defs.json
-    es:
-      url: es://sqlite/odgn.sqlite
 
 /component/patterns:
   include: 

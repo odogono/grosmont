@@ -69,7 +69,7 @@ async function renderMdx(site: Site, e: Entity, options: ProcessMDXRenderOptions
         // log('[renderMdx]', result);
 
         if (isEnabled === false) {
-            return undefined;
+            return [undefined, undefined];
         }
 
         if( target === 'text/ast' ){
@@ -89,7 +89,7 @@ async function renderMdx(site: Site, e: Entity, options: ProcessMDXRenderOptions
         log('[preProcessMdx]', 'error', err);
     }
 
-    return undefined;
+    return [undefined, undefined];
 }
 
 

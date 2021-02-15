@@ -1,4 +1,8 @@
 .ex4 .parent {
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-  }
+  display           : grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+body {
+  color: #333;
+}

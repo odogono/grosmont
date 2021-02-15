@@ -1,6 +1,7 @@
 import Toml from 'toml';
 import Yaml from 'yaml';
 import Path from 'path';
+import Jsonpointer from 'jsonpointer';
 
 import { Entity, EntityId, getEntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
@@ -9,14 +10,11 @@ import { getEntityAttribute } from "odgn-entity/src/util/entity";
 
 import { Component, getComponentDefId } from 'odgn-entity/src/component';
 import { ComponentDef, getDefId } from 'odgn-entity/src/component_def';
-import { stringify } from 'odgn-entity/src/util/json';
+import { slugify, stringify } from '@odgn/utils';
 import { Site } from './site';
-import { fileURLToPath, pathToFileURL } from 'url';
-import { slugify } from '../util/string';
 import { findEntityBySrcUrl, insertDependency, selectTagBySlug } from './query';
-import { createTracing } from 'trace_events';
 import { createTag, createTimes } from './util';
-import { isString } from 'odgn-entity/src/util/is';
+import { isString } from '@odgn/utils';
 
 
 const log = (...args) => console.log('[Config]', ...args);
@@ -35,12 +33,12 @@ export interface ParseOptions {
  * @param type 
  * @param options 
  */
-export async function parse(site: Site, input: string|object, type: string = 'yaml', options:ParseOptions = {}): Promise<Entity> {
+export async function parse(site: Site, input: string|object, type:ParseType = 'yaml', options:ParseOptions = {}): Promise<Entity> {
     const {es, rootPath} = site;
     const addToES = options.add ?? true;
 
     let data:any = isString(input) ?
-        parseString(input as string,type)
+        parseConfigString(input as string,type)
         : input;
 
     if( data === undefined || data === null ){
@@ -69,6 +67,12 @@ export async function parse(site: Site, input: string|object, type: string = 'ya
     for (const [def, com] of coms) {
         e[def.name] = com;
     }
+
+    // e.Meta = { meta:{} };
+    // printEntity(es, e);
+    // console.log( e.componentDefs );
+    // throw 'stop';
+    
 
     if (metaKeys.length > 0) {
         let meta = {};
@@ -134,8 +138,10 @@ export async function parse(site: Site, input: string|object, type: string = 'ya
         if( site && site.e ){
             e.SiteRef = { ref:site.e.id};
         }
+        // printEntity(es, e);
         await es.add( e );
         eid = es.getUpdatedEntities()[0];
+        // log('added', eid, e);
         return es.getEntity(eid);
     }
 
@@ -211,7 +217,15 @@ async function applyTags( site:Site, e:Entity, tags:string|string[]){
 //     return pathToFileURL( url ).href;
 // }
 
-function parseString( data:string, type:string = 'yaml' ){
+
+export type ParseType = 'yaml'|'toml'|'text/yaml'|'text/toml';
+
+/**
+ * 
+ * @param data 
+ * @param type 
+ */
+export function parseConfigString( data:string, type:ParseType = 'yaml' ){
     if (type == 'toml' || type == 'text/toml') {
         try {
             return Toml.parse(data);
@@ -229,7 +243,10 @@ function parseString( data:string, type:string = 'yaml' ){
             return undefined;
         }
     }
-    
+}
+
+export function getPtr(data:any, path:string){
+    return Jsonpointer.get(data, path);
 }
 
 async function getEntityByUrl(es: EntitySet, url: string, val: string) {
