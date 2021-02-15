@@ -25,6 +25,7 @@ import { getDefId } from 'odgn-entity/src/component_def';
 import { applyUpdatesToDependencies, buildSrcUrlIndex, clearUpdates, selectMetaSrc } from '../../query';
 import { EntityUpdate, ProcessOptions } from '../../types';
 import Day from 'dayjs';
+import { info, setLocation } from '../../reporter';
 
 
 
@@ -48,8 +49,8 @@ export interface ProcessFileOptions extends ProcessOptions {
  * @param options 
  */
 export async function process(site: Site, options: ProcessFileOptions = {}) {
-    let { updates } = options;
-
+    let { reporter, updates } = options;
+    setLocation(reporter, '/processor/file');
     
     // // if we are passed updated entities, then just flag them
     // if (updates !== undefined && updates.length > 0) {
@@ -66,12 +67,12 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
         await readFileSystem(site, incoming, options);
 
         // compare the two es
-        let diffs = await diffEntitySets(site.es, incoming);
+        let diffs = await diffEntitySets(site.es, incoming, options);
 
         // log('diffs', diffs);
         // printES(incoming);
         // apply the diffs
-        await applyEntitySetDiffs(site.es, incoming, diffs, true);
+        await applyEntitySetDiffs(site.es, incoming, diffs, true, options);
     // }
 
     // resolve any meta.* files into their containing dirs
@@ -113,8 +114,8 @@ export async function cloneEntitySet(es: EntitySet) {
  * @param esB 
  * @param diffs 
  */
-export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs: SrcUrlDiffResult, addDiff: boolean = true) {
-
+export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs: SrcUrlDiffResult, addDiff: boolean = true, options:ProcessOptions={}) {
+    const {reporter} = options;
     let removeEids: EntityId[] = [];
     let diffComs: Component[] = [];
     let updateEs: Entity[] = [];
@@ -125,14 +126,14 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 
         if (op === ChangeSetOp.Remove) {
             removeEids.push(aEid);
-            log('[applyEntitySetDiffs]','[remove]', aEid);
+            reporter.info('[applyEntitySetDiffs]','[remove]', aEid);
             // add eid to remove list
             continue;
         }
         if (op === ChangeSetOp.Update || op === ChangeSetOp.Add) {
             let e = await esB.getEntity(bEid, true);
             if (e === undefined) {
-                log('[applyEntitySetDiffs]', 'could not find', bEid);
+                reporter.info('[applyEntitySetDiffs]', 'could not find', bEid);
                 continue;
             }
             let eid = op === ChangeSetOp.Add ? esA.createEntityId() : aEid;
@@ -144,9 +145,9 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
             }
 
             if( op === ChangeSetOp.Add ){
-                log('[applyEntitySetDiffs]','[add]', bEid);
+                // reporter.info('[applyEntitySetDiffs]','[add]', bEid);
             } else {
-                log('[applyEntitySetDiffs]','[update]', aEid);
+                // reporter.info('[applyEntitySetDiffs]','[update]', aEid);
             }
             // e.Upd = {op};
             // updateEs.push( e );
@@ -157,7 +158,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
         }
     }
 
-    await esA.removeEntity(removeEids);
+    // await esA.removeEntity(removeEids);
 
     // the retain flag means the changeset wont be cleared,
     // which in effect batches the remove and add together
@@ -188,7 +189,8 @@ type SrcUrlDiffResult = [EntityId, ChangeSetOp, EntityId?][];
 /**
  * Compares two EntitySets using /component/src#/url as a key
  */
-export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<SrcUrlDiffResult> {
+export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:ProcessOptions={}): Promise<SrcUrlDiffResult> {
+    const {reporter} = options;
     const idxA = await buildSrcUrlIndex(esA);
     const idxB = await buildSrcUrlIndex(esB);
 
@@ -216,7 +218,7 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<Sr
             result.push([eid, ChangeSetOp.Update, bEid]);
             let at = Day(mtime).toISOString()
             let bt = Day(bTime).toISOString()
-            log('[diffEntitySets]', '[update]', bEid, `different timestamp to ${bEid} - ${at} != ${bt}`);
+            info(reporter, '[diffEntitySets]', '[update]', bEid, `different timestamp to ${bEid} - ${at} != ${bt}`);
             
             // log(`e ${eid} has different timestamp to ${bEid} - ${mtime} != ${bTime}`);
             continue;
@@ -239,7 +241,7 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<Sr
         if (row === undefined) {
             // b does not exist in a (added)
             result.push([undefined, ChangeSetOp.Add, eid]);
-            log('[diffEntitySets]', '[add]', eid); 
+            info(reporter, '[diffEntitySets]', '[add]', eid); 
             continue;
         }
     }
@@ -261,12 +263,13 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet): Promise<Sr
  */
 async function readFileMeta(site: Site, options: ProcessOptions = {}) {
     const { es } = site;
+    const {reporter} = options;
 
     // find /src with meta.(yaml|toml) files
     const ents = await selectMetaSrc(es, { ...options, siteRef: site.e.id });
 
     if( ents.length > 0 ) {
-        log('[readFileMeta]', ents.map(e => e.id));
+        info(reporter,'[readFileMeta]', ents.map(e => e.id));
         // ents.map( e => printEntity(es, e) );
     }
 

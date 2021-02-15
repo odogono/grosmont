@@ -12,6 +12,8 @@ import { joinPaths} from '../file';
 import { Site } from '../../site';
 import { ProcessOptions } from '../../types';
 import { selectScss, FindEntityOptions, getDstUrl } from '../../query';
+import { info, setLocation } from '../../reporter';
+import { printEntity } from 'odgn-entity/src/util/print';
 
 
 
@@ -22,6 +24,8 @@ import { selectScss, FindEntityOptions, getDstUrl } from '../../query';
  */
 export async function process(site: Site, options:ProcessOptions = {}) {
     const {es} = site;
+    const {reporter} = options;
+    setLocation( reporter, '/processor/scss' );
 
     // select scss entities
     const ents = await selectScss(es, {...options, siteRef:site.e.id});
@@ -31,7 +35,7 @@ export async function process(site: Site, options:ProcessOptions = {}) {
         try {
             const {css, srcPath, dstPath} = await renderScss( site, e, options );
             e.Text = { data:css, mime: 'text/css' };
-    
+            
     
             // alter the target filename
             const url = e.Src.url;
@@ -44,8 +48,12 @@ export async function process(site: Site, options:ProcessOptions = {}) {
             filename = filename.substr(0, filename.lastIndexOf(".")) + ".css";
             e.Dst = { url:filename };
 
+            info( reporter, url);
+
         } catch( err ){
             e.Error = {message:err.message, stack:err.stack};
+            reporter.error(err.message, err);
+            throw err;
         }
     }
 

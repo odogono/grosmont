@@ -1,6 +1,7 @@
 import { EntityId } from 'odgn-entity/src/entity';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { StatementArgs } from 'odgn-entity/src/query';
+import { Reporter } from './reporter';
 
 
 
@@ -49,6 +50,7 @@ export interface ProcessOptions {
     fileIndex?: SiteIndex;
     linkIndex?: SiteIndex;
     pageLinks?: PageLinks;
+    reporter?: Reporter;
 }
 
 export type EntityUpdate = [ EntityId, ChangeSetOp ];

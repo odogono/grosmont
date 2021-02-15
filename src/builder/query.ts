@@ -7,6 +7,7 @@ import { uriToPath } from './util';
 import { DependencyType, ProcessOptions } from './types';
 import { BitField } from "@odgn/utils/bitfield";
 import { parseUri, slugify } from '@odgn/utils';
+import { printAll } from 'odgn-entity/src/util/print';
 
 
 
@@ -122,14 +123,15 @@ export async function selectTitleAndMeta(es: EntitySet, options:FindEntityOption
     // select components which have /title AND /meta but also optionally
     // /dst
     const query = `
-        [ 
-            [ /component/title /component/meta ] !bf 
+        [
             /component/site_ref#ref !ca $ref ==
+            [ /component/title /component/meta ] !bf 
             @c
         ] select
         
         /@e pluck
-        rot [ *^$1 /component/dst !bf @c ] select rot +    
+        rot [ *^$1 /component/dst !bf @c ] select rot +
+        prints
     `;
 
     return await es.prepare(query).getEntities({ref});
@@ -324,6 +326,8 @@ export async function selectScssSrc(es: EntitySet, options: FindEntityOptions = 
             @c
         ] select`;
 
+    // await printAll(es);
+    // console.log('[selectScssSrc]', {ref,onlyUpdated} );
     return await es.prepare(q).getResult({ ref });
 }
 

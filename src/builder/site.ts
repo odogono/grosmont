@@ -35,6 +35,7 @@ import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { isString, parseUri } from '@odgn/utils';
 import { printEntity } from 'odgn-entity/src/util/print';
 import { createUUID } from '@odgn/utils';
+import { info, Reporter, setLocation } from './reporter';
 
 
 
@@ -58,6 +59,7 @@ export interface SiteOptions extends EntitySetOptions {
     configPath?: string;
     rootPath?: string;
     data?: any;
+    reporter?: Reporter;
 }
 
 
@@ -73,12 +75,17 @@ export class Site {
         // read from the path
         let site = new Site();
 
+        let reporter = new Reporter();
+        setLocation(reporter, '/site');
+
         // log('[create]', options);
 
         // attempt to initialise the ES from the configPath
-        await initialiseES(site, options);
+        await initialiseES(site, {...options, reporter});
 
         // await readConfig(site, options);
+
+        
 
         return site;
     }
@@ -447,7 +454,7 @@ async function loadConfig(options: SiteOptions): Promise<SiteOptions> {
  */
 async function initialiseES(site: Site, options: SiteOptions) {
     options = await loadConfig(options);
-    let { data, rootPath, configPath } = options;
+    let { data, rootPath, configPath, reporter } = options;
     // let { configPath, rootPath, data } = await loadConfig(options);
 
     
@@ -468,10 +475,9 @@ async function initialiseES(site: Site, options: SiteOptions) {
 
         if (esData !== undefined && es === undefined) {
             let esUrl = esData.url;
-            let { protocol, host, path } = parseUri(esUrl);
+            let { protocol, host, path, queryKey } = parseUri(esUrl);
             // log('metaUrl', {protocol, host, path});
 
-            // log('es path', path);
             if (path !== undefined) {
                 path = Path.join(rootPath, path);
             }
@@ -479,7 +485,7 @@ async function initialiseES(site: Site, options: SiteOptions) {
             // log('es path', path);
             if (protocol === 'es') {
                 if (host === 'sqlite') {
-                    es = new EntitySetSQL({ path, ...esData });
+                    es = new EntitySetSQL({ path, ...esData, ...queryKey });
                 }
             }
         }
@@ -497,6 +503,8 @@ async function initialiseES(site: Site, options: SiteOptions) {
     }
 
     site.es = es;
+
+    info(reporter,'[create]', site.es.getUrl() );
 
     // register defs against the entityset
     for (const def of defs) {

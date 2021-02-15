@@ -16,6 +16,7 @@ import { process as write } from './processor/write';
 import { process as buildDstIndex } from './processor/dst_index';
 import { EntityUpdate, ProcessOptions } from './types';
 import { clearUpdates } from './query';
+import { Reporter } from './reporter';
 
 
 export interface BuildProcessOptions extends ProcessOptions {
@@ -29,29 +30,34 @@ export interface BuildProcessOptions extends ProcessOptions {
  */
 export async function build(site:Site, options:BuildProcessOptions = {}) {
 
+    let reporter = new Reporter();
+
     // clear /component/update from site
     await clearUpdates(site);
 
-    await scanSrc(site, options);
+    await scanSrc(site, {...options, reporter});
 
-    await markMdx(site, { onlyUpdated:true });
+    await markMdx(site, { onlyUpdated:true, reporter });
     
-    await markScss(site, { onlyUpdated:true });
+    await markScss(site, { onlyUpdated:true, reporter });
 
     // await assignMime(site);
 
-    await renderScss(site, { onlyUpdated:true });
+    await renderScss(site, { onlyUpdated:true, reporter });
 
+    if( true ){
     // mdx
-    await mdxPreprocess(site, { onlyUpdated:true });
-    await mdxResolveMeta(site, { onlyUpdated:true });
-    await mdxRender(site, { onlyUpdated:true });
+    await mdxPreprocess(site, { onlyUpdated:true, reporter });
+    await mdxResolveMeta(site, { onlyUpdated:true, reporter });
+    await mdxRender(site, { onlyUpdated:true, reporter });
 
-    await assignTitle(site, { onlyUpdated:true });
+    await assignTitle(site, { onlyUpdated:true, reporter });
 
-    await buildDstIndex(site);
+    await buildDstIndex(site, {reporter});
 
-    await write(site, {onlyUpdated: true});
+    await write(site, {onlyUpdated: true, reporter});
+
+    }
 
     return site;
 }

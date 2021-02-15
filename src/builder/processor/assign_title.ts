@@ -5,7 +5,7 @@ import { extensionFromMime } from "./assign_mime";
 import { ProcessOptions } from '../types';
 import { selectTitleAndMeta } from '../query';
 import { isString, slugify } from "@odgn/utils";
-import { printEntity } from 'odgn-entity/src/util/print';
+import { printAll, printEntity } from 'odgn-entity/src/util/print';
 
 
 
@@ -26,6 +26,8 @@ export async function process(site: Site, options:ProcessOptions = {}) {
     const ents = await selectTitleAndMeta(site.es, {siteRef:site.e.id});
 
     let output:Entity[] = [];
+
+    // await printAll(site.es);
 
     for( let e of ents ){
         // printEntity( site.es, e );

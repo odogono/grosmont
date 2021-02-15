@@ -26,9 +26,10 @@ export interface ProcessMarkScssOptions extends ProcessOptions {
  */
 export async function process(site: Site, options:ProcessMarkScssOptions = {}) {
     const es = site.es;
+    const {reporter} = options;
     const loadData = options.loadData ?? false;
 
-    // select /component/src with a .mdx extension
+    // select /component/src with a .scss extension
     const coms = await selectScssSrc( site.es, {...options, siteRef:site.e.id} );
 
     // log('coms', coms);
