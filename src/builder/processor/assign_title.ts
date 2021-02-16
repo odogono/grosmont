@@ -6,6 +6,7 @@ import { ProcessOptions } from '../types';
 import { selectTitleAndMeta } from '../query';
 import { isString, slugify } from "@odgn/utils";
 import { printAll, printEntity } from 'odgn-entity/src/util/print';
+import { info, setLocation } from '../reporter';
 
 
 
@@ -21,7 +22,9 @@ const log = (...args) => console.log('[ProcAssignTitle]', ...args);
  * @param es 
  */
 export async function process(site: Site, options:ProcessOptions = {}) {
-    
+    const {reporter} = options;
+    setLocation(reporter, '/processor/assign_title');
+
     // select /meta and /title
     const ents = await selectTitleAndMeta(site.es, {siteRef:site.e.id});
 
@@ -51,10 +54,11 @@ export async function process(site: Site, options:ProcessOptions = {}) {
             url = `${url}.${ext}`;
         }
 
-
         e.Dst = { url };
         
         output.push(e.Dst);
+
+        info(reporter, `set /component/dst#url ${url}`, {eid:e.id});
     }
 
     await site.es.add(output);

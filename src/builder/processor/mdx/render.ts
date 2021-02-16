@@ -10,6 +10,7 @@ import { transpile } from './transpile';
 import { buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath } from "./util";
 import { buildSrcIndex, selectMdx } from "../../query";
 import { info, setLocation } from "../../reporter";
+import { printEntity } from "odgn-entity/src/util/print";
 
 
 const log = (...args) => console.log('[ProcMDXRender]', ...args);
@@ -39,10 +40,19 @@ export async function process(site: Site, options:ProcessMDXRenderOptions = {}) 
     const pageLinks = await buildPageLinks(es, linkIndex );
 
     // final pass - rendering the mdx into text
-    let ents = await selectMdx(es, {...options, siteRef: site.e.id});
+    let ents = await selectMdx(es, options);
     let output = [];
 
     for (const e of ents) {
+        // todo - this should be folded into the query
+        const isRenderable = e.Meta?.meta?.renderable ?? true;
+
+        if( !isRenderable ){
+            continue;
+        }
+        // log('render');
+        // printEntity(es, e);
+
         let [data, mime] = await renderMdx(site, e, { ...options, fileIndex, pageLinks });
         if( data === undefined ){
             continue;

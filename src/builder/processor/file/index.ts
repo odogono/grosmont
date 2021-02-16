@@ -129,7 +129,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 
         if (op === ChangeSetOp.Remove) {
             removeEids.push(aEid);
-            info( reporter, '[applyEntitySetDiffs][remove]', {eid:aEid});
+            info( reporter, '[applyEntitySetDiffs] remove', {eid:aEid});
             // add eid to remove list
             continue;
         }
@@ -268,16 +268,19 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:Pro
 async function readFileMeta(site: Site, options: ProcessOptions = {}) {
     const { es } = site;
     const {reporter} = options;
+    setLocation(reporter, '/processor/file/read_file_meta');
 
     // find /src with meta.(yaml|toml) files
-    const ents = await selectMetaSrc(es, { ...options, siteRef: site.e.id });
+    const ents = await selectMetaSrc(es, options);
 
     if( ents.length > 0 ) {
-        info(reporter,`[readFileMeta] ${ents.map(e => e.id)}`);
+        info(reporter,`${ents.map(e => e.id)}`);
         // ents.map( e => printEntity(es, e) );
     }
 
     let coms = [];
+
+    info(reporter, `selected ${ents.length} ents`);
 
     for (const e of ents) {
         let path = site.getSrcUrl(e);
@@ -310,6 +313,8 @@ async function readFileMeta(site: Site, options: ProcessOptions = {}) {
 
         // copy over the stat times
         coms.push(setEntityId(e.Stat, parentE.id));
+
+        info(reporter, `read from ${path}`, {eid:e.id});
     }
 
     await es.add(coms);
