@@ -80,7 +80,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     await readFileMeta(site, options);
 
     // build dependencies
-    await buildDeps(site, options);
+    await buildDeps(site, {...options, onlyUpdated:true});
 
     // any dependencies of entities marked as updated should also
     // be marked as updated
@@ -195,6 +195,7 @@ type SrcUrlDiffResult = [EntityId, ChangeSetOp, EntityId?][];
  */
 export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:ProcessOptions={}): Promise<SrcUrlDiffResult> {
     const {reporter} = options;
+    setLocation(reporter, '/processor/file/diffEntitySets');
     const idxA = await buildSrcUrlIndex(esA);
     const idxB = await buildSrcUrlIndex(esB);
 
@@ -212,7 +213,8 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:Pro
         if (row === undefined) {
             // a does not exist in b (removed)
             result.push([eid, ChangeSetOp.Remove]);
-            info(reporter, `[diffEntitySets] remove`, {eid}); 
+            info(reporter, `remove - could not find ${url}`, {eid});
+            // log( idxA );
             continue;
         }
 
@@ -223,7 +225,7 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:Pro
             result.push([eid, ChangeSetOp.Update, bEid]);
             let at = Day(mtime).toISOString()
             let bt = Day(bTime).toISOString()
-            info(reporter,`[diffEntitySets][update] different timestamp to ${eid} - ${at} != ${bt}`, {eid:bEid});
+            info(reporter,`update - different timestamp to ${eid} - ${at} != ${bt}`, {eid:bEid});
             
             // log(`e ${eid} has different timestamp to ${bEid} - ${mtime} != ${bTime}`);
             continue;
@@ -246,7 +248,7 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:Pro
         if (row === undefined) {
             // b does not exist in a (added)
             result.push([undefined, ChangeSetOp.Add, eid]);
-            info(reporter, `[diffEntitySets] add`, {eid}); 
+            info(reporter, `add`, {eid}); 
             continue;
         }
     }
@@ -281,7 +283,7 @@ async function readFileMeta(site: Site, options: ProcessOptions = {}) {
 
     let coms = [];
 
-    info(reporter, `selected ${ents.length} ents`);
+    // info(reporter, `selected ${ents.length} ents`);
 
     for (const e of ents) {
         let path = site.getSrcUrl(e);

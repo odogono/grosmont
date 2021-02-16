@@ -31,7 +31,7 @@ export async function process(site: Site, options: BuildDepsOptions = {}) {
     setLocation(reporter, '/processor/build_deps');
 
     // select /src entities with a file url
-    const coms = await selectFileSrc(es, {...options, siteRef:site.e.id});
+    const coms = await selectFileSrc(es, options);
 
     // log('coms', coms);
 

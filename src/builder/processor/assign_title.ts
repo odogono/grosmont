@@ -28,7 +28,7 @@ export async function process(site: Site, options:ProcessOptions = {}) {
     setLocation(reporter, '/processor/assign_title');
 
     // select /meta and /title
-    const ents = await selectTitleAndMeta(site.es, {siteRef:site.e.id});
+    const ents = await selectTitleAndMeta(site.es, options);
 
     let output:Entity[] = [];
 

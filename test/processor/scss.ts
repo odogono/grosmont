@@ -93,7 +93,7 @@ test('process directly from file', async () => {
     let id = 1000;
     const idgen = () => ++id;
 
-    const configPath = `file://${rootPath}/test/fixtures/rootC.yaml`;
+    const configPath = `file://${rootPath}/test/fixtures/rootD.yaml`;
     const site = await Site.create({ idgen, configPath });
 
     await parse( site, `

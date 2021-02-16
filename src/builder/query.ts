@@ -140,14 +140,30 @@ export async function selectTitleAndMeta(es: EntitySet, options:FindEntityOption
 export async function selectTextWithDst(es: EntitySet, options:FindEntityOptions = {}): Promise<Component[]> {
     const {ref, onlyUpdated} = parseOptions(options);
 
-    const q = `
+    const q = onlyUpdated ? `
         [ 
             [ /component/dst /component/text /component/upd ] !bf 
-            /component/site_ref#ref !ca $ref ==
+                        /component/upd#op !ca 1 ==
+                        /component/upd#op !ca 2 ==
+                    or
+                    /component/site_ref#ref !ca $ref ==
+                and
             @eid
         ] select
         swap [ *^$1 @eid /component/text !bf @c ] select
-    `;
+    `
+    :`
+    [ 
+        [ /component/dst /component/text /component/upd ] !bf 
+                /component/upd#op !ca 1 ==
+                /component/upd#op !ca 2 ==
+            or
+            /component/site_ref#ref !ca $ref ==
+        and
+        @eid
+    ] select
+    swap [ *^$1 @eid /component/text !bf @c ] select
+    `
 
     return await es.prepare(q).getResult({ref});
 }
@@ -468,13 +484,19 @@ export async function buildSrcIndex(site: Site) {
 }
 
 
-export async function buildSrcUrlIndex(es: EntitySet): Promise<[string, EntityId, string, BitField][]> {
+export async function buildSrcUrlIndex(es: EntitySet, options:FindEntityOptions = {}): Promise<[string, EntityId, string, BitField][]> {
+    const {ref} = parseOptions(options);
+    
     const query = `
-    [ [/component/src /component/times] !bf @e ] select
+    [ 
+        [/component/src /component/times /component/site_ref] !bf 
+        @e 
+    ] select
+
     [ /component/src#/url /id /component/times#/mtime /bitField ] pluck!
     `
     const stmt = es.prepare(query);
-    let result = await stmt.getResult();
+    let result = await stmt.getResult({ref});
     if (result.length === 0) {
         return result;
     }
@@ -492,11 +514,13 @@ export async function selectFiles(es: EntitySet, options:FindEntityOptions = {})
         /component/site_ref#ref !ca $ref ==
         and
         /component/src !bf 
+        and
         @e
     ] select`
     : `[
         /component/site_ref#ref !ca $ref ==
         /component/src !bf 
+        and
         @e
     ] select`
 

@@ -1,9 +1,10 @@
-import { Callback, suite } from 'uvu';
+import { suite } from 'uvu';
 import Path from 'path';
 import Fs from 'fs-extra';
 import assert from 'uvu/assert';
 
 import { Site } from '../../src/builder/site';
+import { build } from '../../src/builder';
 import {
     process as scanSrc,
     cloneEntitySet,
@@ -29,18 +30,19 @@ import { setEntityId } from 'odgn-entity/src/component';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { sqlClear } from 'odgn-entity/src/entity_set_sql/sqlite';
-import { printAll } from 'odgn-entity/src/util/print';
+import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { 
     clearUpdates,
     applyUpdatesToDependencies 
 } from '../../src/builder/query';
-import { isDate } from 'odgn-entity/src/util/is';
+import { isDate } from '@odgn/utils';
+import { buildUrl } from '../../src/builder/util';
 
 const log = (...args) => console.log('[TestFile]', ...args);
 
-const printES = async (es) => {
+const printES = async (site:Site) => {
     console.log('\n\n---\n');
-    await printAll(es);
+    await printAll(site.es);
 }
 
 const rootPath = Path.resolve(__dirname, "../../");
@@ -56,14 +58,13 @@ interface TestProps {
 }
 
 test.before.each(async (tcx) => {
-    id = 1000;
-    const configPath = `file://${rootPath}/test/fixtures/rootB/site.yaml`;
-    const site = await Site.create({ idgen, configPath });
+    // id = 1000;
+    // const configPath = `file://${rootPath}/test/fixtures/rootB/site.yaml`;
+    // const site = await Site.create({ idgen, configPath });
 
-    tcx.site = site;
-    tcx.es = site.es;
-    tcx.e = site.getSite();
-    
+    // tcx.site = site;
+    // tcx.es = site.es;
+    // tcx.e = site.getSite();
 });
 
 async function loadRootB(site: Site) {
@@ -77,6 +78,26 @@ async function loadRootB(site: Site) {
 
 
 test.only('using sql es', async () => {
+    id = 1000;
+    const configPath = `file://${rootPath}/test/fixtures/rootC.yaml`;
+    const liveDB = { path: `${rootPath}/test/fixtures/odgn.sqlite`, isMemory: false };
+    const testDB = { uuid: 'TEST-1', isMemory: true };
+
+    // sqlClear( liveDB.path );
+    // const es = new EntitySetSQL({...testDB});
+    // const es = new EntitySetMem(undefined, {idgen});
+    const site = await Site.create({configPath});
+
+    // printEntity( site.es, site.e );
+
+    await build(site);
+
+    // await printES(site);
+
+});
+
+
+test('using sql es', async () => {
     id = 1000;
     const configPath = `file://${rootPath}/test/fixtures/rootC.yaml`;
     const liveDB = { path: `${rootPath}/test/fixtures/rootC.sqlite`, isMemory: false };
@@ -104,7 +125,7 @@ test.only('using sql es', async () => {
     
     await applyUpdatesToDependencies(site);
 
-    await printES( es );
+    await printES( site );
 
     log('>---');
     const eids = await site.getUpdatedEntityIds();

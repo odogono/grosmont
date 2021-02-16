@@ -16,13 +16,13 @@ const log = (...args) => console.log('[ProcMDX]', ...args);
 export async function process(site: Site, options:ProcessOptions = {}){
     
     // parse the mdx and pick out links,css,meta
-    await preprocess( site );
+    await preprocess( site, options );
 
     // resolve meta with parents
-    await resolveMeta( site );
+    await resolveMeta( site, options );
 
     // render the mdx into html
-    await render( site );
+    await render( site, options );
 
     return site;
 }
