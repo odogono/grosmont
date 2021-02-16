@@ -504,7 +504,7 @@ async function initialiseES(site: Site, options: SiteOptions) {
 
     site.es = es;
 
-    info(reporter,'[create]', site.es.getUrl() );
+    info(reporter,`created ${site.es.getUrl()}`);
 
     // register defs against the entityset
     for (const def of defs) {

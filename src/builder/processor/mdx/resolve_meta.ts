@@ -4,6 +4,7 @@ import { Site } from '../../site';
 import { ProcessOptions } from "../../types";
 import { mergeMeta } from "../../util";
 import { selectDependencyMeta } from "../../query";
+import { info, setLocation } from "../../reporter";
 
 
 const log = (...args) => console.log('[ProcMDXResolveMeta]', ...args);
@@ -22,8 +23,8 @@ export interface ResolveMetaOptions extends ProcessOptions {
  */
 export async function process(site: Site, options: ResolveMetaOptions = {}) {
     const es = site.es;
-    const eid = options.e;
-
+    const {e:eid, reporter} = options;
+    setLocation(reporter,'/processor/mdx/resolve_meta');
 
     // second pass - resolving meta with dependencies
     let ents = eid !== undefined ?
@@ -43,6 +44,8 @@ export async function process(site: Site, options: ResolveMetaOptions = {}) {
         let meta = mergeMeta(metaList);
 
         e.Meta = { meta };
+
+        info(reporter, '', {eid:e.id});
 
         output.push(e);
     }

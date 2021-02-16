@@ -20,6 +20,7 @@ import { parseUri, toInteger } from "@odgn/utils";
 import { buildProps, getEntityImportUrlFromPath } from "./util";
 import { parse as parseConfig } from '../../config';
 import { isString } from "@odgn/utils";
+import { error, info, setLocation } from "../../reporter";
 
 
 
@@ -34,14 +35,15 @@ const log = (...args) => console.log('[ProcMDXParse]', ...args);
  */
 export async function process(site: Site, options: ProcessOptions = {}) {
     const es = site.es;
-
+    const {reporter} = options;
+    setLocation(reporter,'/processor/mdx/parse');
 
     // build an index of /src#url
     let fileIndex = await buildSrcIndex(site);
     let linkIndex = site.getIndex('/index/links', true);
 
     // select scss entities
-    let ents = await selectMdx(es, { ...options, siteRef: site.e.id });
+    let ents = await selectMdx(es, options);
     let output: Entity[] = [];
 
     
@@ -50,13 +52,14 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         try {
 
             output.push(await preProcessMdx(site, e, { fileIndex, linkIndex }));
+
+            info(reporter,``, {eid:e.id});
             
         } catch (err) {
             
-            
             e.Error = { message: err.message, stack: err.stack };
             output.push(e);
-            log('error', err);
+            error(reporter, 'error', err, {eid:e.id});
         }
         
     }

@@ -48,7 +48,7 @@ export async function process(site: Site, options:ProcessOptions = {}) {
             filename = filename.substr(0, filename.lastIndexOf(".")) + ".css";
             e.Dst = { url:filename };
 
-            info( reporter, url);
+            info( reporter, url, {eid:e.id} );
 
         } catch( err ){
             e.Error = {message:err.message, stack:err.stack};

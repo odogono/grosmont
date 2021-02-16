@@ -90,7 +90,10 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
 }
 
 
-
+/**
+ * 
+ * @param es 
+ */
 export async function cloneEntitySet(es: EntitySet) {
     const { idgen, eidEpoch, workerId } = es;
 
@@ -126,14 +129,14 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 
         if (op === ChangeSetOp.Remove) {
             removeEids.push(aEid);
-            reporter.info('[applyEntitySetDiffs]','[remove]', aEid);
+            info( reporter, '[applyEntitySetDiffs][remove]', {eid:aEid});
             // add eid to remove list
             continue;
         }
         if (op === ChangeSetOp.Update || op === ChangeSetOp.Add) {
             let e = await esB.getEntity(bEid, true);
             if (e === undefined) {
-                reporter.info('[applyEntitySetDiffs]', 'could not find', bEid);
+                info(reporter, '[applyEntitySetDiffs] could not find', {eid:bEid});
                 continue;
             }
             let eid = op === ChangeSetOp.Add ? esA.createEntityId() : aEid;
@@ -208,6 +211,7 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:Pro
         if (row === undefined) {
             // a does not exist in b (removed)
             result.push([eid, ChangeSetOp.Remove]);
+            info(reporter, `[diffEntitySets] remove`, {eid}); 
             continue;
         }
 
@@ -218,7 +222,7 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:Pro
             result.push([eid, ChangeSetOp.Update, bEid]);
             let at = Day(mtime).toISOString()
             let bt = Day(bTime).toISOString()
-            info(reporter, '[diffEntitySets]', '[update]', bEid, `different timestamp to ${bEid} - ${at} != ${bt}`);
+            info(reporter,`[diffEntitySets][update] different timestamp to ${eid} - ${at} != ${bt}`, {eid:bEid});
             
             // log(`e ${eid} has different timestamp to ${bEid} - ${mtime} != ${bTime}`);
             continue;
@@ -241,7 +245,7 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:Pro
         if (row === undefined) {
             // b does not exist in a (added)
             result.push([undefined, ChangeSetOp.Add, eid]);
-            info(reporter, '[diffEntitySets]', '[add]', eid); 
+            info(reporter, `[diffEntitySets] add`, {eid}); 
             continue;
         }
     }
@@ -269,7 +273,7 @@ async function readFileMeta(site: Site, options: ProcessOptions = {}) {
     const ents = await selectMetaSrc(es, { ...options, siteRef: site.e.id });
 
     if( ents.length > 0 ) {
-        info(reporter,'[readFileMeta]', ents.map(e => e.id));
+        info(reporter,`[readFileMeta] ${ents.map(e => e.id)}`);
         // ents.map( e => printEntity(es, e) );
     }
 

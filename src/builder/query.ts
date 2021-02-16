@@ -131,7 +131,6 @@ export async function selectTitleAndMeta(es: EntitySet, options:FindEntityOption
         
         /@e pluck
         rot [ *^$1 /component/dst !bf @c ] select rot +
-        prints
     `;
 
     return await es.prepare(query).getEntities({ref});
@@ -1133,7 +1132,6 @@ export async function selectDependencyMeta(es: EntitySet, eid: EntityId) {
 
         true // true
     ] loop
-    // prints
 
     `);
     await stmt.run({ eid });
@@ -1184,7 +1182,6 @@ export async function getDependencyParents(es: EntitySet, eid: EntityId, type: D
         
         // add to result
         dup $result + result !
-        // prints
         
         true // loop
     ] loop

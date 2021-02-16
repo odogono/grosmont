@@ -9,6 +9,7 @@ import { Site } from '../../site';
 import { transpile } from './transpile';
 import { buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath } from "./util";
 import { buildSrcIndex, selectMdx } from "../../query";
+import { info, setLocation } from "../../reporter";
 
 
 const log = (...args) => console.log('[ProcMDXRender]', ...args);
@@ -25,7 +26,9 @@ export interface ProcessMDXRenderOptions extends ProcessOptions {
  */
 export async function process(site: Site, options:ProcessMDXRenderOptions = {}) {
     const es = site.es;
+    const {reporter} = options;
 
+    setLocation(reporter,'/processor/mdx/render');
 
     // resolve linkIndex
     let fileIndex = await buildSrcIndex(site);
@@ -45,6 +48,8 @@ export async function process(site: Site, options:ProcessMDXRenderOptions = {}) 
             continue;
         }
         e.Text = { data, mime };
+
+        info(reporter, '', {eid:e.id});
 
         output.push(e);
     }

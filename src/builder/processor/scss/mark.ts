@@ -8,6 +8,7 @@ import { FindEntityOptions } from '../../query';
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
 import {  selectScssSrc } from "../../query";
+import { setLocation } from '../../reporter';
 
 const log = (...args) => console.log('[ProcMarkScss]', ...args);
 
@@ -28,9 +29,10 @@ export async function process(site: Site, options:ProcessMarkScssOptions = {}) {
     const es = site.es;
     const {reporter} = options;
     const loadData = options.loadData ?? false;
+    setLocation(reporter,'/processor/scss/mark');
 
     // select /component/src with a .scss extension
-    const coms = await selectScssSrc( site.es, {...options, siteRef:site.e.id} );
+    const coms = await selectScssSrc( site.es, options );
 
     // log('coms', coms);
     const def = es.getByUri('/component/scss');
