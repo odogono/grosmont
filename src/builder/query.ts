@@ -482,6 +482,27 @@ export async function buildSrcUrlIndex(es: EntitySet): Promise<[string, EntityId
     return Array.isArray(result[0]) ? result : [result];
 }
 
+export async function selectFiles(es: EntitySet, options:FindEntityOptions = {}): Promise<Entity[]> {
+    const {ref, onlyUpdated} = parseOptions(options);
+
+    const q = onlyUpdated ? `[
+        /component/upd#op !ca 2 ==
+        /component/upd#op !ca 1 ==
+        or
+        /component/site_ref#ref !ca $ref ==
+        and
+        /component/src !bf 
+        @e
+    ] select`
+    : `[
+        /component/site_ref#ref !ca $ref ==
+        /component/src !bf 
+        @e
+    ] select`
+
+    return await es.prepare(q).getEntities({ref});
+}
+
 
 /**
  * Selects /component/src which have a file:// url
@@ -509,7 +530,7 @@ export async function selectFileSrc(es: EntitySet, options: FindEntityOptions = 
 
     const stmt = es.prepare(q);
 
-    return await stmt.getResult();
+    return await stmt.getResult({ref});
 }
 
 

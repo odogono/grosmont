@@ -6,6 +6,9 @@ import { Entity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { Site } from '../site';
 import { applyMeta } from '../util';
+import { ProcessOptions } from '../types';
+import { selectFiles } from '../query';
+import { setLocation, info } from '../reporter';
 
 const log = (...args) => console.log('[ProcAssignMime]', ...args);
 
@@ -16,31 +19,35 @@ const log = (...args) => console.log('[ProcAssignMime]', ...args);
  * 
  * @param es 
  */
-export async function process(site: Site) {
-    const {es} = site;
+export async function process(site: Site, options: ProcessOptions = {}) {
+    const { es } = site;
+    const { reporter } = options;
     const siteEntity = site.getSite();
+    setLocation(reporter, '/processor/assign_mime');
 
-    const files = await selectFiles(es);
-    let updates:Entity[] = [];
+    const files = await selectFiles(es, options);
+    let updates: Entity[] = [];
 
-    for( const e of files ){
+    for (const e of files) {
         const url = e.Src.url;
         const ext = Path.extname(url);
 
-        let mime = mimeFromExtension( ext );
+        let mime = mimeFromExtension(ext);
 
-        if( mime === false ){
+        if (mime === false) {
             continue;
         }
 
         // convert from src type to dest type
         mime = mapToTargetMime(mime);
 
-        let eu = applyMeta( e, {mime} );
+        let eu = applyMeta(e, { mime });
 
         // log('lookup', url, mime, eu.Meta );
 
         updates.push(eu);
+
+        info(reporter, `assign ${mime} to ${url}`, {eid:e.id});
 
         // const dst = await selectTargetPath( es, id );
 
@@ -54,22 +61,18 @@ export async function process(site: Site) {
 
 
 
-async function selectFiles(es: EntitySet): Promise<Entity[]> {
-    const stmt = es.prepare(`[ /component/src !bf @e ] select`);
-    return await stmt.getEntities();
+
+
+function mimeFromExtension(ext: string) {
+    return Mime.lookup(ext);
 }
 
-
-function mimeFromExtension( ext:string ){
-    return Mime.lookup( ext );
+export function extensionFromMime(mime: string) {
+    return Mime.extension(mime);
 }
 
-export function extensionFromMime( mime:string ){
-    return Mime.extension( mime );
-}
-
-function mapToTargetMime( mime:string ){
-    switch( mime ){
+function mapToTargetMime(mime: string) {
+    switch (mime) {
         case 'text/x-scss':
             return 'text/css';
         case 'text/mdx':

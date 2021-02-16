@@ -69,6 +69,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
         // compare the two es
         let diffs = await diffEntitySets(site.es, incoming, options);
 
+        info(reporter, `${diffs.length} diffs`);
         // log('diffs', diffs);
         // printES(incoming);
         // apply the diffs

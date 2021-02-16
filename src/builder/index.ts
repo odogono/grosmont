@@ -43,7 +43,7 @@ export async function build(site:Site, options:BuildProcessOptions = {}) {
     
     await markScss(site, updateOptions);
 
-    // await assignMime(site);
+    await assignMime(site, updateOptions);
 
     await renderScss(site, updateOptions);
 

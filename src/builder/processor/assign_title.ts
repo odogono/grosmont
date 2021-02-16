@@ -7,6 +7,7 @@ import { selectTitleAndMeta } from '../query';
 import { isString, slugify } from "@odgn/utils";
 import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { info, setLocation } from '../reporter';
+import { toComponentId } from 'odgn-entity/src/component';
 
 
 
@@ -22,6 +23,7 @@ const log = (...args) => console.log('[ProcAssignTitle]', ...args);
  * @param es 
  */
 export async function process(site: Site, options:ProcessOptions = {}) {
+    const {es} = site;
     const {reporter} = options;
     setLocation(reporter, '/processor/assign_title');
 
@@ -48,9 +50,26 @@ export async function process(site: Site, options:ProcessOptions = {}) {
         if( dst ){
             url = `${dst}${url}`;
         }
+
+        let ext = Path.extname(url);
+
         
         if( meta.mime ){
-            let ext = extensionFromMime( meta.mime );
+            ext = extensionFromMime( meta.mime );
+        } else {
+            // attempt to lookup from /component/mime
+            const did = es.resolveComponentDefId('/component/mime');
+            const com = await es.getComponent( toComponentId(e.id, did) );
+            if( com !== undefined ){
+                ext = extensionFromMime( com['type'] );
+            }
+            // log(url, 'has ext', ext);
+            // const ee = await es.getEntity(e.id);
+            // printEntity(es, ee);
+            
+        }
+
+        if( ext !== undefined && ext !== '' ){
             url = `${url}.${ext}`;
         }
 

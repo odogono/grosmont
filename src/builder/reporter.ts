@@ -59,8 +59,8 @@ export class Reporter {
 
     write(level: string, message: string, options: ReportOptions = {}) {
         const { eid } = options;
-        let entry = [this.prefix];
-        entry.push(`[${level}]`);
+        let entry = [`[${level}]`, this.prefix];
+        // entry.push(`[${level}]`);
         if (eid !== undefined) {
             entry.push(`[${yellow(eid)}]`);
         }
