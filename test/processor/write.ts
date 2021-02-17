@@ -1,14 +1,7 @@
 import { suite } from 'uvu';
 import Path from 'path';
 import { Site } from '../../src/builder/site';
-import { process as assignMime } from '../../src/builder/processor/assign_mime';
-import { process as renderScss } from '../../src/builder/processor/scss';
-import { process as renderMdx } from '../../src/builder/processor/mdx';
 import { parse } from '../../src/builder/config';
-import { process as slugifyTitle } from '../../src/builder/processor/assign_title';
-import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
-import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
-import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 import { process as write } from '../../src/builder/processor/write';

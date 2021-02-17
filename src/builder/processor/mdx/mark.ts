@@ -2,6 +2,7 @@ import Fs from 'fs-extra';
 import { getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
 import { getDefId } from "odgn-entity/src/component_def";
 import { selectMdxSrc } from '../../query';
+import { info, setLocation } from '../../reporter';
 
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
@@ -23,8 +24,10 @@ export interface ProcessMarkMdxOptions extends ProcessOptions {
  */
 export async function process(site: Site, options:ProcessMarkMdxOptions = {}) {
     const es = site.es;
+    const {reporter} = options;
     const loadData = options.loadData ?? false;
-
+    setLocation(reporter,'/processor/scss/mark');
+    
     // select /component/src with a .mdx extension
     const coms = await selectMdxSrc( site.es, options );
 
@@ -45,6 +48,7 @@ export async function process(site: Site, options:ProcessMarkMdxOptions = {}) {
             if( !loadData ) {
                 addComs.push( mdx );
             }
+            info(reporter, `mark`, {eid});
         }
 
         if( loadData ){

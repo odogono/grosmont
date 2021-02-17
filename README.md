@@ -1,6 +1,6 @@
-# ODGN Static Site Generator
+# Grosmont SSG
 
-Dogfooding odgn-ecs
+Grosmont is a Static Site Generator written in nodejs.
 
 - static site generation
 - MDX pages
@@ -33,7 +33,13 @@ TODO
 
 [Devii - A developer blog starter](https://github.com/colinhacks/devii)
 
+[Frog is a static web site generator written in Racket.](https://github.com/greghendershott/frog)
 
+
+### Build Parent Dependencies
+/processor/build_deps
+
+Inserts 'dir' dependencies for all /component/src with a file:// url
 
 
 

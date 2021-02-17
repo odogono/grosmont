@@ -222,6 +222,26 @@ export class Site {
     }
 
     /**
+     * Copies the given src to the path
+     * 
+     * @param path 
+     * @param src 
+     */
+    async copyToUrl(path:string, src:string){
+        if (path.startsWith('file://')) {
+            path = fileURLToPath(path);
+        }
+        if (src.startsWith('file://')) {
+            src = fileURLToPath(src);
+        }
+        // log('writing', path);
+        await Fs.ensureDir(Path.dirname(path));
+        await Fs.copyFile(src, path);
+
+        return true;
+    }
+
+    /**
      * Returns the site entity
      */
     getSite(): Entity {

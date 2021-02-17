@@ -9,61 +9,67 @@ import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
 import { info, setLocation } from '../../reporter';
 
-const log = (...args) => console.log('[ProcMarkScss]', ...args);
+const log = (...args) => console.log('[ProcMarkStatic]', ...args);
 
 
-export interface ProcessMarkScssOptions extends ProcessOptions {
+export interface ProcessMarkStaticOptions extends ProcessOptions {
     loadData?: boolean;
+    exts?: string[];
 }
 
 /**
- * /component/src which have an .scss extension are given a /component/scss
- * if they do not already have them. Optionally, the content from the src
- * is placed into /component/scss#data
+ * /component/src which have an certain extensions are given a /component/static
+ * if they do not already have them. Optionally, the content from the /src
+ * is placed into /component/static#data
  * 
  * @param site 
  * @param options 
  */
-export async function process(site: Site, options:ProcessMarkScssOptions = {}) {
+export async function process(site: Site, options:ProcessMarkStaticOptions = {}) {
     const es = site.es;
     const {reporter} = options;
     const loadData = options.loadData ?? false;
-    setLocation(reporter,'/processor/scss/mark');
+    setLocation(reporter,'/processor/static/mark');
+
+    const exts = [
+        'html', 'jpeg', 'jpg', 'png', 'svg', 'txt'
+    ]
 
     // select /component/src with a .scss extension
-    const coms = await selectSrcByExt( site.es, ['scss'], options );
+    const srcs = await selectSrcByExt( site.es, exts, options );
 
     // log('coms', coms);
-    const def = es.getByUri('/component/scss');
+    const def = es.getByUri('/component/static');
     const did = getDefId(def);
 
     let addComs = [];
 
-    for( const com of coms ){
-        let eid = getComponentEntityId(com);
+    for( const src of srcs ){
+        let eid = getComponentEntityId(src);
 
-        let scss = await es.getComponent( toComponentId(eid,did) );
+        let staticCom = await es.getComponent( toComponentId(eid,did) );
 
-        if( scss === undefined ){
-            scss = es.createComponent( did );
-            scss = setEntityId( scss, eid );
+        if( staticCom === undefined ){
+            staticCom = es.createComponent( did );
+            staticCom = setEntityId( staticCom, eid );
             if( !loadData ) {
-                addComs.push( scss );
+                addComs.push( staticCom );
             }
+
             info(reporter, `mark`, {eid});
         }
 
         if( loadData ){
-            const {url} = com;
+            const {url} = src;
 
             let path = site.getSrcUrl(url);
 
             // log('loading from', path);
-
+            // TODO - should read binary
             let content = await Fs.readFile(path, 'utf8');
             if( content ){
-                scss.data = content;
-                addComs.push( scss );
+                staticCom.data = content;
+                addComs.push( staticCom );
             }
         }
     }

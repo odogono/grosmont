@@ -46,6 +46,7 @@ export interface SiteIndex {
 
 
 export interface ProcessOptions {
+    dryRun?: boolean;
     onlyUpdated?: boolean;
     fileIndex?: SiteIndex;
     linkIndex?: SiteIndex;

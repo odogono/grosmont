@@ -6,6 +6,7 @@ import { Site, SiteOptions } from './site';
 import { process as scanSrc } from './processor/file';
 import { process as markMdx } from './processor/mdx/mark';
 import { process as markScss } from './processor/scss/mark';
+import { process as markStatic } from './processor/static/mark';
 import { process as assignMime } from './processor/assign_mime';
 import { process as mdxPreprocess } from './processor/mdx/parse';
 import { process as mdxResolveMeta } from './processor/mdx/resolve_meta';
@@ -13,6 +14,7 @@ import { process as mdxRender } from './processor/mdx/render';
 import { process as renderScss } from './processor/scss';
 import { process as assignTitle } from './processor/assign_title';
 import { process as write } from './processor/write';
+import { process as copyStatic } from './processor/static/copy';
 import { process as buildDstIndex } from './processor/dst_index';
 import { EntityUpdate, ProcessOptions } from './types';
 import { clearUpdates } from './query';
@@ -39,6 +41,8 @@ export async function build(site:Site, options:BuildProcessOptions = {}) {
 
     await scanSrc(site, {...options, reporter});
 
+    await markStatic(site, updateOptions);
+
     await markMdx(site, updateOptions);
     
     await markScss(site, updateOptions);
@@ -58,6 +62,8 @@ export async function build(site:Site, options:BuildProcessOptions = {}) {
     await buildDstIndex(site, {reporter});
 
     await write(site, updateOptions);
+
+    await copyStatic(site, updateOptions);
 
     }
 

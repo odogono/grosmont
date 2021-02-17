@@ -1,4 +1,5 @@
 import { suite } from 'uvu';
+import assert from 'uvu/assert';
 import Path from 'path';
 import { Site } from '../../src/builder/site';
 import { process as assignMime } from '../../src/builder/processor/assign_mime';
@@ -15,9 +16,11 @@ import { process as markScss } from '../../src/builder/processor/scss/mark';
 
 import { parse } from '../../src/builder/config';
 
-import assert from 'uvu/assert';
+
 import { printAll } from 'odgn-entity/src/util/print';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
+import { EntityId } from 'odgn-entity/src/entity';
+import { FindEntityOptions } from '../../src/builder/query';
 
 
 const log = (...args) => console.log('[TestProcSCSS]', ...args);
@@ -39,6 +42,7 @@ test.before.each(async (tcx) => {
     tcx.site = await Site.create({ idgen, name: 'test', dst });
     // tcx.siteEntity = tcx.site.getSite();
     tcx.es = tcx.site.es;
+    tcx.options = { siteRef: tcx.site.e.id as EntityId } as FindEntityOptions;
 });
 
 
@@ -95,16 +99,17 @@ test('process directly from file', async () => {
 
     const configPath = `file://${rootPath}/test/fixtures/rootD.yaml`;
     const site = await Site.create({ idgen, configPath });
+    let options: FindEntityOptions = { siteRef: site.e.id as EntityId };
 
     await parse( site, `
     src: file:///styles/main.scss
     `);
 
-    await markScss( site );
+    await markScss( site, options );
 
-    await renderScss(site);
+    await renderScss(site, options);
 
-    await buildDstIndex(site);
+    await buildDstIndex(site, options);
 
     // await printES(site);
 
