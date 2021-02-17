@@ -18,6 +18,7 @@ export interface TranspileProps {
     css?: string;
     cssLinks?: string[];
     applyLinks?: PageLinks;
+    imgs?: PageImgs;
 }
 
 export interface TranspileResult {
@@ -33,6 +34,7 @@ export interface TranspileResult {
     requires?: string[];
     css?: string;
     cssLinks?: string[];
+    imgs?: PageImgs;
 }
 
 
@@ -49,12 +51,13 @@ export interface ProcessOptions {
     dryRun?: boolean;
     onlyUpdated?: boolean;
     fileIndex?: SiteIndex;
+    imgIndex?: SiteIndex;
     linkIndex?: SiteIndex;
     pageLinks?: PageLinks;
     reporter?: Reporter;
 }
 
-export type EntityUpdate = [ EntityId, ChangeSetOp ];
+export type EntityUpdate = [EntityId, ChangeSetOp];
 
 
 
@@ -92,7 +95,7 @@ export interface TranspileMeta {
 export interface TranspileOptions {
     render?: boolean;
     forceRender?: boolean;
-    resolveImport: (path:string) => string | undefined;
+    resolveImport: (path: string) => string | undefined;
 }
 
 
@@ -102,6 +105,16 @@ export interface PageLink {
 }
 
 export type PageLinks = Map<string, PageLink>;
+
+
+export interface PageImg {
+    url?: string;
+    alt?: string;
+    attrs?: Map<string, any>;
+}
+
+export type PageImgs = Map<string, PageImg>;
+
 
 export interface PageMeta {
     title?: string;
@@ -134,4 +147,4 @@ export interface PageMeta {
 }
 
 
-export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link';
+export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img';

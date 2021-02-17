@@ -1,5 +1,5 @@
 import unistVisit from 'unist-util-visit';
-import { PageLinks, PageLink } from "../../context";
+import { PageLinks, PageLink } from "../../types";
 import {select,selectAll} from 'unist-util-select';
 
 
@@ -22,6 +22,8 @@ export function linkProc({ links, applyLinks }: LinkProcProps) {
             // const ctx = node.type === 'link' ? node : Definitions(node.identifier)
             const ctx = node;
             if (!ctx) return;
+
+            console.log('[linkProc]', ctx)
 
             const text = select('text', node);
             const url = node.url;

@@ -1,9 +1,9 @@
 import React from 'react';
-import { PageContext } from '../builder/context';
+// import { PageContext } from '../builder/types';
 
 export function Head({children, ...props}) {
 
-  const ctx = React.useContext(PageContext)
+  // const ctx = React.useContext(PageContext)
 
   // console.log('[Head]', ctx );
   // console.log('[Head]', renderPreactToString(children) );

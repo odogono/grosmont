@@ -24,6 +24,7 @@ const emoji = require('remark-emoji')
 
 import { importCSSPlugin } from '../../unified/plugin/import_css';
 import { linkProc } from '../../unified/plugin/link';
+import { process as imgProc } from '../../unified/plugin/img';
 import { configPlugin } from '../../unified/plugin/config';
 import { removeCommentPlugin } from '../../unified/plugin/remove_comment';
 import { titlePlugin } from '../../unified/plugin/title';
@@ -36,7 +37,9 @@ import {
     TranspileProps,
     TranspileOptions,
     TranspileResult,
-    PageLinks
+    PageLinks,
+    PageImgs,
+    PageImg
 } from '../../types';
 
 const log = (...args) => console.log('[TranspileMDX]', ...args);
@@ -50,7 +53,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
 
     let meta = props.meta ?? {};
 
-    let { css, cssLinks: inputCssLinks, children, applyLinks } = props;
+    let { css, cssLinks: inputCssLinks, children, applyLinks, imgs } = props;
 
     let { data, path } = props;
     const { resolveImport } = options;
@@ -86,19 +89,22 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     }
 
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
-    const mdxResult = await parseMdx(data, path, { pageProps: inPageProps, applyLinks, resolveImport });
+    
+    const mdxResult = await parseMdx(data, path, 
+        { pageProps: inPageProps, applyLinks, imgs, resolveImport });
     
     const { component, frontMatter,
         code, jsx, ast, page, default: d,
         requires, links, cssLinks,
         pageProps, ...rest } = mdxResult;
+    imgs = mdxResult.imgs;
 
     meta = { ...meta, ...pageProps };
 
-    // log('[transpile]', 'meta', mdxResult );
+    // log('[transpile]', 'imgs', imgs );
 
     let result: TranspileResult = {
-        path, jsx, code, ast, /* code, ast,*/ component, links, meta, cssLinks, additional: rest
+        path, jsx, code, ast, /* code, ast,*/ component, links, imgs, meta, cssLinks, additional: rest
     };
 
     
@@ -160,13 +166,13 @@ function renderHTML({ components, component: Component, children }) {
 async function parseMdx(data: string, path: string, options: ProcessMDXOptions) {
     
     try {
-        let [jsx, links, ast] = await processMdx(data, options);
+        let {jsx, links, ast, imgs} = await processMdx(data, options);
         
 
         let code = transformJSX(jsx);
         let el = evalCode(code, path);
 
-        return { ...el, code, jsx, ast, links };
+        return { ...el, code, jsx, ast, links, imgs };
 
     } catch (err) {
         log('[parseMdx]', `failed to process mdx ${path}`, err.stack);
@@ -180,16 +186,27 @@ async function parseMdx(data: string, path: string, options: ProcessMDXOptions) 
 export type ProcessMDXOptions = {
     pageProps?: any;
     applyLinks?: PageLinks;
+    imgs?: PageImgs;
     resolveImport?: (path) => string | undefined;
 }
 
-export type ProcessMDXResult = [string, PageLinks, any];
+// export type ProcessMDXResult = [string, PageLinks, any];
+export interface ProcessMDXResult {
+    jsx: string;
+    links: PageLinks,
+    ast: any;
+    imgs: PageImgs
+}
 
 export async function processMdx(content: string, options: ProcessMDXOptions): Promise<ProcessMDXResult> {
 
-    const { pageProps, applyLinks, resolveImport } = options;
+    let { pageProps, applyLinks, resolveImport, imgs } = options;
     let links = new Map<string, any>();
     let ast;
+
+    if( imgs === undefined ){
+        imgs = new Map<string,PageImg>();
+    }
 
     // remark-mdx has a really bad time with html comments even
     // if they are removed with the removeCommentPlugin, so a brute
@@ -203,11 +220,11 @@ export async function processMdx(content: string, options: ProcessMDXOptions): P
         .use(emoji)
         .use(configPlugin, { page: pageProps })
         .use(removeCommentPlugin)
-        
+        // .use(() => console.dir)
+        .use(imgProc, { imgs })
         .use(linkProc, { links, applyLinks })
         // take a snap of the AST
         .use(() => tree => { ast = JSON.stringify(tree, null, '\t') })
-        // .use(() => console.dir)
         .use(mdx)
         .use(mdxjs)
         .use(titlePlugin)
@@ -220,9 +237,16 @@ export async function processMdx(content: string, options: ProcessMDXOptions): P
         .process(content);
     // console.log( output.toString());
 
-    
+    // log( 'ast', ast ); throw 'stop';
 
-    return ['/* @jsx mdx */\n' + output.toString(), links, ast];
+    // return ['/* @jsx mdx */\n' + output.toString(), links, ast];
+
+    return {
+        jsx: '/* @jsx mdx */\n' + output.toString(),
+        links,
+        ast,
+        imgs
+    };
 }
 
 

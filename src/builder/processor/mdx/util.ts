@@ -2,7 +2,7 @@ import { toComponentId } from "odgn-entity/src/component";
 import { Entity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { buildUrl, uriToPath } from "../../util";
-import { PageLink, PageLinks, SiteIndex, TranspileProps } from "../../types";
+import { PageLink, PageImg, PageImgs, PageLinks, SiteIndex, TranspileProps } from "../../types";
 import { getDependencyEntities, getDstUrl } from "../../query";
 import { Site } from "../../site";
 
@@ -30,6 +30,23 @@ export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> 
     let props: TranspileProps = { path, data, meta: eMeta };
 
     return props;
+}
+
+
+export async function buildPageImgs( es:EntitySet, imgIndex:SiteIndex ){
+    let result: PageImgs = new Map<string, PageImg>();
+
+    for( const [url, [eid,type]] of imgIndex.index ){
+        if( type === 'external' ){
+            result.set( url, {url});
+        } else {
+            let path = await getDstUrl(es, eid);
+            path = uriToPath(path);
+            result.set(url, {url:path});
+        }
+    }
+
+    return result;
 }
 
 

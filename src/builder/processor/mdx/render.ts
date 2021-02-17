@@ -3,11 +3,11 @@
 
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
-import { ProcessOptions, TranspileProps, TranspileResult } from '../../types';
+import { PageImgs, ProcessOptions, TranspileProps, TranspileResult } from '../../types';
 import { Site } from '../../site';
 
 import { transpile } from './transpile';
-import { buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath } from "./util";
+import { buildPageImgs, buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath } from "./util";
 import { buildSrcIndex, selectMdx } from "../../query";
 import { info, setLocation } from "../../reporter";
 import { printEntity } from "odgn-entity/src/util/print";
@@ -18,6 +18,7 @@ const log = (...args) => console.log('[ProcMDXRender]', ...args);
 
 export interface ProcessMDXRenderOptions extends ProcessOptions {
     target? : 'text/html' | 'text/javascript' | 'text/jsx' | 'text/ast';
+    imgs?: PageImgs;
 }
 
 /**
@@ -34,10 +35,12 @@ export async function process(site: Site, options:ProcessMDXRenderOptions = {}) 
     // resolve linkIndex
     let fileIndex = await buildSrcIndex(site);
     let linkIndex = site.getIndex('/index/links', true);
+    let imgIndex = site.getIndex('/index/imgs', true);
 
     // log('LINK index', linkIndex);
 
     const pageLinks = await buildPageLinks(es, linkIndex );
+    const imgs = await buildPageImgs(es, imgIndex);
 
     // final pass - rendering the mdx into text
     let ents = await selectMdx(es, options);
@@ -53,7 +56,7 @@ export async function process(site: Site, options:ProcessMDXRenderOptions = {}) 
         // log('render');
         // printEntity(es, e);
 
-        let [data, mime] = await renderMdx(site, e, { ...options, fileIndex, pageLinks });
+        let [data, mime] = await renderMdx(site, e, { ...options, fileIndex, imgs, pageLinks });
         if( data === undefined ){
             continue;
         }
@@ -108,7 +111,7 @@ async function renderMdx(site: Site, e: Entity, options: ProcessMDXRenderOptions
 }
 
 
-async function renderEntity(site: Site, src: Entity, child: TranspileResult, options: ProcessOptions) {
+async function renderEntity(site: Site, src: Entity, child: TranspileResult, options: ProcessMDXRenderOptions) {
     const { es } = site;
     const { fileIndex } = options;
     const resolveImport = (path: string) => getEntityImportUrlFromPath(fileIndex, path);
@@ -120,6 +123,7 @@ async function renderEntity(site: Site, src: Entity, child: TranspileResult, opt
     }
 
     props.applyLinks = options.pageLinks;
+    props.imgs = options.imgs;
 
     props = await applyCSSDependencies(es, src, child, props);
 

@@ -400,9 +400,14 @@ export async function selectDstTextIds(es: EntitySet): Promise<EntityId[]> {
 }
 
 
-
+/**
+ * Finds an entity by its /component/src#/url.
+ * @param es 
+ * @param path 
+ * @param options 
+ */
 export async function findEntityBySrcUrl(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<EntityId> {
-    const { ref, onlyUpdated } = parseOptions(options);
+    const { ref } = parseOptions(options);
 
     // convert to an extension-less path
     path = uriToPath(path);
@@ -419,7 +424,6 @@ export async function findEntityBySrcUrl(es: EntitySet, path: string, options: F
     [
         /component/site_ref#ref !ca $ref ==
         /component/src#url !ca *^$1 ==
-        // /component/src#url !ca $path ==
         and
         @eid
     ] select`;
@@ -448,10 +452,11 @@ export async function getEntityBySrcUrl(es: EntitySet, url: string, options: Fin
 
 
 
-
 /**
  * 
- * 
+ * @param es 
+ * @param url 
+ * @param options 
  */
 export async function findEntityByUrl(es: EntitySet, url: string, options: FindEntityOptions = {}): Promise<Entity> {
 
@@ -510,7 +515,6 @@ export async function buildSrcIndex(site: Site) {
     // let es = site.es;
     const siteEntity = site.getSite();
 
-    // select entities with /component/file AND /component/text (eg. have been rendered)
     const query = `
 
     [
@@ -898,6 +902,9 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
  */
 export async function insertDependency(es: EntitySet, src: EntityId, dst: EntityId, type: DependencyType): Promise<EntityId> {
     if (src === 0 || dst === 0) {
+        return 0;
+    }
+    if( src === dst ){
         return 0;
     }
 

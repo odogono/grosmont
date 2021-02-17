@@ -41,6 +41,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     // build an index of /src#url
     let fileIndex = await buildSrcIndex(site);
     let linkIndex = site.getIndex('/index/links', true);
+    let imgIndex = site.getIndex('/index/imgs', true);
 
     // select scss entities
     let ents = await selectMdx(es, options);
@@ -51,7 +52,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     for (const e of ents) {
         try {
 
-            output.push(await preProcessMdx(site, e, { fileIndex, linkIndex }));
+            output.push(await preProcessMdx(site, e, { fileIndex, imgIndex, linkIndex }));
 
             info(reporter,``, {eid:e.id});
             
@@ -89,37 +90,15 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
         
         let result = await transpile(props, { render: false, resolveImport });
 
-        
-
         const { meta } = result;
-        // const { isEnabled } = meta;
-
-        // log('[preProcessMdx]', props.path, meta );
-
-        // if( isEnabled === false ){
-        //     return e;
-        // }
-
-        // clear out empty/undefined values
-        // Object.keys(meta).forEach((k) => meta[k] == null && delete meta[k]);
 
         await parseConfig(site, meta, undefined, { add: false, e });
 
-        // log('[preProcessMdx]', 'parsed');
-        // printEntity( es, pe );
-
-        // e = applyMeta(e, { ...meta });
-
-        // applies to /component/title
-        // e = applyTitle(es, e, meta);
-
-        // e = applyDst(es, e, meta);
-
-        // adds a layout dependency if found
-        // e = await applyLayout(es, e, meta);
-
         // creates css dependencies
         e = await applyCSSLinks(es, e, result);
+
+
+        e = await applyImgLinks(es, e, result, options);
 
         // creates tag dependencies
         // NOTE - does not happen here, since tags from parents also need to be applied 
@@ -136,63 +115,63 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
     return e;
 }
 
-function applyDst(es: EntitySet, e: Entity, result: TranspileMeta) {
-    let dst = result['dst'];
-    if (dst === undefined) {
-        return e;
-    }
+// function applyDst(es: EntitySet, e: Entity, result: TranspileMeta) {
+//     let dst = result['dst'];
+//     if (dst === undefined) {
+//         return e;
+//     }
 
-    e.Dst = { url: dst };
+//     e.Dst = { url: dst };
 
-    return e;
-}
+//     return e;
+// }
 
-function applyTitle(es: EntitySet, e: Entity, result: TranspileMeta) {
-    let { title, description, ...rest } = result;
+// function applyTitle(es: EntitySet, e: Entity, result: TranspileMeta) {
+//     let { title, description, ...rest } = result;
 
-    let com: any = {};
-    if (title !== undefined) {
-        com.title = title;
-    }
-    if (isString(description) && description.length > 0) {
-        com.description = description;
-    }
-    if (Object.keys(com).length > 0) {
-        e.Title = com;
-    } else {
-        e.Title = undefined;
-    }
+//     let com: any = {};
+//     if (title !== undefined) {
+//         com.title = title;
+//     }
+//     if (isString(description) && description.length > 0) {
+//         com.description = description;
+//     }
+//     if (Object.keys(com).length > 0) {
+//         e.Title = com;
+//     } else {
+//         e.Title = undefined;
+//     }
 
-    return e;
-}
+//     return e;
+// }
 
 
-async function applyLayout(es: EntitySet, e: Entity, result: TranspileMeta) {
-    const { layout } = result;
+// async function applyLayout(es: EntitySet, e: Entity, result: TranspileMeta) {
+//     const { layout } = result;
 
-    // log('[applyLayout]', e.id, layout );
+//     // log('[applyLayout]', e.id, layout );
 
-    if (layout === undefined) {
-        await removeDependency(es, e.id, 'layout');
-        return e;
-    }
+//     if (layout === undefined) {
+//         await removeDependency(es, e.id, 'layout');
+//         return e;
+//     }
 
-    const siteRef = e.SiteRef?.ref;
+//     const siteRef = e.SiteRef?.ref;
 
-    // log('[applyLayout]', e.File.uri, {layout} );
+//     // log('[applyLayout]', e.File.uri, {layout} );
 
-    // find the entity matching the layout
-    const layoutEid = await findEntityBySrcUrl(es, layout, { siteRef });
+//     // find the entity matching the layout
+//     const layoutEid = await findEntityBySrcUrl(es, layout, { siteRef });
 
-    // log('[applyLayout]', e.id, 'found', layoutEid);
+//     // log('[applyLayout]', e.id, 'found', layoutEid);
 
-    // add a dependency from this entity to the layout entity
-    if (layoutEid !== undefined) {
-        await insertDependency(es, e.id, layoutEid, 'layout');
-    }
+//     // add a dependency from this entity to the layout entity
+//     if (layoutEid !== undefined) {
+//         await insertDependency(es, e.id, layoutEid, 'layout');
+//     }
 
-    return e;
-}
+//     return e;
+// }
 
 
 /**
@@ -238,6 +217,42 @@ async function applyCSSLinks(es: EntitySet, e: Entity, result: TranspileResult) 
 
     return e;
 }
+
+async function applyImgLinks(es: EntitySet, e: Entity, result: TranspileResult, options: ProcessOptions) {
+    const {imgs} = result;
+    const siteRef = e.SiteRef?.ref;
+    const { imgIndex } = options;
+
+    const existingIds = new Set(await getDependencies(es, e.id, 'img'));
+
+    // log('[applyImgLinks]', imgs);
+    
+    for( let [imgId, {url,alt}] of imgs ){
+        const srcE = await findEntityByUrl( es, url, {siteRef});
+        
+        // log('[applyImgLinks]', url, srcE);
+
+        if( srcE === undefined ){
+            continue;
+        }
+
+        let depId = await insertDependency(es, e.id, srcE.id, 'img' );
+
+        if (existingIds.has(depId)) {
+            existingIds.delete(depId);
+        }
+
+        const type = srcE.Src !== undefined ? 'internal' : 'external';
+        imgIndex.index.set(url, [srcE.id, type]);
+    }
+
+    // remove dependencies that don't exist anymore
+    await es.removeEntity(Array.from(existingIds));
+
+
+    return e;
+}
+
 
 /**
  * takes any cssLinks found on the entities transpile result and creates dependency

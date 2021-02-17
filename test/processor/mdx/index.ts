@@ -1,31 +1,31 @@
 import { suite } from 'uvu';
 import Path from 'path';
 import Beautify from 'js-beautify';
-import { Site } from '../../src/builder/site';
-import { process as assignMime } from '../../src/builder/processor/assign_mime';
-import { process as renderScss } from '../../src/builder/processor/scss';
-import { process as renderMdx } from '../../src/builder/processor/mdx';
-import { process as assignTitle } from '../../src/builder/processor/assign_title';
-import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
-import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
-import { process as applyTags } from '../../src/builder/processor/mdx/apply_tags';
-import { process as mdxRender } from '../../src/builder/processor/mdx/render';
-import { process as buildDeps } from '../../src/builder/processor/build_deps';
-import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
-import { process as markMdx } from '../../src/builder/processor/mdx/mark';
+import { Site } from '../../../src/builder/site';
+import { process as assignMime } from '../../../src/builder/processor/assign_mime';
+import { process as renderScss } from '../../../src/builder/processor/scss';
+import { process as renderMdx } from '../../../src/builder/processor/mdx';
+import { process as assignTitle } from '../../../src/builder/processor/assign_title';
+import { process as mdxPreprocess } from '../../../src/builder/processor/mdx/parse';
+import { process as mdxResolveMeta } from '../../../src/builder/processor/mdx/resolve_meta';
+import { process as applyTags } from '../../../src/builder/processor/mdx/apply_tags';
+import { process as mdxRender } from '../../../src/builder/processor/mdx/render';
+import { process as buildDeps } from '../../../src/builder/processor/build_deps';
+import { process as buildDstIndex } from '../../../src/builder/processor/dst_index';
+import { process as markMdx } from '../../../src/builder/processor/mdx/mark';
 import {
     process as processJSX,
     preprocess as preProcessJSX
-} from '../../src/builder/processor/jsx';
+} from '../../../src/builder/processor/jsx';
 
-import { parse } from '../../src/builder/config';
+import { parse } from '../../../src/builder/config';
 
 import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
-import { ProcessOptions } from '../../src/builder/types';
-import { FindEntityOptions } from '../../src/builder/query';
+import { ProcessOptions } from '../../../src/builder/types';
+import { FindEntityOptions } from '../../../src/builder/query';
 import { EntityId } from 'odgn-entity/src/entity';
 
 
@@ -36,7 +36,7 @@ const printES = async (site: Site) => {
     await printAll(site.es);
 }
 
-const rootPath = Path.resolve(__dirname, "../../");
+const rootPath = Path.resolve(__dirname, "../../../");
 const test = suite('processor/mdx');
 
 
