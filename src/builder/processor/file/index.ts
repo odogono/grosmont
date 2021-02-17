@@ -168,7 +168,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 
     // the retain flag means the changeset wont be cleared,
     // which in effect batches the remove and add together
-    await esA.add(diffComs, { retain: false, debug:false });
+    await esA.add(diffComs, { retain: true, debug:false });
     info(reporter, `[applyEntitySetDiffs] updated ${diffComs.length} coms`);
     // log( diffComs );
     // log('updated ents', esA.getUpdatedEntities() );
