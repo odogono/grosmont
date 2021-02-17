@@ -80,7 +80,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     await readFileMeta(site, options);
 
     // build dependencies
-    await buildDeps(site, {...options, onlyUpdated:true});
+    await buildDeps(site, {...options, onlyUpdated:true, debug:diffs.length>0});
 
     // any dependencies of entities marked as updated should also
     // be marked as updated
@@ -126,6 +126,8 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 
     const diffDefId = getDefId(esA.getByUri('/component/upd'));
 
+    log('[applyEntitySetDiffs]', diffs);
+
     for (const [aEid, op, bEid] of diffs) {
 
         if (op === ChangeSetOp.Remove) {
@@ -149,9 +151,9 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
             }
 
             if( op === ChangeSetOp.Add ){
-                // reporter.info('[applyEntitySetDiffs]','[add]', bEid);
+                info(reporter,'[applyEntitySetDiffs] add', {eid:bEid});
             } else {
-                // reporter.info('[applyEntitySetDiffs]','[update]', aEid);
+                info(reporter,'[applyEntitySetDiffs] update', {eid:aEid});
             }
             // e.Upd = {op};
             // updateEs.push( e );
@@ -166,7 +168,10 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 
     // the retain flag means the changeset wont be cleared,
     // which in effect batches the remove and add together
-    await esA.add(diffComs, { retain: true });
+    await esA.add(diffComs, { retain: false, debug:false });
+    info(reporter, `[applyEntitySetDiffs] updated ${diffComs.length} coms`);
+    // log( diffComs );
+    // log('updated ents', esA.getUpdatedEntities() );
     // await esA.add( updateEs, {retain:true} );
 
     // esA.getUpdatedEntities

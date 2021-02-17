@@ -16,7 +16,8 @@ import { EntityUpdate } from '../builder/types';
 import { clearUpdates } from '../builder/query';
 import Day from 'dayjs';
 import { EntityId } from 'odgn-entity/src/entity';
-import { debounce, toInteger } from "@odgn/utils";
+import { debounce, parseUri, toInteger } from "@odgn/utils";
+import { Reporter, setLocation, info, error } from '../builder/reporter';
 const log = (...args) => console.log('[server]', ...args);
 
 const app = express();
@@ -47,37 +48,41 @@ const clientHandler = '<script>' + Fs.readFileSync( clientHandlerPath, 'utf-8' )
 
 const debugHTML = Fs.readFileSync( debugHTMLPath, 'utf-8' );
 
+const reporter = new Reporter();
+setLocation(reporter, '/server');
+
 
 async function onStart(){
-    log(`listening at http://localhost:${port}`);
+    info(reporter, `listening at http://localhost:${port}`);
     
     site = await Site.create({configPath});
-    log('config', configPath );
-    log('root', site.getSrcUrl() );
+    info(reporter, `config: ${configPath}` );
+    info(reporter, `root: ${site.getSrcUrl()}` );
 
     await build(site);
 
     // await printAll(site.es);
 
-    log('index', site.getIndex('/index/dstUrl').index );
+    // info(reporter, `index ${site.getIndex('/index/dstUrl').index}` );
+    log(`index`, site.getIndex('/index/dstUrl').index );
 
     let changeQueue:EntityUpdate[] = [];
 
     
     let processChangeQueue = debounce( async () => {
-        // log('[cq]', changeQueue );
+        // info(reporter, '[cq]', changeQueue );
         // await clearUpdates(site);
         await build(site, {updates:changeQueue});
         // await scanSrc(site, {updates: changeQueue});
 
 
         const eids = await site.getUpdatedEntityIds();
-        log('updated:');
+        // info(reporter, 'updated:');
         let updates = [];
         for( const eid of eids ){
             let url = await site.getEntityDstUrl( eid );
             let srcUrl = await site.getEntitySrcUrl( eid );
-            log( eid, srcUrl, url );
+            info(reporter, `update ${srcUrl} ${url}`,  {eid} );
             updates.push( [url, srcUrl, eid ] );
             // printEntity( site.es, await site.es.getEntity(eid) );
         }
@@ -103,7 +108,7 @@ async function onStart(){
         
         const eid = await site.getEntityIdBySrc( 'file://' + relPath );
         
-        log('[change]', 'file://' + relPath, eid, op);
+        info(reporter, `change - file://${relPath}`, {eid});
         
         if( eid !== undefined ){
             changeQueue.push( [eid,op] );
@@ -120,7 +125,7 @@ app.get('/sseEvents', function (req, res) {
     let query = parseUri(originalUrl.href).queryKey;
 
     try {
-        log('[sseEvents]', 'connect', originalUrl.href);
+        info(reporter, `[sseEvents] connect ${originalUrl.href}`);
         let {e:rEid,path:rPath} = query;
         rEid = toInteger(rEid);
 
@@ -132,7 +137,7 @@ app.get('/sseEvents', function (req, res) {
         });
 
         req.on('close', () => {
-            log('[sseEvents]', 'disconnected.');
+            info(reporter, `[sseEvents] disconnected`);
             // clearTimeout(manualShutdown)  // prevent shutting down the connection twice
           })
 
@@ -140,11 +145,11 @@ app.get('/sseEvents', function (req, res) {
             const { event, ...rest } = e;
             res.write(`event: ${event}\n`);
             res.write("data: " + JSON.stringify(rest) + "\n\n")
-            log('[/sse]', e);
+            info(reporter, `[/sse] ${e}`);
         });
 
         emitter.on('/serve/e/update', (updates) => {
-            log('[/serve/e/update]', updates);
+            info(reporter, `[/serve/e/update] ${updates}`);
             const update = updates.find( ([url,srcUrl,eid]) => eid === rEid );
             if( update !== undefined ){
                 res.write(`event: reload\n`);

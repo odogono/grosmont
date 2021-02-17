@@ -6,6 +6,7 @@ import { getComponentEntityId } from 'odgn-entity/src/component';
 import { ProcessOptions } from '../types';
 import { insertDependency, selectFileSrc, selectSrcByUrl } from '../query';
 import { setLocation, info } from '../reporter';
+import { printAll, printEntity } from 'odgn-entity/src/util/print';
 
 
 
@@ -13,7 +14,7 @@ const log = (...args) => console.log('[ProcBuildDeps]', ...args);
 
 
 export interface BuildDepsOptions extends ProcessOptions {
-    debug?: true;
+    debug?: boolean;
     readFS?: boolean;
     readFSResult?: EntitySetMem;
 }
@@ -34,6 +35,10 @@ export async function process(site: Site, options: BuildDepsOptions = {}) {
     const coms = await selectFileSrc(es, options);
 
     // log('coms', coms);
+    // if( coms.length === 0 && options.debug ){
+    //     let e = await es.getEntity(16235993252063);
+    //     await printEntity(es, e);
+    // }
 
     for (const com of coms) {
         const { url } = com;
