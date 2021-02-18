@@ -41,7 +41,6 @@ export async function process(site: Site, options:ProcessOptions = {}) {
         let meta = e.Meta?.meta ?? {};
         let dst = e.Dst?.url;
 
-        // log('existing title', dst);
         if( isString(dst) && dst.length > 0 && !dst.endsWith(Path.sep) ){
             continue;
         }

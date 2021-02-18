@@ -48,6 +48,7 @@ export interface SiteIndex {
 
 
 export interface ProcessOptions {
+    siteRef?: EntityId;
     dryRun?: boolean;
     onlyUpdated?: boolean;
     fileIndex?: SiteIndex;

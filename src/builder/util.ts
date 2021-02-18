@@ -115,6 +115,11 @@ export async function selectSiteTargetUri(es: EntitySet, e: Entity) {
 
 
 
+export function joinPaths(a: string, b: string) {
+    a = uriToPath(a);
+    b = uriToPath(b);
+    return Path.join(a, b);
+}
 
 export function uriToPath(uri: string) {
     if (uri === undefined) {

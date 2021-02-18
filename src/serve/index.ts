@@ -184,10 +184,12 @@ app.use(async (req, res, next) => {
     
     log('[ok]', originalUrl.href, path);
 
+    let e = site.getEntityIdByDst(path);
 
-    // let out = Path.join(__dirname, '../../dist', path );
-
-    const e = site.getEntityIdByDst(path);
+    if( e === undefined && path.endsWith('/') ){
+        path = path + 'index.html';
+        e = site.getEntityIdByDst(path);
+    }
 
     if( e !== undefined ){
         log('found', e);
@@ -205,23 +207,25 @@ app.use(async (req, res, next) => {
         }
     }
 
-    const [exists, filePath] = await resolveRequestPath(path);
+    return next();
 
-    if (!exists) {
-        // console.log('[serveStatic] not found', path);
-        return next();
-    }
+    // const [exists, filePath] = await resolveRequestPath(path);
 
-    console.log('[serveStatic]', path, filePath);
+    // if (!exists) {
+    //     // console.log('[serveStatic] not found', path);
+    //     return next();
+    // }
 
-    if (filePath.endsWith('.html')) {
-        const data = await Fs.readFile(filePath, 'utf8');
+    // console.log('[serveStatic]', path, filePath);
 
-        res.send(data + debugHTML + clientHandler);
-    }
-    else {
-        res.sendFile(filePath);
-    }
+    // if (filePath.endsWith('.html')) {
+    //     const data = await Fs.readFile(filePath, 'utf8');
+
+    //     res.send(data + debugHTML + clientHandler);
+    // }
+    // else {
+    //     res.sendFile(filePath);
+    // }
 })
 
 function clientIdHeader(eid:EntityId, path:string){

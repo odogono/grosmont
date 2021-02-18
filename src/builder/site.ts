@@ -36,6 +36,7 @@ import { isString, parseUri } from '@odgn/utils';
 import { printEntity } from 'odgn-entity/src/util/print';
 import { createUUID } from '@odgn/utils';
 import { info, Reporter, setLocation } from './reporter';
+import { uriToPath } from './util';
 
 
 
@@ -130,10 +131,11 @@ export class Site {
      * @param appendPath 
      */
     getSrcUrl(appendPath?: string | Entity) {
-        let res = fileURLToPath(this.e.Src.url);
+        // let path = this.e.Src?.url ?? '';
+        let res = uriToPath(this.e.Src?.url);
         if (appendPath) {
             let path = isString(appendPath) ? appendPath : (appendPath as Entity).Src?.url ?? '';
-            res = Path.join(res, path.startsWith('file://') ? fileURLToPath(path) : path);
+            res = Path.join(res, uriToPath(path) );
         }
         return res;
     }
@@ -147,8 +149,8 @@ export class Site {
         let res = this.e.Dst.url;
 
         if (appendPath) {
-            res = res.startsWith('file://') ? fileURLToPath(res) : res;
-            res = Path.join(res, appendPath.startsWith('file://') ? fileURLToPath(appendPath) : appendPath);
+            res = uriToPath(res);
+            res = Path.join(res, uriToPath(appendPath) );
         }
 
         return res;
@@ -210,10 +212,7 @@ export class Site {
         if (data === undefined) {
             throw new Error(`${path} data is undefined`);
         }
-        // log('writing', path);
-        if (path.startsWith('file://')) {
-            path = fileURLToPath(path);
-        }
+        path = uriToPath(path);
         // log('writing', path);
         await Fs.ensureDir(Path.dirname(path));
         await Fs.writeFile(path, data);
@@ -228,12 +227,9 @@ export class Site {
      * @param src 
      */
     async copyToUrl(path:string, src:string){
-        if (path.startsWith('file://')) {
-            path = fileURLToPath(path);
-        }
-        if (src.startsWith('file://')) {
-            src = fileURLToPath(src);
-        }
+        path = uriToPath(path);
+        src = uriToPath(src);
+        
         // log('writing', path);
         await Fs.ensureDir(Path.dirname(path));
         await Fs.copyFile(src, path);
@@ -445,15 +441,12 @@ async function loadConfig(options: SiteOptions): Promise<SiteOptions> {
     if (configPath === undefined) {
         return {...options, uuid};
     }
-    if (configPath.startsWith('file://')) {
-        configPath = fileURLToPath(configPath);
-    }
+    configPath = uriToPath(configPath);
+    
     if (rootPath === undefined) {
         rootPath = Path.dirname(configPath);
     }
-    if (rootPath.startsWith('file://')) {
-        rootPath = fileURLToPath(rootPath);
-    }
+    rootPath = uriToPath(rootPath);
     rootPath = rootPath.endsWith(Path.sep) ? rootPath : rootPath + Path.sep;
 
     if (data === undefined) {
@@ -606,14 +599,14 @@ async function readSiteFromConfig(site: Site, e: Entity, options: SiteOptions = 
 
     // resolve the src and dst paths
     let url = e.Src?.url ?? pathToFileURL(rootPath).href;
-    url = url.startsWith('file://') ? fileURLToPath(url) : url;
+    url = uriToPath(url);
     url = pathToFileURL(Path.join(rootPath, url)).href;
     e.Src = { url };
 
     // log('[readConfig]', 'src', url);
 
     url = e.Dst?.url ?? pathToFileURL(rootPath).href;;
-    url = url.startsWith('file://') ? fileURLToPath(url) : url;
+    url = uriToPath(url);
     // log('[readConfig]', 'dst', Path.join(rootPath,url) );
     url = pathToFileURL(Path.join(rootPath, url)).href;
     e.Dst = { url };

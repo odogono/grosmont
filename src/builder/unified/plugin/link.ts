@@ -23,7 +23,7 @@ export function linkProc({ links, applyLinks }: LinkProcProps) {
             const ctx = node;
             if (!ctx) return;
 
-            console.log('[linkProc]', ctx)
+            // console.log('[linkProc]', ctx)
 
             const text = select('text', node);
             const url = node.url;

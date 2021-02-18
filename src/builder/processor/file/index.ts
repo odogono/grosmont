@@ -22,10 +22,11 @@ import { selectSite, Site } from '../../site';
 import { parse, ParseType } from '../../config';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { getDefId } from 'odgn-entity/src/component_def';
-import { applyUpdatesToDependencies, buildSrcUrlIndex, clearUpdates, selectMetaSrc } from '../../query';
+import { applyUpdatesToDependencies, buildSrcUrlIndex, selectSrcByFilename } from '../../query';
 import { EntityUpdate, ProcessOptions } from '../../types';
 import Day from 'dayjs';
 import { info, setLocation } from '../../reporter';
+import { printEntity } from 'odgn-entity/src/util/print';
 
 
 
@@ -126,7 +127,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 
     const diffDefId = getDefId(esA.getByUri('/component/upd'));
 
-    log('[applyEntitySetDiffs]', diffs);
+    // log('[applyEntitySetDiffs]', diffs);
 
     for (const [aEid, op, bEid] of diffs) {
 
@@ -265,7 +266,9 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:Pro
 
 
 
-
+export interface ReadFileMetaOptions extends ProcessOptions {
+    applyFromE?: boolean;
+}
 
 
 /**
@@ -273,59 +276,88 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options:Pro
  * @param site 
  * @param options 
  */
-async function readFileMeta(site: Site, options: ProcessOptions = {}) {
+export async function readFileMeta(site: Site, options: ReadFileMetaOptions = {}) {
     const { es } = site;
     const {reporter} = options;
     setLocation(reporter, '/processor/file/read_file_meta');
 
     // find /src with meta.(yaml|toml) files
-    const ents = await selectMetaSrc(es, options);
+    // const ents = await selectMetaSrc(es, options);
+    const coms = await selectSrcByFilename(es, ['meta.toml', 'meta.yaml'], options );
 
-    if( ents.length > 0 ) {
-        info(reporter,`${ents.map(e => e.id)}`);
+    if( coms.length > 0 ) {
+        // info(reporter,`${coms.map(e => e.id)}`);
         // ents.map( e => printEntity(es, e) );
     }
 
-    let coms = [];
+    let outComs = [];
+    let remComs = [];
 
-    // info(reporter, `selected ${ents.length} ents`);
+    info(reporter, `selected ${coms.length} yaml/toml config`);
+    // log( options );
 
-    for (const e of ents) {
-        let path = site.getSrcUrl(e);
-        let ext = Path.extname(path).substring(1);
+    for (const com of coms) {
+        const eid = getComponentEntityId(com);
+        // log('[readFileMeta]', eid, com);
+        // let path = site.getSrcUrl( com.url );
+        let ext = Path.extname(com.url).substring(1);
 
         // find the parent dir
-        const parentUrl = Path.dirname(e.Src.url) + Path.sep;
+        const parentUrl = Path.dirname(com.url) + Path.sep;
         let parentE = await selectSrcByUrl(es, parentUrl) as Entity;
+
+        log('[readFileMeta]', 'dir parent', parentUrl, parentE.id );
 
         if (parentE === undefined) {
             parentE = es.createEntity();
             parentE.Src = { url: parentUrl };
         }
 
-        let content = await Fs.readFile(path, 'utf8');
+        let content = await site.readUrl( com.url );// await Fs.readFile(path, 'utf8');
+        // log('[readFileMeta]', 'read from', com.url, content);
+        if( content !== undefined ){
+            // parse the meta into an entity
+            let metaE = await parse(site, content, ext as ParseType, { add: false });
+            // fold this entity into the parent
+            
+            log('[readFileMeta] read'); printEntity( es, metaE );
+            for (let [, com] of metaE.components) {
+                log('[readFileMeta]', 'adding', com, 'to', parentE.id);
+                com = setEntityId(com, parentE.id);
+                outComs.push(com);
+            }
+        }
 
-        // parse the meta into an entity
-        let metaE = await parse(site, content, ext as ParseType, { add: false });
+        let e = await es.getEntity(eid, true);
 
         // fold this entity into the parent
-        for (let [, com] of metaE.components) {
-            com = setEntityId(com, parentE.id);
-            coms.push(com);
+        // for (let [, com] of e.components) {
+            // com = setEntityId(com, parentE.id);
+            // outComs.push(com);
+        // }
+
+        // printEntity( es, e );
+
+        if( e.Dst ){
+            outComs.push(setEntityId(e.Dst, parentE.id));
+            remComs.push( e.Dst );
         }
 
         // add the update flag if present
         if( e.Upd ){
-            coms.push(setEntityId(e.Upd, parentE.id));
+            outComs.push(setEntityId(e.Upd, parentE.id));
         }
 
         // copy over the stat times
-        coms.push(setEntityId(e.Stat, parentE.id));
+        if( e.Stat ){
+            outComs.push(setEntityId(e.Stat, parentE.id));
+        }
 
-        info(reporter, `read from ${path}`, {eid:e.id});
+        info(reporter, `read from ${com.url}`, {eid:e.id});
     }
 
-    await es.add(coms);
+    await es.add(outComs);
+    await es.removeComponents( remComs, {retain:true} );
 
     // if( metaEnts.length > 0 ) {
     //     log('[readFileMeta]', coms);
@@ -768,29 +800,3 @@ export async function writeFile(path: string, content: string) {
     await Fs.ensureDir(Path.dirname(path));
     await Fs.writeFile(path, content);
 }
-
-
-export function joinPaths(a: string, b: string) {
-    a = uriToPath(a);
-    b = uriToPath(b);
-    return Path.join(a, b);
-}
-
-export function uriToPath(uri: string) {
-    if (uri === undefined) {
-        return '';
-    }
-    return uri.startsWith('file://') ? uri.substring('file://'.length) : uri;
-}
-
-export function pathToUri(path: string) {
-    if (path === undefined) {
-        return undefined;
-    }
-    return path.startsWith('file://') ? path : 'file://' + path;
-}
-
-
-// function log(...args) {
-//     console.log('[SiteProcessor]', ...args);
-// }

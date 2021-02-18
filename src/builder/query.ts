@@ -357,7 +357,7 @@ export async function selectScss(es: EntitySet, options: FindEntityOptions = {})
  * @param ext
  * @param options 
  */
-export async function selectSrcByExt(es: EntitySet, ext: string[], options: FindEntityOptions = {}) {
+export async function selectSrcByExt(es: EntitySet, ext: string[], options: FindEntityOptions = {}):Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const regexExt = ext.join('|');
@@ -377,6 +377,42 @@ export async function selectSrcByExt(es: EntitySet, ext: string[], options: Find
         : `
     [
             /component/src#/url !ca ~r/^.*\.(${regexExt})$/i ==
+            /component/site_ref#ref !ca $ref ==
+        and
+        /component/src !bf
+        @c
+    ] select`;
+
+    return await es.prepare(q).getResult({ ref });
+}
+
+/**
+ * Returns /component/src components with the given file names
+ * @param es 
+ * @param names 
+ * @param options 
+ */
+export async function selectSrcByFilename(es: EntitySet, names: string[], options: FindEntityOptions = {}):Promise<Component[]> {
+    const { ref, onlyUpdated } = parseOptions(options);
+
+    const regexExt = names.join('|');
+
+    // console.log('[selectSrcByFilename]', regexExt, ref);
+    let q = onlyUpdated ? `
+        [
+                /component/src#/url !ca ~r/^.*(${regexExt})$/i ==
+                /component/upd#op !ca 1 ==
+                        /component/upd#op !ca 2 ==
+                    or
+                    /component/site_ref#ref !ca $ref ==
+                and
+            and
+            /component/src !bf
+            @c 
+        ] select`
+        : `
+    [
+            /component/src#/url !ca ~r/^.*(${regexExt})$/i ==
             /component/site_ref#ref !ca $ref ==
         and
         /component/src !bf

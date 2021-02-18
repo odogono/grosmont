@@ -26,7 +26,7 @@ export async function process(site: Site, options:ProcessMarkMdxOptions = {}) {
     const es = site.es;
     const {reporter} = options;
     const loadData = options.loadData ?? false;
-    setLocation(reporter,'/processor/scss/mark');
+    setLocation(reporter,'/processor/mdx/mark');
     
     // select /component/src with a .mdx extension
     const coms = await selectMdxSrc( site.es, options );

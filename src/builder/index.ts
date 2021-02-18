@@ -8,6 +8,7 @@ import { process as markMdx } from './processor/mdx/mark';
 import { process as markScss } from './processor/scss/mark';
 import { process as markStatic } from './processor/static/mark';
 import { process as assignMime } from './processor/assign_mime';
+import { process as applyTags } from './processor/mdx/apply_tags';
 import { process as mdxPreprocess } from './processor/mdx/parse';
 import { process as mdxResolveMeta } from './processor/mdx/resolve_meta';
 import { process as mdxRender } from './processor/mdx/render';
@@ -39,7 +40,7 @@ export async function build(site:Site, options:BuildProcessOptions = {}) {
     // clear /component/update from site
     await clearUpdates(site);
 
-    await scanSrc(site, {...options, reporter});
+    await scanSrc(site, {...options, reporter, siteRef});
 
     await markStatic(site, updateOptions);
 
@@ -54,10 +55,16 @@ export async function build(site:Site, options:BuildProcessOptions = {}) {
     if( true ){
     // mdx
     await mdxPreprocess(site, updateOptions);
+
+    await applyTags(site, options);
+
     await mdxResolveMeta(site, updateOptions);
+
     await mdxRender(site, updateOptions);
 
+
     await assignTitle(site, updateOptions);
+
 
     await buildDstIndex(site, {reporter});
 

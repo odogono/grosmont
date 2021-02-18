@@ -3,7 +3,9 @@ import {
     getDepenendencyDst, 
     insertDependency 
 } from "../../query";
+import { setLocation } from "../../reporter";
 import { Site } from "../../site";
+import { ProcessOptions } from "../../types";
 
 
 const log = (...args) => console.log('[ProcApplyTags]', ...args);
@@ -16,8 +18,10 @@ const log = (...args) => console.log('[ProcApplyTags]', ...args);
  * @param site 
  * @param options 
  */
-export async function process(site: Site, options = {}) {
+export async function process(site: Site, options:ProcessOptions = {}) {
     const {es} = site;
+    const { reporter } = options;
+    setLocation(reporter, '/processor/mdx/apply_tags');
 
     const eids = await site.getDependencyLeafEntityIds( 'dir' );
 
@@ -46,38 +50,3 @@ export async function process(site: Site, options = {}) {
 
     return site;
 }
-
-// export async function processOld(site: Site, options = {}) {
-//     const es = site.es;
-
-//     const coms:Component[] = await selectMeta( site );
-
-
-//     for( const com of coms ){
-//         let tags = com['meta']?.tags;
-//         if( tags === undefined ){
-//             continue;
-//         }
-
-//         const eid = getComponentEntityId(com);
-
-//         // get rid of duplicates
-//         tags = Object.values( tags.reduce( (r,tag) => {
-//             r[slugify(tag)] = tag;
-//             return r;
-//         }, {}) );
-
-//         for( const tag of tags ){
-//             // select the tag entity
-//             let etag = await selectTagBySlug(site, tag);
-//             if( etag === undefined ){
-//                 etag = await createTag(site, tag);
-//             }
-
-//             let tid = await insertDependency(site.es, eid, etag.id, 'tag');
-//         }
-//         // log('tags', tags);
-//     }
-
-//     return site;
-// }

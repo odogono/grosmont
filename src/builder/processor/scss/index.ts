@@ -8,12 +8,12 @@ import CSSNano from 'cssnano';
 
 import { Entity, EntityId } from "odgn-entity/src/entity";
 
-import { joinPaths} from '../file';
 import { Site } from '../../site';
 import { ProcessOptions } from '../../types';
 import { selectScss, FindEntityOptions, getDstUrl } from '../../query';
 import { info, setLocation } from '../../reporter';
 import { printEntity } from 'odgn-entity/src/util/print';
+import { joinPaths } from '../../util';
 
 
 
