@@ -28,30 +28,45 @@ const BgMagenta = "\x1b[45m";
 const BgCyan = "\x1b[46m";
 const BgWhite = "\x1b[47m";
 
+
+export enum Level {
+    FATAL = 0,
+    ERROR = 1,
+    WARN = 2,
+    INFO = 3,
+    DEBUG = 4,
+    TRACE = 5
+};
+
 export interface ReportOptions {
     eid?: EntityId;
 }
 
 export class Reporter {
     prefix: string;
+    level: Level = Level.INFO;
 
     setLocation(loc: string) {
         let parts = loc.split('/');
-        this.prefix = '[' + parts.filter(Boolean).map(p => toPascalCase(p) ).join('][') + ']';
+        this.prefix = '[' + parts.filter(Boolean).map(p => toPascalCase(p)).join('][') + ']';
     }
 
     info(message: string, options: ReportOptions = {}) {
+        if( this.level < Level.INFO ){ return; }
         this.write('Info', message, options);
     }
 
     debug(message: string, options: ReportOptions = {}) {
+        if( this.level < Level.DEBUG ){ return; }
         this.write('Debug', message, options);
     }
 
     warn(message: string, options: ReportOptions = {}) {
+        if( this.level < Level.WARN ){ return; }
         this.write('Warn', message, options);
     }
     error(message: string, error?: Error, options: ReportOptions = {}) {
+        if( this.level < Level.ERROR ){ return; }
         this.write('Error', message, options);
         if (error) console.log(error);
     }
@@ -64,18 +79,23 @@ export class Reporter {
         if (eid !== undefined) {
             entry.push(`[${yellow(eid)}]`);
         }
-        entry.push( (message.startsWith('[') ? '' : ' ') + message);
+        entry.push((message.startsWith('[') ? '' : ' ') + message);
         console.log(entry.join(''));
     }
 }
 
-function yellow(str:any){
+function yellow(str: any) {
     return `${FgYellow}${str}${Reset}`;
 }
-function cyan(str:any){
+function cyan(str: any) {
     return `${FgCyan}${str}${Reset}`;
 }
 
+export function setLevel( reporter: Reporter, level:Level ){
+    if( reporter ){
+        reporter.level = level;
+    }
+}
 export function setLocation(reporter: Reporter, loc: string) {
     if (reporter) {
         reporter.setLocation(loc);
@@ -93,6 +113,11 @@ export function debug(reporter, message: string, options: ReportOptions = {}) {
     }
 }
 
+export function warn(reporter, message: string, options: ReportOptions = {}) {
+    if (reporter) {
+        reporter.warn(message, options);
+    }
+}
 export function error(reporter, message: string, error?: Error, options: ReportOptions = {}) {
     if (reporter) {
         reporter.error(message, error, options);
