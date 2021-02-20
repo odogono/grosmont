@@ -34,14 +34,15 @@ export interface BuildProcessOptions extends ProcessOptions {
 export async function build(site:Site, options:BuildProcessOptions = {}) {
 
     let reporter = new Reporter();
-    const siteRef = site.e.id;
+    const siteRef = site.getRef();
     const updateOptions = {onlyUpdated:true, reporter, siteRef};
 
     // clear /component/update from site
-    await clearUpdates(site);
+    await clearUpdates(site.es, {siteRef});
 
     await scanSrc(site, {...options, reporter, siteRef});
 
+    if( true ){
     await markStatic(site, updateOptions);
 
     await markMdx(site, updateOptions);
@@ -52,7 +53,7 @@ export async function build(site:Site, options:BuildProcessOptions = {}) {
 
     await renderScss(site, updateOptions);
 
-    if( true ){
+    
     // mdx
     await mdxPreprocess(site, updateOptions);
 

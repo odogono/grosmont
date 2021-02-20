@@ -35,7 +35,7 @@ import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { isString, parseUri } from '@odgn/utils';
 import { printEntity } from 'odgn-entity/src/util/print';
 import { createUUID } from '@odgn/utils';
-import { info, Reporter, setLocation } from './reporter';
+import { info, Level, Reporter, setLevel, setLocation } from './reporter';
 import { uriToPath } from './util';
 
 
@@ -78,6 +78,7 @@ export class Site {
 
         let reporter = new Reporter();
         setLocation(reporter, '/site');
+        setLevel(reporter, Level.INFO);
 
         // log('[create]', options);
 
@@ -122,7 +123,7 @@ export class Site {
 
 
     async getUpdatedEntityIds() {
-        return await selectUpdated(this);
+        return await selectUpdated(this.es, {siteRef:this.getRef()});
     }
 
     /**
@@ -240,9 +241,9 @@ export class Site {
     /**
      * Returns the site entity
      */
-    getSite(): Entity {
-        return this.e;
-    }
+    // getSite(): Entity {
+    //     return this.e;
+    // }
     getEntity(): Entity {
         return this.e;
     }
@@ -250,9 +251,16 @@ export class Site {
     /**
      * Returns the EntityId for the site
      */
-    getSiteEntityId(): EntityId {
-        return this.e.id;
+    getRef(): EntityId {
+        return this.e?.id ?? 0;
     }
+
+    // /**
+    //  * Returns the EntityId for the site
+    //  */
+    // getSiteEntityId(): EntityId {
+    //     return this.e.id;
+    // }
 
     /**
      * Returns the sites host url
@@ -538,8 +546,8 @@ async function initialiseES(site: Site, options: SiteOptions) {
 
 
 async function initialiseSiteEntity(site: Site, options: SiteOptions) {
+    const es = options.es ?? site.es;
     const { name, dst, dir, uuid, data } = options;
-    const {es} = site;
 
     const stmt = es.prepare(`
     [ 
@@ -595,7 +603,7 @@ async function readSiteFromConfig(site: Site, e: Entity, options: SiteOptions = 
         return e;
     }
 
-    e = await parse(site, data, 'yaml', { add: false, e });
+    e = await parse(site.es, data, 'yaml', { add: false, e, siteRef:site.getRef() });
 
     // resolve the src and dst paths
     let url = e.Src?.url ?? pathToFileURL(rootPath).href;

@@ -1,4 +1,5 @@
 import { EntityId } from 'odgn-entity/src/entity';
+import { EntitySet } from 'odgn-entity/src/entity_set';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { StatementArgs } from 'odgn-entity/src/query';
 import { Reporter } from './reporter';
@@ -49,6 +50,7 @@ export interface SiteIndex {
 
 export interface ProcessOptions {
     siteRef?: EntityId;
+    es?: EntitySet;
     dryRun?: boolean;
     onlyUpdated?: boolean;
     fileIndex?: SiteIndex;

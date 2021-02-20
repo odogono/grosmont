@@ -23,7 +23,7 @@ test.before.each( async (tcx) => {
 
     const dst = `file://${rootPath}/dist/`;
     tcx.site = await Site.create({idgen, name:'test', dst});
-    tcx.siteEntity = tcx.site.getSite();
+    tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
 });
 

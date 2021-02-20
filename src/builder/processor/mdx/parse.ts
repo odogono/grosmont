@@ -81,6 +81,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
  */
 async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
     const { es } = site;
+    const siteRef = site.getRef();
     const { fileIndex } = options;
     const resolveImport = (path: string) => getEntityImportUrlFromPath(fileIndex, path);
 
@@ -92,7 +93,7 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
 
         const { meta } = result;
 
-        await parseConfig(site, meta, undefined, { add: false, e });
+        await parseConfig(es, meta, undefined, { add: false, e, siteRef });
 
         // creates css dependencies
         e = await applyCSSLinks(es, e, result);

@@ -31,10 +31,10 @@ test.before.each(async (tcx) => {
     const dst = `file://${rootPath}/test/fixtures/dist/`;
     tcx.site = await Site.create({ idgen, name: 'test', dst });
     
-    // tcx.siteEntity = tcx.site.getSite();
+    // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
     const reporter = new Reporter();
-    tcx.options = { siteRef: tcx.site.e.id as EntityId, reporter } as FindEntityOptions;
+    tcx.options = { siteRef: tcx.site.getRef() as EntityId, reporter } as FindEntityOptions;
 });
 
 
@@ -52,7 +52,6 @@ test('renders image', async ({site,es, options}) => {
 <img src={'file:///static/image.jpg'} alt="Image alt" />
 
     `);
-
 
     await mdxPreprocess(site, options);
     await mdxRender(site, options);

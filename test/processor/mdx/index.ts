@@ -56,9 +56,9 @@ test.before.each(async (tcx) => {
     const es = new EntitySetSQL({ ...testDB });
 
     tcx.site = await Site.create({ idgen, name: 'test', es, dst });
-    // tcx.siteEntity = tcx.site.getSite();
+    // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
-    tcx.options = { siteRef: tcx.site.e.id as EntityId } as FindEntityOptions;
+    tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
 });
 
 
@@ -531,83 +531,6 @@ dst: index.html
 });
 
 
-test('tags in mdx', async ({ es, site, options }) => {
-    let e = await addMdx(site, 'file:///pages/main.mdx', `
----
-tags:
-- weeknotes
-- blog
-- Good Stuff
----
-## Things that happened
-    `);
-    e.Meta = { meta: { tags: ['active'] } };
-    await site.update(e);
-
-    e = await addMdx(site, 'file:///pages/about.mdx', `## About Me`, { tags: 'blog' });
-
-    await mdxPreprocess(site, options);
-
-    // convert /meta tags into dependencies
-    // await applyTags(site);
-
-    // await printES( es );
-
-    let eids = await site.findByTags(['weeknotes', 'blog']);
-
-    assert.equal(eids, [1002]);
-});
-
-
-test('tags inherited from dir', async ({ es, site, options }) => {
-    await parse(site, `
-    id: 1998
-    src: /pages/
-    tags:
-        - blog
-        - odgn
-    `);
-
-    await parse(site, `
-    id: 1999
-    src: /pages/2021/
-    tags:
-        - 2021
-    `);
-
-    await addMdx(site, 'file:///pages/2021/main.mdx', `
----
-tags:
-- things
----
-# Things that happened
-    `);
-
-    await buildDeps(site, options);
-
-    await mdxPreprocess(site, options);
-
-    await applyTags(site, options);
-
-    // await printES(es);
-
-    assert.equal(
-        await site.findByTags(['blog', 'odgn']),
-        [1008, 1998, 1999]);
-    assert.equal(
-        await site.findByTags(['things']),
-        [1008]);
-    assert.equal(
-        await site.findByTags(['2021', 'blog']),
-        [1008, 1999]);
-    assert.equal(
-        await site.findByTags(['2021', 'things']),
-        [1008]);
-    // let eids = await site.findByTags(['2021', 'blog'] );
-    // log( eids );
-});
-
-
 
 
 test('mark will only consider updated', async ({ es, site }) => {
@@ -693,7 +616,7 @@ test('process directly from file', async () => {
 
     const configPath = `file://${rootPath}/test/fixtures/rootD.yaml`;
     const site = await Site.create({ idgen, configPath });
-    let options: FindEntityOptions = { siteRef: site.e.id as EntityId };
+    let options: FindEntityOptions = { siteRef: site.getRef() as EntityId };
 
 
     await parse(site, `

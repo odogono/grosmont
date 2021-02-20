@@ -79,7 +79,7 @@ async function loadRootB(site: Site) {
 
 test.only('using sql es', async () => {
     id = 1000;
-    const configPath = `file://${rootPath}/test/fixtures/rootC.yaml`;
+    const configPath = `file://${rootPath}/test/fixtures/rootA.yaml`;
     const liveDB = { path: `${rootPath}/test/fixtures/odgn.sqlite`, isMemory: false };
     const testDB = { uuid: 'TEST-1', isMemory: true };
 
@@ -92,7 +92,7 @@ test.only('using sql es', async () => {
 
     await build(site);
 
-    // await printES(site);
+    await printES(site);
 
 });
 
@@ -118,7 +118,7 @@ test('using sql es', async () => {
 
     await buildDstIndex(site); // remove with update = remove
 
-    await clearUpdates(site);
+    await clearUpdates(site.es, {siteRef:site.getRef()});
 
     let eid = await site.getEntityIdByDst('/blah');
     await site.markUpdate( eid, ChangeSetOp.Update );

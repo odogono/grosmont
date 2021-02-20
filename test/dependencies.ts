@@ -40,7 +40,7 @@ test.before.each(async (tcx) => {
 
     tcx.site = site;
     tcx.es = site.es;
-    tcx.e = site.getSite();
+    tcx.e = site.getEntity();
 });
 
 

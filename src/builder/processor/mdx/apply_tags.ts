@@ -19,7 +19,7 @@ const log = (...args) => console.log('[ProcApplyTags]', ...args);
  * @param options 
  */
 export async function process(site: Site, options:ProcessOptions = {}) {
-    const {es} = site;
+    const es = options.es ?? site.es;
     const { reporter } = options;
     setLocation(reporter, '/processor/mdx/apply_tags');
 

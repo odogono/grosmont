@@ -23,12 +23,12 @@ import { joinPaths } from '../../util';
  * 
  */
 export async function process(site: Site, options:ProcessOptions = {}) {
-    const {es} = site;
+    const es = options.es ?? site.es;
     const {reporter} = options;
     setLocation( reporter, '/processor/scss' );
 
     // select scss entities
-    const ents = await selectScss(es, {...options, siteRef:site.e.id});
+    const ents = await selectScss(es, options);
 
     for (let e of ents) {
 

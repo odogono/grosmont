@@ -23,7 +23,7 @@ const log = (...args) => console.log('[ProcAssignTitle]', ...args);
  * @param es 
  */
 export async function process(site: Site, options:ProcessOptions = {}) {
-    const {es} = site;
+    const es = options.es ?? site.es;
     const {reporter} = options;
     setLocation(reporter, '/processor/assign_title');
 

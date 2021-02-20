@@ -24,9 +24,9 @@ const log = (...args) => console.log('[ProcJSX]', ...args);
  * Compiles Jsx
  */
 export async function process(site: Site, options:ProcessOptions = {}){
-    const {es} = site;
+    const es = options.es ?? site.es;
 
-    let ents = await selectJsx(es, {...options, siteRef: site.e.id});
+    let ents = await selectJsx(es, options);
     let output = [];
 
     for (const e of ents) {
@@ -51,9 +51,9 @@ export async function process(site: Site, options:ProcessOptions = {}){
 
 
 export async function preprocess(site: Site, options:ProcessOptions = {}){
-    const {es} = site;
+    const es = options.es ?? site.es;
 
-    let ents = await selectJsx(es, {...options, siteRef: site.e.id});
+    let ents = await selectJsx(es, options);
     let output = [];
 
     for (const e of ents) {

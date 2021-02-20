@@ -6,7 +6,7 @@ import { Site } from "./site";
 import { uriToPath } from './util';
 import { DependencyType, ProcessOptions } from './types';
 import { BitField } from "@odgn/utils/bitfield";
-import { parseUri, slugify } from '@odgn/utils';
+import { parseUri, slugify, toBoolean } from '@odgn/utils';
 import { printAll } from 'odgn-entity/src/util/print';
 
 
@@ -20,16 +20,23 @@ export interface FindEntityOptions {
     createIfNotFound?: boolean;
 }
 
+export interface ParseOptionsOptions extends FindEntityOptions {
+    warnOnEmptyRef?: boolean;
+}
 
 function parseOptions(options: FindEntityOptions = {}) {
     const ref = options.siteRef ?? 0;
     const onlyUpdated = options.onlyUpdated ?? false;
+    if( ref === 0 ){
+        // console.warn('[parseOptions]', 'empty siteRef passed');
+        throw new Error('[parseOptions] empty siteRef passed');
+    }
     return { ref, onlyUpdated };
 }
 
-export async function selectTagBySlug(site: Site, name: string) {
+export async function selectTagBySlug(es: EntitySet, name: string, options: FindEntityOptions = {}) {
     const slug = slugify(name);
-    const { es, e } = site;
+    const {ref} = parseOptions(options);
 
     const stmt = es.prepare(`
     [
@@ -40,7 +47,7 @@ export async function selectTagBySlug(site: Site, name: string) {
     ] select
     `);
 
-    return await stmt.getEntity({ ref: e.id, slug });
+    return await stmt.getEntity({ ref, slug });
 }
 
 
@@ -98,8 +105,8 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
 
 
 
-export async function selectMeta(site: Site) {
-    const { es } = site;
+export async function selectMeta(es: EntitySet, options: FindEntityOptions = {}) {
+    const {ref} = parseOptions(options);
 
 
     const stmt = es.prepare(`
@@ -112,7 +119,7 @@ export async function selectMeta(site: Site) {
     ] select
     `);
 
-    return await stmt.getResult({ ref: site.e.id });
+    return await stmt.getResult({ ref });
 }
 
 
@@ -380,10 +387,16 @@ export async function selectSrcByExt(es: EntitySet, ext: string[], options: Find
             /component/site_ref#ref !ca $ref ==
         and
         /component/src !bf
-        @c
+        @c 
     ] select`;
 
+    // console.log('[selectSrcByExt]', ref, q);
     return await es.prepare(q).getResult({ ref });
+}
+
+
+export interface FindEntityFilenameOptions extends FindEntityOptions {
+    ignoreExt?: boolean;
 }
 
 /**
@@ -392,15 +405,17 @@ export async function selectSrcByExt(es: EntitySet, ext: string[], options: Find
  * @param names 
  * @param options 
  */
-export async function selectSrcByFilename(es: EntitySet, names: string[], options: FindEntityOptions = {}):Promise<Component[]> {
+export async function selectSrcByFilename(es: EntitySet, names: string[], options: FindEntityFilenameOptions = {}):Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const regexExt = names.join('|');
 
+    const regex = toBoolean(options.ignoreExt) ? `~r/^.*(${regexExt}).*/i` : `~r/^.*(${regexExt})$/i`;
+
     // console.log('[selectSrcByFilename]', regexExt, ref);
     let q = onlyUpdated ? `
         [
-                /component/src#/url !ca ~r/^.*(${regexExt})$/i ==
+                /component/src#/url !ca ${regex} ==
                 /component/upd#op !ca 1 ==
                         /component/upd#op !ca 2 ==
                     or
@@ -412,7 +427,7 @@ export async function selectSrcByFilename(es: EntitySet, names: string[], option
         ] select`
         : `
     [
-            /component/src#/url !ca ~r/^.*(${regexExt})$/i ==
+            /component/src#/url !ca ${regex} ==
             /component/site_ref#ref !ca $ref ==
         and
         /component/src !bf
@@ -437,7 +452,8 @@ export async function selectDstTextIds(es: EntitySet): Promise<EntityId[]> {
 
 
 /**
- * Finds an entity by its /component/src#/url.
+ * Finds an entity by its /component/src#/url ignoring any file extension
+ * 
  * @param es 
  * @param path 
  * @param options 
@@ -548,9 +564,7 @@ export async function getEntityByUrl(es: EntitySet, url: string) {
 
 
 export async function buildSrcIndex(site: Site) {
-    // let es = site.es;
-    const siteEntity = site.getSite();
-
+    const ref = site.getRef();
     const query = `
 
     [
@@ -562,7 +576,7 @@ export async function buildSrcIndex(site: Site) {
     [ /component/src#url /id /component/meta#/meta/mime ] pluck
     `;
 
-    return await site.addQueryIndex('/index/srcUrl', query, { ref: siteEntity.id });
+    return await site.addQueryIndex('/index/srcUrl', query, { ref });
 }
 
 
@@ -687,7 +701,7 @@ export async function selectTextByEntity(es: EntitySet, e: EntityId | Entity): P
  */
 export async function selectEntityBySrc(site: Site, url: string, options: FindEntityOptions = {}): Promise<(Entity | EntityId)> {
     const { es } = site;
-    const ref = site.e.id;
+    const {ref} = parseOptions(options);
     // const {ref, onlyUpdated} = parseOptions(options);
 
     const stmt = es.prepare(`
@@ -1107,9 +1121,8 @@ export async function applyUpdatesToDependencies(site: Site) {
  * 
  * @param site 
  */
-export async function selectUpdated(site: Site): Promise<EntityId[]> {
-    const { es } = site;
-    const ref = site.e.id;
+export async function selectUpdated(es: EntitySet, options: FindEntityOptions = {}): Promise<EntityId[]> {
+    const {ref} = parseOptions(options);
 
     const stmt = es.prepare(`
         [
@@ -1132,10 +1145,8 @@ export async function selectUpdated(site: Site): Promise<EntityId[]> {
  * 
  * @param es 
  */
-export async function clearUpdates(site: Site, options: FindEntityOptions = {}) {
-    // const {ref} = parseOptions(options);
-    const { es } = site;
-    const ref = site.e.id;
+export async function clearUpdates(es: EntitySet, options: FindEntityOptions = {}) {
+    const {ref} = parseOptions(options);
 
     // TODO - select only within the site
     const stmt = es.prepare(`
@@ -1149,7 +1160,7 @@ export async function clearUpdates(site: Site, options: FindEntityOptions = {}) 
 
     await es.removeComponents(cids);
 
-    return site;
+    return es;
 }
 
 
@@ -1465,6 +1476,16 @@ export async function getDependencyComponent(es: EntitySet, src: EntityId, dst: 
     return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getDepdendencyComponentBySrc(es:EntitySet, src:EntityId): Promise<Component[]> {
+    const q = `
+    [
+        /component/dep#src !ca $src ==
+        /component/dep !bf
+        @c
+    ] select
+    `;
+    return es.prepare(q).getResult({src});
+}
 
 export async function getDependencyComponents(es: EntitySet, eid: EntityId, type: DependencyType): Promise<Component[]> {
     const stmt = es.prepare(`

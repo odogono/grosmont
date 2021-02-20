@@ -4,7 +4,7 @@ import Path from 'path';
 import Jsonpointer from 'jsonpointer';
 
 import { Entity, EntityId, getEntityId } from "odgn-entity/src/entity";
-import { EntitySet } from "odgn-entity/src/entity_set";
+import { EntitySet, EntitySetMem, isEntitySet } from "odgn-entity/src/entity_set";
 import { getEntityAttribute } from "odgn-entity/src/util/entity";
 
 
@@ -12,9 +12,10 @@ import { Component, getComponentDefId } from 'odgn-entity/src/component';
 import { ComponentDef, getDefId } from 'odgn-entity/src/component_def';
 import { slugify, stringify } from '@odgn/utils';
 import { Site } from './site';
-import { findEntityBySrcUrl, insertDependency, selectTagBySlug } from './query';
+import { findEntityBySrcUrl, FindEntityOptions, insertDependency, selectTagBySlug } from './query';
 import { createTag, createTimes } from './util';
 import { isString } from '@odgn/utils';
+import { BitField, toValues as bfToValues } from '@odgn/utils/bitfield';
 
 
 const log = (...args) => console.log('[Config]', ...args);
@@ -22,6 +23,9 @@ const log = (...args) => console.log('[Config]', ...args);
 export interface ParseOptions {
     add?: boolean;
     e?: Entity;
+    es?: EntitySet;
+    blackList?: BitField;
+    siteRef?: EntityId;
 }
 
 
@@ -33,10 +37,15 @@ export interface ParseOptions {
  * @param type 
  * @param options 
  */
-export async function parse(site: Site, input: string|object, type:ParseType = 'yaml', options:ParseOptions = {}): Promise<Entity> {
-    const {es, rootPath} = site;
+export async function parse(from: EntitySet|Site, input: string|object, type:ParseType = 'yaml', options:ParseOptions = {}): Promise<Entity> {
+    const es:EntitySet = isEntitySet(from) ? from as EntitySet : (from as Site).es;
     const addToES = options.add ?? true;
-
+    let {blackList,siteRef} = options;
+    if( !isEntitySet(from) ){
+        siteRef = (from as Site).getRef();
+    }
+    const selectOptions = {siteRef};
+    
     let data:any = isString(input) ?
         parseConfigString(input as string,type)
         : input;
@@ -68,12 +77,6 @@ export async function parse(site: Site, input: string|object, type:ParseType = '
         e[def.name] = com;
     }
 
-    // e.Meta = { meta:{} };
-    // printEntity(es, e);
-    // console.log( e.componentDefs );
-    // throw 'stop';
-    
-
     if (metaKeys.length > 0) {
         let meta = {};
         for (const key of metaKeys) {
@@ -99,10 +102,10 @@ export async function parse(site: Site, input: string|object, type:ParseType = '
                 e.Mime = {type: other[key] };
             }
             else if( key === 'tags' ){
-                await applyTags( site, e, other[key] );
+                await applyTags( es, e, other[key], selectOptions );
             }
             else if( key === 'layout' ){
-                await applyLayout( site, e, other[key] );
+                await applyLayout( es, e, other[key], selectOptions );
             }
             else {
                 meta[key] = other[key];
@@ -116,6 +119,8 @@ export async function parse(site: Site, input: string|object, type:ParseType = '
 
     // log('!! done', e.id);
 
+    // if a primary key was specified, lookup the e to which it
+    // refers
     if (e.id === 0 && pk !== undefined) {
         // check the ES for an existing entity with this component
 
@@ -131,17 +136,35 @@ export async function parse(site: Site, input: string|object, type:ParseType = '
         }
     }
 
+    // remove any blacklisted coms from the entity
+    if( blackList !== undefined ){
+        const dids = bfToValues(blackList);
+        // console.log('blacklist dids', dids);
+        let ce = es.createEntity(e.id);
+        for( const [did,com] of e.components ){
+            if( dids.indexOf(did) === -1 ){
+                ce.addComponentUnsafe(did, com);
+            }
+        }
+        e = ce;
+    }
+
     // printEntity(es, e);
     // log( e );
 
     if( addToES ){
-        if( site && site.e ){
-            e.SiteRef = { ref:site.e.id};
+        if( siteRef !== undefined ){
+            e.SiteRef = { ref:siteRef};
         }
+        // log('adding', Array.from(e.components.values()));
+        // apply, dont replace, to existing e
+        await es.add( Array.from(e.components.values()) );
+
+        
         // printEntity(es, e);
-        await es.add( e );
+        // await es.add( e );
         eid = es.getUpdatedEntities()[0];
-        // log('added', eid, e);
+        // log('added', eid, await es.getEntity(eid));
         return es.getEntity(eid);
     }
 
@@ -170,19 +193,18 @@ function applyToCom( e:Entity, name:string, attrs:any, overwrite:boolean = true 
 }
 
 
-async function applyLayout( site:Site, e:Entity, url:string ) {
-    const siteRef = e.SiteRef?.ref;
+async function applyLayout( es:EntitySet, e:Entity, url:string, options:FindEntityOptions = {} ) {
     // find the entity matching the layout
-    const layoutEid = await findEntityBySrcUrl(site.es, url, { siteRef });
+    const layoutEid = await findEntityBySrcUrl(es, url, options);
     
     if (layoutEid !== undefined) {
-        await insertDependency(site.es, e.id, layoutEid, 'layout');
+        await insertDependency(es, e.id, layoutEid, 'layout');
     } else {
         log('[applyLayout]', 'could not find layout for', url);
     }
 }
 
-async function applyTags( site:Site, e:Entity, tags:string|string[]){
+async function applyTags( es:EntitySet, e:Entity, tags:string|string[], options:FindEntityOptions = {}){
     let names:string[] = isString(tags) ? [ tags as string ] : tags as string[];
     
     // get rid of duplicates
@@ -192,12 +214,12 @@ async function applyTags( site:Site, e:Entity, tags:string|string[]){
     }, {}) );
 
     for( const tag of names ){
-        let etag = await selectTagBySlug(site, tag);
+        let etag = await selectTagBySlug(es, tag, options);
         if( etag === undefined ){
-            etag = await createTag(site,tag);
+            etag = await createTag(es,tag, options);
         }
 
-        await insertDependency(site.es, e.id, etag.id, 'tag');
+        await insertDependency(es, e.id, etag.id, 'tag');
     }
 
 }

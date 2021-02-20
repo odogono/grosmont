@@ -40,9 +40,9 @@ test.before.each(async (tcx) => {
 
     const dst = `file://${rootPath}/dist/`;
     tcx.site = await Site.create({ idgen, name: 'test', dst });
-    // tcx.siteEntity = tcx.site.getSite();
+    // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
-    tcx.options = { siteRef: tcx.site.e.id as EntityId } as FindEntityOptions;
+    tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
 });
 
 
@@ -99,7 +99,7 @@ test('process directly from file', async () => {
 
     const configPath = `file://${rootPath}/test/fixtures/rootD.yaml`;
     const site = await Site.create({ idgen, configPath });
-    let options: FindEntityOptions = { siteRef: site.e.id as EntityId };
+    let options: FindEntityOptions = { siteRef: site.getRef() as EntityId };
 
     await parse( site, `
     src: file:///styles/main.scss

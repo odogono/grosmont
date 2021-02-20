@@ -6,6 +6,7 @@ import Day from 'dayjs';
 import { Site } from './site';
 import { buildQueryString, slugify, stringify, toBoolean } from "@odgn/utils";
 import { isString } from "@odgn/utils";
+import { FindEntityOptions } from './query';
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
 
@@ -141,17 +142,21 @@ export function createTimes() {
 }
 
 
-export async function createTag(site:Site, name:string){
+export async function createTag(es:EntitySet, name:string, options: FindEntityOptions = {} ){
     if( !isString(name) ){
         name = stringify(name);
     }
-    let e = site.es.createEntity();
+    let e = es.createEntity();
     e.Tag = { slug: slugify(name) };
     e.Title = { title:name };
-    e.SiteRef = { ref: site.e.id };
+    if( options.siteRef !== undefined ){
+        e.SiteRef = { ref: options.siteRef };
+    }
     e.Times = createTimes();
 
-    return await site.update(e);
+    await es.add(e);
+    let eid = es.getUpdatedEntities()[0];
+    return es.getEntity(eid);
 }
 
 

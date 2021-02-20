@@ -13,7 +13,7 @@ import { Reporter } from '../../src/builder/reporter';
 
 
 
-const log = (...args) => console.log('[TestProcMeta]', ...args);
+const log = (...args) => console.log('[TestProcStatic]', ...args);
 
 const printES = async (es) => {
     console.log('\n\n---\n');
@@ -21,7 +21,7 @@ const printES = async (es) => {
 }
 
 const rootPath = Path.resolve(__dirname, "../../");
-const test = suite('processor/dst_index');
+const test = suite('processor/static');
 
 
 test.before.each(async (tcx) => {
@@ -31,9 +31,9 @@ test.before.each(async (tcx) => {
     const dst = `file://${rootPath}/test/fixtures/dist/`;
     tcx.site = await Site.create({ idgen, name: 'test', dst });
     
-    // tcx.siteEntity = tcx.site.getSite();
+    // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
-    tcx.options = { siteRef: tcx.site.e.id as EntityId } as FindEntityOptions;
+    tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
 });
 
 
@@ -94,6 +94,22 @@ test('copies static files', async ({site,es, options}) => {
     // let e = await site.getEntityBySrc('file:///beta.html');
 
     // assert.ok( e.Static );
+});
+
+
+test.only('ignore non-relevent', async ({site, es, options}) => {
+    await parse(site, `
+    id: 2000
+    src: alpha.mdx
+    dst: alpha.html
+    /component/mdx:
+        data: "# Alpha"
+    `);
+
+    options.reporter = new Reporter();
+    await markStatic(site, options);
+    await copyStatic(site, {...options, dryRun:true});
+
 });
 
 

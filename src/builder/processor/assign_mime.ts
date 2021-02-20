@@ -22,7 +22,6 @@ const log = (...args) => console.log('[ProcAssignMime]', ...args);
 export async function process(site: Site, options: ProcessOptions = {}) {
     const { es } = site;
     const { reporter } = options;
-    const siteEntity = site.getSite();
     setLocation(reporter, '/processor/assign_mime');
 
     const files = await selectFiles(es, options);
