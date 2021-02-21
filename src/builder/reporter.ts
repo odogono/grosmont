@@ -57,6 +57,7 @@ export class Reporter {
     }
 
     debug(message: string, options: ReportOptions = {}) {
+        // console.log('[debug]', 'level', this.level );
         if( this.level < Level.DEBUG ){ return; }
         this.write('Debug', message, options);
     }
@@ -92,6 +93,7 @@ function cyan(str: any) {
 }
 
 export function setLevel( reporter: Reporter, level:Level ){
+    // console.log('[setLevel]', level);
     if( reporter ){
         reporter.level = level;
     }

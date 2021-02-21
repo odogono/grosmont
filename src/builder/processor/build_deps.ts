@@ -56,13 +56,8 @@ export async function process(site: Site, options: BuildDepsOptions = {}) {
 
         // insert or update
         const depId = await insertDependency(es, eid, pid, 'dir');
-        // await selectDependency(es, eid, pId, 'dir');
-
+        
         info(reporter, `added dir dep to from ${eid} to ${pid}`, {eid:depId});
-
-        // log('com', eid, '->', pid, '=', depId);
-        // log('com', getComponentEntityId(com), 'parent', getComponentEntityId(parent) );
-
     }
 
     return es;

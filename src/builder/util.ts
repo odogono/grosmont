@@ -1,5 +1,5 @@
 import Path from 'path';
-import { Component, getComponentEntityId, toComponentId } from "odgn-entity/src/component";
+import { Component, getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import Day from 'dayjs';
@@ -7,6 +7,7 @@ import { Site } from './site';
 import { buildQueryString, slugify, stringify, toBoolean } from "@odgn/utils";
 import { isString } from "@odgn/utils";
 import { FindEntityOptions } from './query';
+import { getDefId } from 'odgn-entity/src/component_def';
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
 
@@ -18,6 +19,28 @@ export function applyMeta(e: Entity, data: any): Entity {
     // meta = {...meta, ...data};
     e.Meta = { meta };
     return e;
+}
+
+export async function applyMimeToEntityId( es:EntitySet, eid:EntityId, mime:string ): Promise<Component> {
+    return applyMetaComponentToEntityId(es, eid, {mime} );
+}
+
+export async function applyMetaComponentToEntityId( es:EntitySet, eid:EntityId, data:any ): Promise<Component>{
+    const metaDef = es.getByUri('/component/meta');
+    const metaDid = getDefId(metaDef);
+
+    let meta = await es.getComponent( toComponentId(eid,metaDid) );
+    if( meta === undefined ){
+        meta = es.createComponent( metaDid, {meta:{}} );
+    }
+    meta = applyMetaToComponent( meta, data );
+    return setEntityId( meta, eid );
+}
+
+export function applyMetaToComponent(com:Component, data:any): Component {
+    let meta = com.meta ?? {};
+    com.meta = mergeMeta([meta,data]);
+    return com;
 }
 
 

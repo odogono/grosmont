@@ -416,7 +416,7 @@ export async function selectSrcByFilename(es: EntitySet, names: string[], option
     let q = onlyUpdated ? `
         [
                 /component/src#/url !ca ${regex} ==
-                /component/upd#op !ca 1 ==
+                        /component/upd#op !ca 1 ==
                         /component/upd#op !ca 2 ==
                     or
                     /component/site_ref#ref !ca $ref ==
@@ -994,42 +994,42 @@ export async function removeDependency(es: EntitySet, eid: EntityId, type: Depen
 /**
  * Selects a dependency entity
  */
-export async function selectDependency(es: EntitySet, src?: EntityId, dst?: EntityId, type?: DependencyType, asEntity: boolean = false) {
-    // const did:ComponentDefId = es.resolveComponentDefId('/component/dep');
+// export async function selectDependency(es: EntitySet, src?: EntityId, dst?: EntityId, type?: DependencyType, asEntity: boolean = false) {
+//     // const did:ComponentDefId = es.resolveComponentDefId('/component/dep');
 
-    let conds = [];
-    if (src !== undefined) {
-        conds.push(`/component/dep#src !ca ${src} ==`);
-    }
-    if (dst !== undefined) {
-        conds.push(`/component/dep#dst !ca ${dst} ==`);
-    }
-    if (conds.length === 2) { conds.push('and'); }
-    if (type !== undefined) {
-        conds.push(`/component/dep#type !ca ${type} ==`);
-    }
-    if (conds.length >= 2) { conds.push('and'); }
+//     let conds = [];
+//     if (src !== undefined) {
+//         conds.push(`/component/dep#src !ca ${src} ==`);
+//     }
+//     if (dst !== undefined) {
+//         conds.push(`/component/dep#dst !ca ${dst} ==`);
+//     }
+//     if (conds.length === 2) { conds.push('and'); }
+//     if (type !== undefined) {
+//         conds.push(`/component/dep#type !ca ${type} ==`);
+//     }
+//     if (conds.length >= 2) { conds.push('and'); }
 
-    if (asEntity) {
-        let query = `[
-            /component/dep !bf
-            ${conds.join('\n')}
-            @c
-        ] select`;
-        let stack = await es.query(query);
-        return stack.popValue() as unknown as Component[];
-    }
+//     if (asEntity) {
+//         let query = `[
+//             /component/dep !bf
+//             ${conds.join('\n')}
+//             @c
+//         ] select`;
+//         let stack = await es.query(query);
+//         return stack.popValue() as unknown as Component[];
+//     }
 
-    let query = `[
-        /component/dep !bf
-        ${conds.join('\n')}
-        @c
-    ] select`;
+//     let query = `[
+//         /component/dep !bf
+//         ${conds.join('\n')}
+//         @c
+//     ] select`;
 
-    let out = await es.queryEntities(query);
+//     let out = await es.queryEntities(query);
 
-    return out;
-}
+//     return out;
+// }
 
 
 
@@ -1391,7 +1391,7 @@ export async function getDependencyChildren(es: EntitySet, eid: EntityId, type: 
  * @param options 
  */
 export async function findLeafDependenciesByType(es: EntitySet, type: DependencyType, options: FindEntityOptions = {}): Promise<EntityId[]> {
-    const ref = options.siteRef ?? 0;
+    const {ref, onlyUpdated} = parseOptions(options);
 
     // select dependency components by type
     // build a list of all src and all dst
@@ -1405,9 +1405,21 @@ export async function findLeafDependenciesByType(es: EntitySet, type: Dependency
     /src pluck unique
     swap /dst pluck! unique
     swap diff! // ids which are in src but not dst
+    
+    // // /component/site_ref#ref !ca $ref ==
+    // swap // es
+    // [
+        
+    //             /component/upd#op !ca 1 ==
+    //             /component/upd#op !ca 2 ==
+    //         or
+    // ]
+    
+    // $onlyUpdated if
+
     `);
 
-    return await stmt.getResult({ type, ref });
+    return await stmt.getResult({ type, ref, onlyUpdated });
 }
 
 /**

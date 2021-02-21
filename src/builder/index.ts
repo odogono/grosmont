@@ -31,33 +31,33 @@ export interface BuildProcessOptions extends ProcessOptions {
  * 
  * @param site 
  */
-export async function build(site:Site, options:BuildProcessOptions = {}) {
+export async function build(site: Site, options: BuildProcessOptions = {}) {
 
-    let reporter = new Reporter();
+    let reporter = site.reporter;
     const siteRef = site.getRef();
-    const updateOptions = {onlyUpdated:true, reporter, siteRef};
+    const updateOptions = { onlyUpdated: true, reporter, siteRef };
 
     // clear /component/update from site
-    await clearUpdates(site.es, {siteRef});
+    await clearUpdates(site.es, { siteRef });
 
-    await scanSrc(site, {...options, reporter, siteRef});
+    await scanSrc(site, updateOptions); //{...options, reporter, siteRef});
 
-    if( true ){
     await markStatic(site, updateOptions);
 
     await markMdx(site, updateOptions);
-    
+
     await markScss(site, updateOptions);
 
-    await assignMime(site, updateOptions);
+    // await assignMime(site, updateOptions);
 
     await renderScss(site, updateOptions);
 
-    
+
     // mdx
     await mdxPreprocess(site, updateOptions);
 
-    await applyTags(site, options);
+    await applyTags(site, updateOptions);
+    // if( true ){
 
     await mdxResolveMeta(site, updateOptions);
 
@@ -67,13 +67,13 @@ export async function build(site:Site, options:BuildProcessOptions = {}) {
     await assignTitle(site, updateOptions);
 
 
-    await buildDstIndex(site, {reporter});
+    await buildDstIndex(site, { reporter });
 
     await write(site, updateOptions);
 
     await copyStatic(site, updateOptions);
 
-    }
+    // }
 
     return site;
 }

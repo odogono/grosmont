@@ -1,4 +1,6 @@
 import Fs from 'fs-extra';
+import Mime from 'mime-types';
+import Path from 'path';
 import { Component, getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
 import { getDefId } from "odgn-entity/src/component_def";
 import { Entity, EntityId } from "odgn-entity/src/entity";
@@ -8,6 +10,7 @@ import { FindEntityOptions, selectSrcByExt } from '../../query';
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
 import { info, setLocation } from '../../reporter';
+import { applyMimeToEntityId } from '../../util';
 
 const log = (...args) => console.log('[ProcMarkStatic]', ...args);
 
@@ -58,6 +61,12 @@ export async function process(site: Site, options:ProcessMarkStaticOptions = {})
 
             info(reporter, `mark`, {eid});
         }
+
+        // set the mime type
+        const ext = Path.extname(src.url);
+        let mime = Mime.lookup(ext);
+        let meta = await applyMimeToEntityId(es, eid, mime);
+        addComs.push( meta );
 
         if( loadData ){
             const {url} = src;

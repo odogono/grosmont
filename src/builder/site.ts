@@ -26,11 +26,12 @@ import {
     getDstUrl,
     selectEntityBySrc,
     selectSrcByEntity,
+    selectSrcByFilename,
     selectSrcByUrl,
     selectTextByEntity,
     selectUpdated
 } from './query';
-import { DependencyType, SiteIndex } from './types';
+import { DependencyType, ProcessOptions, SiteIndex } from './types';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { isString, parseUri } from '@odgn/utils';
 import { printEntity } from 'odgn-entity/src/util/print';
@@ -61,6 +62,7 @@ export interface SiteOptions extends EntitySetOptions {
     rootPath?: string;
     data?: any;
     reporter?: Reporter;
+    level?: Level;
 }
 
 
@@ -69,6 +71,7 @@ export class Site {
     es: EntitySet;
     e: Entity; // reference to the active site entity
     rootPath: string;
+    reporter: Reporter;
 
     indexes: Map<string, SiteIndex> = new Map<string, SiteIndex>();
 
@@ -78,8 +81,8 @@ export class Site {
 
         let reporter = new Reporter();
         setLocation(reporter, '/site');
-        setLevel(reporter, Level.INFO);
-
+        setLevel(reporter, options.level ?? Level.DEBUG);
+        site.reporter = reporter;
         // log('[create]', options);
 
         // attempt to initialise the ES from the configPath
@@ -369,8 +372,12 @@ export class Site {
      * 
      * @param type 
      */
-    async getDependencyLeafEntityIds(type: DependencyType) {
-        return findLeafDependenciesByType(this.es, type, { siteRef: this.e.id });
+    async getDependencyLeafEntityIds(type: DependencyType, options:ProcessOptions ) {
+        return findLeafDependenciesByType(this.es, type, options ); //{ siteRef: this.e.id });
+    }
+
+    async getDirectoryMetaComponents(options:ProcessOptions){
+        return await selectSrcByFilename( this.es, ['dir.e'], {...options,ignoreExt:true} );
     }
 
 

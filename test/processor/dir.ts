@@ -16,6 +16,7 @@ import assert from 'uvu/assert';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 import { printAll } from 'odgn-entity/src/util/print';
+import { Level } from '../../src/builder/reporter';
 
 const log = (...args) => console.log('[TestProcMeta]', ...args);
 
@@ -39,7 +40,7 @@ const test = suite('processor/dir');
 test('dir', async () => {
     let id = 1000; let idgen = () => ++id;
     const configPath = `file://${rootPath}/test/fixtures/rootE.yaml`;
-    const site = await Site.create({idgen, configPath});
+    const site = await Site.create({idgen, configPath, level:Level.INFO});
     const options = { siteRef:site.getRef() };
     
     // await parse( site, `
@@ -56,13 +57,15 @@ test('dir', async () => {
 
     // await applyDirMeta(site, options);
     
-    log('>---');
+    // log('>--- BUILD 2'); await build(site);
 
-    // await build(site);
-    
+    let eids = await site.findByTags(['blog', 'main']);
+
+    assert.equal( eids, [1007] );
+
+    // log('\n>---\n');
+
     await printAll( site.es );
-
-    // assert.equal( site.getIndex('/index/dstUrl').index.get('/styles/main.css'), [ 2001 ] );
 });
 
 

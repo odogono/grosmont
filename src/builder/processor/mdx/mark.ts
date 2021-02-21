@@ -1,11 +1,14 @@
 import Fs from 'fs-extra';
-import { getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
+import { Component, getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
 import { getDefId } from "odgn-entity/src/component_def";
+import { EntityId } from 'odgn-entity/src/entity';
+import { EntitySet } from 'odgn-entity/src/entity_set';
 import { selectMdxSrc } from '../../query';
 import { info, setLocation } from '../../reporter';
 
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
+import { applyMeta, applyMetaComponentToEntityId, applyMetaToComponent, applyMimeToEntityId } from '../../util';
 
 const log = (...args) => console.log('[ProcApplyTags]', ...args);
 
@@ -51,6 +54,17 @@ export async function process(site: Site, options:ProcessMarkMdxOptions = {}) {
             info(reporter, `mark`, {eid});
         }
 
+        // set the mime type
+        let meta = await applyMimeToEntityId(es, eid, 'text/html');
+        addComs.push( meta );
+
+        // let meta = await es.getComponent( toComponentId(eid,metaDid) );
+        // if( meta === undefined ){
+        //     meta = es.createComponent( metaDid, {meta:{}} );
+        // }
+        // meta = applyMetaToComponent( meta, {mime:'text/html'} );
+        // let eu = applyMeta(e, { mime });
+
         if( loadData ){
             const {url} = com;
 
@@ -70,3 +84,4 @@ export async function process(site: Site, options:ProcessMarkMdxOptions = {}) {
 
     return site;
 }
+

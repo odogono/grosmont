@@ -70,29 +70,33 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // read the fs into the incoming es
     await readFileSystem(site, { ...options, es: incoming });
 
-    // read all files marked as being entities
-    await readEntityFiles(site, { ...options, es: incoming });
-
-    // merge dir.e.* files into their parents
-    await applyDirMeta(site, { ...options, es: incoming });
-
-    await printAll(incoming);
+    // await printAll(incoming);
     // await printAll(site.es);
 
     // compare the two es
     let diffs = await diffEntitySets(site.es, incoming, options);
 
-    info(reporter, `${diffs.length} diffs`);
-    // log('diffs', diffs);
-    // printES(incoming);
+    if (diffs.length > 0) {
+        info(reporter, `${diffs.length} diffs`);
+        // log('diffs', diffs);
+        // await printAll(incoming);
+        // await printAll(site.es);
+    }
     // apply the diffs
     await applyEntitySetDiffs(site.es, incoming, diffs, true, options);
     // }
 
-    // if (false) {
-    // resolve any meta.* files into their containing dirs
-    // replaced by /processor/read_e and /processor/apply_dir_meta
-    // await readDirMeta(site, options);
+
+    // read all files marked as being entities
+    await readEntityFiles(site, { ...options, onlyUpdated: true });
+
+    // merge dir.e.* files into their parents
+    await applyDirMeta(site, { ...options, onlyUpdated: true });
+
+
+    // await printAll(site.es);
+
+    // if (true) {
 
     // build dependencies
     await buildDirDeps(site, { ...options, onlyUpdated: true, debug: diffs.length > 0 });
@@ -102,7 +106,6 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // if( options.debug ){
     // printAll(site.es as EntitySetMem);
     await applyUpdatesToDependencies(site);
-    // }
     // }
 }
 
@@ -231,7 +234,6 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: Pr
         // find url in b
         let row = idxB.find(b => b[0] === url);
 
-
         if (row === undefined) {
             // a does not exist in b (removed)
             result.push([eid, ChangeSetOp.Remove]);
@@ -266,13 +268,13 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: Pr
 
     for (let [url, eid, mtime] of idxB) {
         let row = idxA.find(a => a[0] === url);
-
         if (row === undefined) {
             // b does not exist in a (added)
             result.push([undefined, ChangeSetOp.Add, eid]);
             debug(reporter, `add`, { eid });
             continue;
         }
+        // debug(reporter, `exists`, { eid });
     }
 
 
@@ -282,9 +284,9 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: Pr
 
 
 
-export interface ReadDirMetaOptions extends ProcessOptions {
-    applyFromE?: boolean;
-}
+// export interface ReadDirMetaOptions extends ProcessOptions {
+//     applyFromE?: boolean;
+// }
 
 
 /**
@@ -292,100 +294,100 @@ export interface ReadDirMetaOptions extends ProcessOptions {
  * @param site 
  * @param options 
  */
-export async function readDirMeta(site: Site, options: ReadDirMetaOptions = {}) {
-    const { es } = site;
-    const siteRef = site.getRef();
-    const { reporter } = options;
-    setLocation(reporter, '/processor/file/read_dir_meta');
+// export async function readDirMeta(site: Site, options: ReadDirMetaOptions = {}) {
+//     const { es } = site;
+//     const siteRef = site.getRef();
+//     const { reporter } = options;
+//     setLocation(reporter, '/processor/file/read_dir_meta');
 
-    // find /src with meta.(yaml|toml) files
-    // const ents = await selectMetaSrc(es, options);
-    const coms = await selectSrcByFilename(es, ['meta.toml', 'meta.yaml'], options);
+//     // find /src with meta.(yaml|toml) files
+//     // const ents = await selectMetaSrc(es, options);
+//     const coms = await selectSrcByFilename(es, ['meta.toml', 'meta.yaml'], options);
 
-    if (coms.length > 0) {
-        // info(reporter,`${coms.map(e => e.id)}`);
-        // ents.map( e => printEntity(es, e) );
-    }
+//     if (coms.length > 0) {
+//         // info(reporter,`${coms.map(e => e.id)}`);
+//         // ents.map( e => printEntity(es, e) );
+//     }
 
-    let outComs = [];
-    let remComs = [];
+//     let outComs = [];
+//     let remComs = [];
 
-    info(reporter, `selected ${coms.length} yaml/toml config`);
-    // log( options );
+//     info(reporter, `selected ${coms.length} yaml/toml config`);
+//     // log( options );
 
-    for (const com of coms) {
-        const eid = getComponentEntityId(com);
-        // log('[readDirMeta]', eid, com);
-        // let path = site.getSrcUrl( com.url );
-        let ext = Path.extname(com.url).substring(1);
+//     for (const com of coms) {
+//         const eid = getComponentEntityId(com);
+//         // log('[readDirMeta]', eid, com);
+//         // let path = site.getSrcUrl( com.url );
+//         let ext = Path.extname(com.url).substring(1);
 
-        // find the parent dir
-        const parentUrl = Path.dirname(com.url) + Path.sep;
-        let parentE = await selectSrcByUrl(es, parentUrl) as Entity;
+//         // find the parent dir
+//         const parentUrl = Path.dirname(com.url) + Path.sep;
+//         let parentE = await selectSrcByUrl(es, parentUrl) as Entity;
 
-        log('[readDirMeta]', 'dir parent', parentUrl, parentE.id);
+//         log('[readDirMeta]', 'dir parent', parentUrl, parentE.id);
 
-        if (parentE === undefined) {
-            parentE = es.createEntity();
-            parentE.Src = { url: parentUrl };
-        }
+//         if (parentE === undefined) {
+//             parentE = es.createEntity();
+//             parentE.Src = { url: parentUrl };
+//         }
 
-        let content = await site.readUrl(com.url);// await Fs.readFile(path, 'utf8');
-        // log('[readDirMeta]', 'read from', com.url, content);
-        if (content !== undefined) {
-            // parse the meta into an entity
-            let metaE = await parse(es, content, ext as ParseType, { add: false, siteRef });
-            // fold this entity into the parent
+//         let content = await site.readUrl(com.url);// await Fs.readFile(path, 'utf8');
+//         // log('[readDirMeta]', 'read from', com.url, content);
+//         if (content !== undefined) {
+//             // parse the meta into an entity
+//             let metaE = await parse(es, content, ext as ParseType, { add: false, siteRef });
+//             // fold this entity into the parent
 
-            log('[readDirMeta] read'); printEntity(es, metaE);
-            for (let [, com] of metaE.components) {
-                log('[readDirMeta]', 'adding', com, 'to', parentE.id);
-                com = setEntityId(com, parentE.id);
-                outComs.push(com);
-            }
-        }
+//             log('[readDirMeta] read'); printEntity(es, metaE);
+//             for (let [, com] of metaE.components) {
+//                 log('[readDirMeta]', 'adding', com, 'to', parentE.id);
+//                 com = setEntityId(com, parentE.id);
+//                 outComs.push(com);
+//             }
+//         }
 
-        let e = await es.getEntity(eid, true);
+//         let e = await es.getEntity(eid, true);
 
-        // fold this entity into the parent
-        // for (let [, com] of e.components) {
-        // com = setEntityId(com, parentE.id);
-        // outComs.push(com);
-        // }
+//         // fold this entity into the parent
+//         // for (let [, com] of e.components) {
+//         // com = setEntityId(com, parentE.id);
+//         // outComs.push(com);
+//         // }
 
-        // printEntity( es, e );
+//         // printEntity( es, e );
 
-        if (e.Dst) {
-            outComs.push(setEntityId(e.Dst, parentE.id));
-            remComs.push(e.Dst);
-        }
+//         if (e.Dst) {
+//             outComs.push(setEntityId(e.Dst, parentE.id));
+//             remComs.push(e.Dst);
+//         }
 
-        // add the update flag if present
-        if (e.Upd) {
-            outComs.push(setEntityId(e.Upd, parentE.id));
-        }
+//         // add the update flag if present
+//         if (e.Upd) {
+//             outComs.push(setEntityId(e.Upd, parentE.id));
+//         }
 
-        // copy over the stat times
-        if (e.Stat) {
-            outComs.push(setEntityId(e.Stat, parentE.id));
-        }
+//         // copy over the stat times
+//         if (e.Stat) {
+//             outComs.push(setEntityId(e.Stat, parentE.id));
+//         }
 
-        info(reporter, `read from ${com.url}`, { eid: e.id });
-    }
+//         info(reporter, `read from ${com.url}`, { eid: e.id });
+//     }
 
-    await es.add(outComs);
-    await es.removeComponents(remComs, { retain: true });
+//     await es.add(outComs);
+//     await es.removeComponents(remComs, { retain: true });
 
-    // if( metaEnts.length > 0 ) {
-    //     log('[readDirMeta]', coms);
-    // }
+//     // if( metaEnts.length > 0 ) {
+//     //     log('[readDirMeta]', coms);
+//     // }
 
-    // dont remove the meta files - we will need them to compare
-    // for updates
-    // await site.es.removeEntity( metaEnts.map( e => e.id) );
+//     // dont remove the meta files - we will need them to compare
+//     // for updates
+//     // await site.es.removeEntity( metaEnts.map( e => e.id) );
 
-    return es;
-}
+//     return es;
+// }
 
 
 

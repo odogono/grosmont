@@ -8,6 +8,7 @@ import { FindEntityOptions, selectSrcByExt } from '../../query';
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
 import { info, setLocation } from '../../reporter';
+import { applyMimeToEntityId } from '../../util';
 
 const log = (...args) => console.log('[ProcMarkScss]', ...args);
 
@@ -52,6 +53,10 @@ export async function process(site: Site, options:ProcessMarkScssOptions = {}) {
             }
             info(reporter, `mark`, {eid});
         }
+
+        // set the mime type
+        let meta = await applyMimeToEntityId(es, eid, 'text/scss');
+        addComs.push( meta );
 
         if( loadData ){
             const {url} = com;

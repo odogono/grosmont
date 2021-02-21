@@ -1,0 +1,14 @@
+/component/uuid:
+  uuid: 0D550569-515B-426D-B31D-568F7ED77815
+
+/component/src:
+  url: file:///rootE/
+
+/component/dst:
+  url: file:///dist/siteE/
+
+/component/patterns:
+  include: 
+    - '**/*'
+  exclude:
+    - .DS_Store

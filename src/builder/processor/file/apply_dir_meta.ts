@@ -22,10 +22,12 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     let { reporter } = options;
     setLocation(reporter, '/processor/apply_dir_meta');
 
-    let coms = await selectSrcByFilename( es, ['dir.e'], {...options,ignoreExt:true} );
+    let coms = await site.getDirectoryMetaComponents(options);
+    
 
     // build a blacklist of defs that will be ignored in the loaded entity
-    const blackList:ComponentDefId[] = bfToValues(es.resolveComponentDefIds([ '/component/src', '/component/site_ref'] ));
+    const blackList:ComponentDefId[] = bfToValues(es.resolveComponentDefIds(
+        [ '/component/src', '/component/site_ref', '/component/times'] ));
     
     let addComs = [];
 
