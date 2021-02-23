@@ -67,7 +67,7 @@ export type EntityUpdate = [EntityId, ChangeSetOp];
 export interface TranspileMeta {
     title?: string;
 
-    description?: string;
+    summary?: string;
 
     // created at date - otherwise sourced from file
     // date?: string;
@@ -122,7 +122,7 @@ export type PageImgs = Map<string, PageImg>;
 export interface PageMeta {
     title?: string;
 
-    description?: string;
+    summary?: string;
 
     // created at date - otherwise sourced from file
     // date?: string;

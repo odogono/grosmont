@@ -16,7 +16,7 @@ export function titlePlugin() {
         let pageProps = appendExport(tree, 'page', { });
         // log('ok', pageProps);
 
-        if( 'title' in pageProps && 'description' in pageProps ){
+        if( 'title' in pageProps && 'summary' in pageProps ){
             return;
         }
 
@@ -24,15 +24,15 @@ export function titlePlugin() {
         const firstHeading = select('heading[depth=1] > text', tree);
 
         if( firstHeading ){
-            const description = select('heading[depth=1] + paragraph > text', tree);
+            const summary = select('heading[depth=1] + paragraph > text', tree);
 
             if( !('title' in pageProps) ){
                 pageProps.title = firstHeading.value;
             }
-            if( !('description' in pageProps) ){
-                let value = description?.value;
+            if( !('summary' in pageProps) ){
+                let value = summary?.value;
                 if( isString(value) && (value as string).length > 0 ){
-                    pageProps.description = value;
+                    pageProps.summary = value;
                 }
             }
         }
@@ -59,9 +59,6 @@ function appendExport(tree, name: string, additional: any = {}) {
                 if( key === undefined ){
                     return;
                 }
-                // if( key !== 'title' && key !== 'description' ){
-                //     return;
-                // }
                 // const value = path.node.value?.value;
                 path.skip(); // prevent going any further
                 try {

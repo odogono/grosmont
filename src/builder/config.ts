@@ -99,7 +99,7 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
                 e.Text = {data: other[key] };
             }
             else if( key === 'mime'){
-                e.Mime = {type: other[key] };
+                // e.Mime = {type: other[key] };
             }
             else if( key === 'tags' ){
                 await applyTags( es, e, other[key], selectOptions );

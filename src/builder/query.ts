@@ -76,7 +76,6 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
     ] selectTagBySlug define
 
     [
-        
         $es [
             /component/dep#dst !ca *^$1 ==
             @eid /component/dep#src @ca
@@ -86,7 +85,9 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
         @>
     ] selectTagDepByDst define
 
+    // first, resolve the incoming slugs to tag eids
     $tags *selectTagBySlug map
+    // remove empty results
     [ false != ] filter
 
     

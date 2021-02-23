@@ -93,7 +93,6 @@ export const defs = [
         uri: '/component/title',
         properties: [ 
             { name: 'title', type: 'string' },
-            { name: 'description', type: 'string' },
             { name: 'summary', type: 'string' } 
         ]
     },

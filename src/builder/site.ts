@@ -376,6 +376,11 @@ export class Site {
         return findLeafDependenciesByType(this.es, type, options ); //{ siteRef: this.e.id });
     }
 
+    /**
+     * Returns /component/src for directory meta
+     * 
+     * @param options 
+     */
     async getDirectoryMetaComponents(options:ProcessOptions){
         return await selectSrcByFilename( this.es, ['dir.e'], {...options,ignoreExt:true} );
     }

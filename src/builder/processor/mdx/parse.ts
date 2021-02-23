@@ -116,64 +116,6 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
     return e;
 }
 
-// function applyDst(es: EntitySet, e: Entity, result: TranspileMeta) {
-//     let dst = result['dst'];
-//     if (dst === undefined) {
-//         return e;
-//     }
-
-//     e.Dst = { url: dst };
-
-//     return e;
-// }
-
-// function applyTitle(es: EntitySet, e: Entity, result: TranspileMeta) {
-//     let { title, description, ...rest } = result;
-
-//     let com: any = {};
-//     if (title !== undefined) {
-//         com.title = title;
-//     }
-//     if (isString(description) && description.length > 0) {
-//         com.description = description;
-//     }
-//     if (Object.keys(com).length > 0) {
-//         e.Title = com;
-//     } else {
-//         e.Title = undefined;
-//     }
-
-//     return e;
-// }
-
-
-// async function applyLayout(es: EntitySet, e: Entity, result: TranspileMeta) {
-//     const { layout } = result;
-
-//     // log('[applyLayout]', e.id, layout );
-
-//     if (layout === undefined) {
-//         await removeDependency(es, e.id, 'layout');
-//         return e;
-//     }
-
-//     const siteRef = e.SiteRef?.ref;
-
-//     // log('[applyLayout]', e.File.uri, {layout} );
-
-//     // find the entity matching the layout
-//     const layoutEid = await findEntityBySrcUrl(es, layout, { siteRef });
-
-//     // log('[applyLayout]', e.id, 'found', layoutEid);
-
-//     // add a dependency from this entity to the layout entity
-//     if (layoutEid !== undefined) {
-//         await insertDependency(es, e.id, layoutEid, 'layout');
-//     }
-
-//     return e;
-// }
-
 
 /**
  * takes any cssLinks found on the entities transpile result and creates dependency
