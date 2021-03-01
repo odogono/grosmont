@@ -1,3 +1,5 @@
+import Mime from 'mime-types';
+import Path from 'path';
 import Fs from 'fs-extra';
 import { Component, getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
 import { getDefId } from "odgn-entity/src/component_def";
@@ -16,7 +18,7 @@ const log = (...args) => console.log('[ProcMark]', ...args);
 export interface MarkOptions extends ProcessOptions {
     exts: string[];
     comUrl: string;
-    mime: string;
+    mime?: string;
     loadData?: boolean;
 }
 
@@ -37,12 +39,13 @@ export interface ProcessMarkJSXOptions extends ProcessOptions {
  */
 export async function process(site: Site, options: MarkOptions) {
     const es = site.es;
-    const { reporter, exts, comUrl, mime } = options;
+    const { reporter, exts, comUrl } = options;
+    let { mime } = options;
     const loadData = options.loadData ?? false;
     setLocation(reporter, '/processor/mark');
 
     // select /component/src with a .scss extension
-    const coms = await selectSrcByExt(site.es, exts, {...options, siteRef:site.getRef()});
+    const coms = await selectSrcByExt(site.es, exts, { ...options, siteRef: site.getRef() });
 
     // log('coms', coms);
     const def = es.getByUri(comUrl);
@@ -52,6 +55,7 @@ export async function process(site: Site, options: MarkOptions) {
 
     for (const com of coms) {
         let eid = getComponentEntityId(com);
+        const { url } = com;
 
         let typeCom = await es.getComponent(toComponentId(eid, did));
 
@@ -64,25 +68,23 @@ export async function process(site: Site, options: MarkOptions) {
             info(reporter, `mark`, { eid });
         }
 
+        if (mime === undefined) {
+            const ext = Path.extname(url);
+            mime = Mime.lookup(ext);
+        }
+
         // set the mime type
         com.mime = mime;
-        addComs.push( com );
+        addComs.push(com);
 
-        let meta = await applyMimeToEntityId(es, eid, mime);
-        addComs.push(meta);
+        // let meta = await applyMimeToEntityId(es, eid, mime);
+        // addComs.push(meta);
 
         if (loadData) {
-            const { url } = com;
+            let data = await site.getEntityData( eid );
 
-            let path = site.getSrcUrl(url);
-
-            // log('loading from', path);
-
-            let content = await Fs.readFile(path, 'utf8');
-            if (content) {
-                typeCom.data = content;
-                addComs.push(typeCom);
-            }
+            let dataCom = es.createComponent('/component/data');
+            addComs.push( setEntityId(dataCom, eid) );
         }
     }
 

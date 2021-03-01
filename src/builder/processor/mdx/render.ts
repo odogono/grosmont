@@ -8,7 +8,7 @@ import { Site } from '../../site';
 
 import { transpile } from './transpile';
 import { buildPageImgs, buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath } from "./util";
-import { buildSrcIndex, selectMdx } from "../../query";
+import { buildSrcIndex, getLayoutFromDependency, selectMdx } from "../../query";
 import { info, setLocation } from "../../reporter";
 import { printEntity } from "odgn-entity/src/util/print";
 
@@ -33,7 +33,7 @@ export async function process(site: Site, options:ProcessMDXRenderOptions = {}) 
     setLocation(reporter,'/processor/mdx/render');
 
     // resolve linkIndex
-    let fileIndex = await buildSrcIndex(site);
+    let fileIndex = site.getIndex('/index/srcUrl');
     let linkIndex = site.getIndex('/index/links', true);
     let imgIndex = site.getIndex('/index/imgs', true);
 
@@ -159,7 +159,8 @@ async function renderLayoutEntity(site: Site, src: Entity, child: TranspileResul
 
     // log('[renderLayoutEntity]', 'returned', layoutE.id, 'for', src.id );
 
-    // log('[renderLayoutEntity]', layoutE.Src.url );
+    // log('[renderLayoutEntity]', layoutE );
+    // printEntity(es, layoutE);
 
     if (layoutE === undefined) {
         return child;
@@ -195,29 +196,5 @@ async function applyCSSDependencies(es: EntitySet, e: Entity, child: TranspileRe
 }
 
 
-
-
-
-
-async function getLayoutFromDependency(es: EntitySet, eid: EntityId): Promise<Entity> {
-    // eid = 0;
-    const stmt = es.prepare(`
-    [
-        /component/dep#src !ca $eid ==
-        /component/dep#type !ca "layout" ==
-        and
-        @c
-    ] select
-    /dst pluck!
-    
-    // exit with undefined if nothing was found
-    dup [ undefined @! ] swap [] == if
-    
-    // select the entity
-    pop!
-    swap [ *^$1 @e ] select
-    `);
-    return await stmt.getResult({ eid });
-}
 
 

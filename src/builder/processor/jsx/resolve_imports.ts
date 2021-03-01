@@ -15,9 +15,9 @@ import { removeCommentPlugin } from '../../unified/plugin/remove_comment';
 import { titlePlugin } from '../../unified/plugin/title';
 import { ProcessOptions } from '../../types';
 import { Site } from '../../site';
-import { getDependencies, insertDependency, selectJsx } from '../../query';
+import { getDependencies, insertDependency, selectJsx, selectSrcByMime } from '../../query';
 import { buildProps } from '.';
-import { setEntityId } from 'odgn-entity/src/component';
+import { getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
 import { EntityId } from 'odgn-entity/src/entity';
 import { resolveUrlPath } from '../../util';
 
@@ -55,38 +55,43 @@ const presets = [
 export async function process(site: Site, options: ProcessOptions = {}) {
     const es = options.es ?? site.es;
 
-    let ents = await selectJsx(es, { ...options, siteRef: site.getRef() });
+    // let ents = await selectJsx(es, { ...options, siteRef: site.getRef() });
+    let src = await selectSrcByMime(es, ['text/jsx'], { ...options, siteRef: site.getRef() });
     let output = [];
 
     const did = es.getByUri('/component/data');
 
+    // log('ents', src);
 
     let coms = [];
-    
+
     let removeEids = new Set<EntityId>();
 
-    for (const e of ents) {
+    for (const srcCom of src) {
+
+        const srcUrl = srcCom.url;
+        const eid = getComponentEntityId(srcCom);
 
         try {
-            let props = await buildProps(site, e);
-            let data = await site.getEntityData(e);
-            // let importEids = [];
+            // let props = await buildProps(site, e);
+            let data = await site.getEntityData(eid);
+
             let imports = [];
 
             // get a list of existing css dependencies
-            const depIds = await getDependencies(es, e.id, 'import');
+            const depIds = await getDependencies(es, eid, 'import');
 
-            removeEids = new Set([...removeEids, ...depIds ]);
+            removeEids = new Set([...removeEids, ...depIds]);
 
             let ast = babelParser(data, { sourceType: 'module', plugins: ['jsx', 'typescript'] });
 
             traverse(ast, {
                 ImportDeclaration(path) {
                     let importPath = path.node.source.value;
-                    let resolvedEid = resolvePath(site, importPath, e.Src.url);
+                    let resolvedEid = resolvePath(site, importPath, srcUrl);
                     if (resolvedEid !== undefined) {
                         const val = `e://${resolvedEid}/component/jsx#component`;
-                        imports.push( [resolvedEid, val]);
+                        imports.push([resolvedEid, val]);
                         // importEids.push(resolvedEid);
                         path.node.source.value = val;
                     }
@@ -96,30 +101,29 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
             let generateResult = babelGenerate(ast);
             if (generateResult) {
-                let com = e.Data;
-                if( e.Data === undefined ){
-                    com = es.createComponent(did, {});
-                    com = setEntityId( com, e.id );
-                }
-                
-                com.data = generateResult.code;
-                coms.push( com );
+                let dataCom = es.createComponent(did, { data: generateResult.code });
+                dataCom = setEntityId(dataCom, eid);
+
+                coms.push(dataCom);
             }
 
 
             // insert import dependencies
-            for( const [eid,url] of imports ){
-                let urlCom = es.createComponent('/component/url', {url} );
+            for (const [impEid, url] of imports) {
+                let urlCom = es.createComponent('/component/url', { url });
                 // add a import dependency
-                let depId = await insertDependency(es, e.id, eid, 'import', [urlCom] );
+                let depId = await insertDependency(es, eid, impEid, 'import', [urlCom]);
 
                 if (removeEids.has(depId)) {
                     removeEids.delete(depId);
                 }
             }
-            
+
         } catch (err) {
-            e.Error = { message: err.message, stack: err.stack, from: '/processor/jsx' };
+            // e.Error = { message: err.message, stack: err.stack, from: '/processor/jsx' };
+            let ee = es.createComponent('/component/error', {message: err.message, from: '/processor/jsx'});
+            ee = setEntityId(ee, eid);
+            await es.add( ee );
             throw err;
         }
     }
@@ -133,9 +137,9 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 }
 
 
-function resolvePath(site: Site, path: string, base: string):EntityId {
+function resolvePath(site: Site, path: string, base: string): EntityId {
     const srcIndex = site.getIndex('/index/srcUrl');
-    if( srcIndex === undefined ){
+    if (srcIndex === undefined) {
         throw new Error('/index/srcUrl not present');
     }
     path = resolveUrlPath(path, base);

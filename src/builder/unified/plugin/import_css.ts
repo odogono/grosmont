@@ -29,7 +29,7 @@ export function importCSSPlugin(options: ImportCSSPluginOptions = {}) {
                     if (options.resolve) {
                         let cssPath = options.resolve(value, ['text/css', 'text/scss'] );
                         if( cssPath !== undefined ){
-                            log('adding cssPath', cssPath);
+                            // log('adding cssPath', cssPath);
                             cssPaths.push(cssPath);
                             found = true;
                             return false;

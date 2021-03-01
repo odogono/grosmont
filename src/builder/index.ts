@@ -46,13 +46,18 @@ export async function build(site: Site, options: BuildProcessOptions = {}) {
 
     await buildSrcIndex(site);
 
-    await markStatic(site, updateOptions);
+    // await markStatic(site, updateOptions);
 
-    await markMdx(site, updateOptions);
+    await mark(site, { exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' });
+    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
+    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' })
+    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
 
-    await markScss(site, updateOptions);
+    // await markMdx(site, updateOptions);
 
-    await mark(site, {...updateOptions, exts:['jsx', 'tsx'], comUrl:'/component/jsx', mime: 'text/jsx' });
+    // await markScss(site, updateOptions);
+
+    // await mark(site, {...updateOptions, exts:['jsx', 'tsx'], comUrl:'/component/jsx', mime: 'text/jsx' });
 
     // await printAll( site.es );
     // await assignMime(site, updateOptions);

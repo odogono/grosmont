@@ -11,20 +11,23 @@ import { Site } from "../../site";
 const log = (...args) => console.log('[Util]', ...args);
 
 export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> {
-    let data = e.Mdx?.data;
 
-    if( data === undefined ){
-        // attempt to load from src
-        const src = e.Src?.url;
+    let data = await site.getEntityData(e);
 
-        if( src === undefined ){
-            throw new Error(`mdx data not found for ${e.id}`);
-        }
+    // let data = e.Mdx?.data;
 
-        data = await site.readUrl( src );
+    // if( data === undefined ){
+    //     // attempt to load from src
+    //     const src = e.Src?.url;
 
-        // e.Mdx.data = data;
-    }
+    //     if( src === undefined ){
+    //         throw new Error(`mdx data not found for ${e.id}`);
+    //     }
+
+    //     data = await site.readUrl( src );
+
+    //     // e.Mdx.data = data;
+    // }
 
     let eMeta = e.Meta?.meta ?? {};
     let path = site.getSrcUrl(e);// e.Src.url; // e.Dst?.url ?? '';

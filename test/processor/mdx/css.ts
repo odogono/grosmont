@@ -13,10 +13,14 @@ import { process as mdxRender } from '../../../src/builder/processor/mdx/render'
 import { process as buildDeps } from '../../../src/builder/processor/build_deps';
 import { process as buildDstIndex } from '../../../src/builder/processor/dst_index';
 import { process as markMdx } from '../../../src/builder/processor/mdx/mark';
+import { process as mark } from '../../../src/builder/processor/mark';
 import {
     process as processJSX,
     preprocess as preProcessJSX
 } from '../../../src/builder/processor/jsx';
+import {
+    process as resolveImports
+} from '../../../src/builder/processor/jsx/resolve_imports';
 
 import { parse } from '../../../src/builder/config';
 
@@ -25,8 +29,9 @@ import { printAll } from 'odgn-entity/src/util/print';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { ProcessOptions } from '../../../src/builder/types';
-import { FindEntityOptions } from '../../../src/builder/query';
+import { buildSrcIndex, FindEntityOptions } from '../../../src/builder/query';
 import { EntityId } from 'odgn-entity/src/entity';
+import { Level, Reporter } from '../../../src/builder/reporter';
 
 
 const log = (...args) => console.log('[TestProcMDX]', ...args);
@@ -55,7 +60,7 @@ test.before.each(async (tcx) => {
     const testDB = { uuid: 'TEST-1', isMemory: true, idgen };
     const es = new EntitySetSQL({ ...testDB });
 
-    tcx.site = await Site.create({ idgen, name: 'test', es, dst });
+    tcx.site = await Site.create({ idgen, name: 'test', es, dst, level:Level.ERROR });
     // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
     tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
@@ -80,15 +85,11 @@ import 'file:///styles/main.scss';
 
     await addScss(site, 'file:///styles/main.scss', `h2 { color: blue; }`);
 
-
-
-    await assignMime(site, options);
+    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' })
+    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+    await buildSrcIndex(site);
     await renderScss(site, options);
-
-    // printES(es);
-
     await renderMdx(site, options);
-
 
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
 
@@ -111,7 +112,9 @@ import 'file:///styles/main.scss';
     `);
     await addScss(site, 'file:///styles/main.scss', `h2 { color: blue; }`);
 
-    await assignMime(site, options);
+    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' })
+    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+    await buildSrcIndex(site);
     await renderScss(site, options);
     await renderMdx(site, options);
 
@@ -127,7 +130,9 @@ import 'file:///styles/alt.scss';
 ## Main page
     `);
 
-    await assignMime(site, options);
+    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' })
+    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+    await buildSrcIndex(site);
     await renderScss(site, options);
     await renderMdx(site, options);
 
@@ -171,12 +176,21 @@ Hello _world_
     ` );
 
 
-    await assignMime(site, options);
+    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' })
+    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+    await buildSrcIndex(site);
     await renderScss(site, options);
+
+    
     await renderMdx(site, options);
 
-    // console.log('\n\n---\n');
+    let e = await site.getEntityBySrc('file:///pages/main.mdx');
+    assert.equal(e.Text.data,
+        `<html lang="en"><body><p>Hello <em>world</em></p></body></html>`);
+
+    
     // printAll(es);
+    
 
 });
 
@@ -189,13 +203,13 @@ test.run();
 
 async function addScss(site: Site, url: string, data: string) {
     let e = await site.addSrc(url);
-    e.Scss = { data };
+    e.Data = { data };
     await site.update(e);
 }
 
 async function addMdx(site: Site, url: string, data: string, meta?: any) {
     let e = await site.addSrc(url);
-    e.Mdx = { data };
+    e.Data = { data };
     if (meta !== undefined) {
         e.Meta = { meta };
     }

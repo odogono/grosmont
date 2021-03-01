@@ -19,15 +19,36 @@ import { parseEntityUri } from '../../util';
 import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { parseUri, toInteger } from '@odgn/utils';
 
-
+import { process as resolveImports } from './resolve_imports';
 
 const log = (...args) => console.log('[ProcJSX]', ...args);
 
 
 /**
- * Compiles Jsx
+ * Compiles Mdx
  */
 export async function process(site: Site, options:ProcessOptions = {}){
+    
+    // parse the mdx and pick out links,css,meta
+    await preprocess( site, options );
+
+    // resolve meta with parents
+    // await resolveMeta( site, options );
+    await resolveImports(site, options);
+
+    // render the mdx into html
+    await render( site, options );
+
+    return site;
+}
+
+
+
+
+/**
+ * Compiles Jsx
+ */
+export async function render(site: Site, options:ProcessOptions = {}){
     const es = options.es ?? site.es;
 
     let ents = await selectJsx(es, {...options, siteRef:site.getRef()});

@@ -271,7 +271,11 @@ export async function selectJsx(es: EntitySet, options: FindEntityOptions = {}):
         `[
             // debug
                 /component/site_ref#ref !ca $ref ==
-                /component/jsx !bf
+                // /component/src#mime !ca "text/mdx" ==
+                // /component/src#mime !ca "text/jsx" ==
+                    /component/jsx !bf
+                    // /component/mdx !bf
+                or
             and
             @e
         ] select`;
@@ -338,7 +342,7 @@ export async function selectScss(es: EntitySet, options: FindEntityOptions = {})
 
     let q = onlyUpdated ? `
         [
-            /component/scss !bf
+            /component/src#mime !ca "text/scss" ==
                     /component/upd#op !ca 1 ==
                     /component/upd#op !ca 2 ==
                 or
@@ -348,7 +352,7 @@ export async function selectScss(es: EntitySet, options: FindEntityOptions = {})
         @e 
         ] select` :
         `[
-                /component/scss !bf
+                /component/src#mime !ca "text/scss" ==
                 /component/site_ref#ref !ca $ref ==
             and
             @e
@@ -394,6 +398,69 @@ export async function selectSrcByExt(es: EntitySet, ext: string[], options: Find
 
     // console.log('[selectSrcByExt]', ref, q);
     return await es.prepare(q).getResult({ ref });
+}
+
+export async function selectSrcByMime(es: EntitySet, mime: string[], options: FindEntityOptions = {}): Promise<Component[]> {
+    const { ref, onlyUpdated } = parseOptions(options);
+
+    const regexExt = mime.join('|');
+
+    let q = onlyUpdated ? `
+        [
+                /component/src#/mime !ca ~r/^(${regexExt})$/i ==
+                /component/upd#op !ca 1 ==
+                        /component/upd#op !ca 2 ==
+                    or
+                    /component/site_ref#ref !ca $ref ==
+                and
+            and
+            /component/src !bf
+            @c 
+        ] select`
+        : `
+    [
+        
+            /component/src#/mime !ca ~r/^(${regexExt})$/i ==
+            /component/site_ref#ref !ca $ref ==
+        and
+        /component/src !bf
+        
+        @c 
+    ] select`;
+
+    // console.log('[selectSrcByExt]', ref, q);
+    return await es.prepare(q).getResult({ ref });
+}
+
+export async function selectEntitiesByMime(es: EntitySet, mime: string[], options: FindEntityOptions = {}): Promise<Entity[]> {
+    const { ref, onlyUpdated } = parseOptions(options);
+
+    const regexExt = mime.join('|');
+
+    let q = onlyUpdated ? `
+        [
+                /component/src#/mime !ca ~r/^(${regexExt})$/i ==
+                /component/upd#op !ca 1 ==
+                        /component/upd#op !ca 2 ==
+                    or
+                    /component/site_ref#ref !ca $ref ==
+                and
+            and
+            /component/src !bf
+            @e
+        ] select`
+        : `
+    [
+        
+            /component/src#/mime !ca ~r/^(${regexExt})$/i ==
+            /component/site_ref#ref !ca $ref ==
+        and
+        /component/src !bf
+        @e
+    ] select`;
+
+    // console.log('[selectSrcByExt]', ref, q);
+    return await es.prepare(q).getEntities({ ref });
 }
 
 
@@ -1043,6 +1110,30 @@ export async function removeDependency(es: EntitySet, eid: EntityId, type: Depen
 export async function getDependency(es: EntitySet, eid: EntityId, type: DependencyType): Promise<EntityId> {
     const depId = await getDependencies(es, eid, type);
     return depId.length > 0 ? depId[0] : undefined;
+}
+
+
+
+
+export async function getLayoutFromDependency(es: EntitySet, eid: EntityId): Promise<Entity> {
+    // eid = 0;
+    const stmt = es.prepare(`
+    [
+        /component/dep#src !ca $eid ==
+        /component/dep#type !ca "layout" ==
+        and
+        @c
+    ] select
+    
+    /dst pluck!
+    
+    // exit with undefined if nothing was found
+    dup [ undefined @! ] swap [] == if
+    
+    // select the entity
+    pop!
+    `);
+    return await stmt.getEntity({ eid });
 }
 
 
