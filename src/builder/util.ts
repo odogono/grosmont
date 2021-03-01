@@ -204,3 +204,17 @@ export function buildUrl(action: string, qs = {}, options: BuildUrlOptions = {})
         return action;
     }
 }
+
+
+/**
+ * Resolves the path against the base url
+ * 
+ * @param path 
+ * @param base 
+ */
+export function resolveUrlPath( path:string, base?:string ): string {
+    path = Path.normalize(path);
+    const url = new URL(path, base);
+    return url.href;
+}
+

@@ -40,12 +40,35 @@ export interface TranspileResult {
 
 
 
-export interface SiteIndex {
+// export interface SiteIndex {
+//     query?: string;
+//     args?: StatementArgs;
+//     index: Map<any, any[]>;
+// }
+
+export class SiteIndex {
     query?: string;
     args?: StatementArgs;
     index: Map<any, any[]>;
+    constructor(query?: string, args?:StatementArgs ){
+        this.query = query;
+        this.args = args;
+        this.index = new Map<any, any[]>();
+    }
+    getEid( key ):EntityId {
+        let entry = this.index.get(key);
+        if( entry !== undefined ){
+            return entry[0];
+        }
+        return undefined;
+    }
+    set( key, eid:EntityId, ...args){
+        this.index.set( key, [eid,...args]);
+    }
+    clear(){
+        this.index.clear();
+    }
 }
-
 
 
 export interface ProcessOptions {
@@ -99,6 +122,8 @@ export interface TranspileOptions {
     render?: boolean;
     forceRender?: boolean;
     resolveImport: (path: string) => string | undefined;
+    require: (path:string, fullPath:string) => any;
+    context?: any;
 }
 
 
@@ -150,4 +175,4 @@ export interface PageMeta {
 }
 
 
-export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img';
+export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img' | 'import';

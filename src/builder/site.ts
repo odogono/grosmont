@@ -33,7 +33,7 @@ import {
 } from './query';
 import { DependencyType, ProcessOptions, SiteIndex } from './types';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
-import { isString, parseUri } from '@odgn/utils';
+import { isEmpty, isString, parseUri } from '@odgn/utils';
 import { printEntity } from 'odgn-entity/src/util/print';
 import { createUUID } from '@odgn/utils';
 import { info, Level, Reporter, setLevel, setLocation } from './reporter';
@@ -139,6 +139,9 @@ export class Site {
         let res = uriToPath(this.e.Src?.url);
         if (appendPath) {
             let path = isString(appendPath) ? appendPath : (appendPath as Entity).Src?.url ?? '';
+            if( isEmpty(path) ){
+                return undefined;
+            }
             res = Path.join(res, uriToPath(path) );
         }
         return res;
@@ -191,6 +194,28 @@ export class Site {
     }
 
 
+    /**
+     * Returns data from the entity looking at /component/data#data first,
+     * otherwise reads from /component/src#url
+     * @param e 
+     */
+    async getEntityData( e:Entity ): Promise<string> {
+        if( e?.Data?.data !== undefined ){
+            return e.Data.data;
+        }
+        let srcUrl = this.getSrcUrl( e );
+        if( srcUrl === undefined ){
+            return undefined;
+        }
+        return this.readUrl( srcUrl );
+    }
+
+    // async setEntityData( e:Entity, data:string ){
+    //     const d = e.Data ?? {data:''};
+    //     d.data = data;
+    //     e.Data = d;
+    //     return e;
+    // }
 
     /**
      * Attempts to read data from the specified path
@@ -278,7 +303,7 @@ export class Site {
      * @param url 
      */
     async addSrc(url: string): Promise<Entity> {
-        return selectEntityBySrc(this, url, { createIfNotFound: true }) as Promise<Entity>;
+        return selectEntityBySrc(this, url, { createIfNotFound: true, siteRef:this.getRef() }) as Promise<Entity>;
     }
 
     /**
@@ -286,7 +311,7 @@ export class Site {
      * @param url
      */
     async getEntityIdBySrc(url: string): Promise<EntityId> {
-        return selectEntityBySrc(this, url, { returnEid: true, createIfNotFound: false }) as Promise<EntityId>;
+        return selectEntityBySrc(this, url, { returnEid: true, createIfNotFound: false, siteRef:this.getRef() }) as Promise<EntityId>;
     }
 
     /**
@@ -294,7 +319,7 @@ export class Site {
      * @param url
      */
     async getEntityBySrc(url: string): Promise<Entity> {
-        return selectEntityBySrc(this, url, { returnEid: false, createIfNotFound: false }) as Promise<Entity>;
+        return selectEntityBySrc(this, url, { returnEid: false, createIfNotFound: false, siteRef:this.getRef() }) as Promise<Entity>;
     }
 
     /**
@@ -327,15 +352,22 @@ export class Site {
         return entry[0];
     }
 
-    async update(e: Entity) {
+    /**
+     * Adds an entity to the site es
+     * @param e 
+     */
+    async update(e: Entity): Promise<Entity> {
         if (e.SiteRef === undefined && this.e) {
-            e.SiteRef = { ref: this.e.id };
+            e.SiteRef = { ref: this.getRef() };
         }
         await this.es.add(e);
         return this.getLastAdded();
     }
 
-    async getLastAdded() {
+    /**
+     * Returns the entity that was last added/updated in the es
+     */
+    async getLastAdded(): Promise<Entity> {
         let eid = this.es.getUpdatedEntities()[0];
         return this.es.getEntity(eid);
     }
@@ -349,7 +381,7 @@ export class Site {
      * 
      */
     async addQueryIndex(name: string, query: string, args: StatementArgs) {
-        let index: SiteIndex = { query, args, index: new Map<any, any[]>() };
+        let index: SiteIndex = new SiteIndex(query, args);
         this.indexes.set(name, index);
         await this.buildIndexes(name);
         return index;
@@ -396,7 +428,7 @@ export class Site {
     getIndex(name: string, create: boolean = false): SiteIndex {
         let index = this.indexes.get(name);
         if (index === undefined && create) {
-            index = { index: new Map<any, any[]>() };
+            index = new SiteIndex();
             this.indexes.set(name, index);
         }
         return index;
@@ -408,12 +440,11 @@ export class Site {
     async buildIndexes(runName?: string) {
 
         for (const [name, idx] of this.indexes) {
-            const { query, args, index } = idx;
-
+            const { query, args } = idx;
 
             if (query !== undefined) {
 
-                index.clear();
+                idx.clear();
 
                 const stmt = this.es.prepare(query);
 
@@ -430,7 +461,7 @@ export class Site {
                 }
 
                 for (const [key, eid, ...rest] of rows) {
-                    index.set(key, [eid, ...rest]);
+                    idx.set(key, eid, ...rest );// [eid, ...rest]);
                 }
             }
 
