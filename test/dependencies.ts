@@ -6,17 +6,13 @@ import assert from 'uvu/assert';
 import { Site } from '../src/builder/site';
 import { process as buildDeps } from '../src/builder/processor/build_deps';
 
-import { Entity } from 'odgn-entity/src/entity';
-import { getDependencyParents, getDependencyChildren, printAll, printEntity } from '../src/builder/util';
+import { Entity, EntityId } from 'odgn-entity/src/entity';
+import { getDependencyParents, getDependencyChildren, FindEntityOptions } from '../src/builder/query';
 import { EntitySet, EntitySetMem } from 'odgn-entity/src/entity_set';
 
 
 const log = (...args) => console.log('[TestFile]', ...args);
 
-const printES = async (es) => {
-    console.log('\n\n---\n');
-    printAll(es);
-}
 
 const rootPath = Path.resolve(__dirname, "../");
 const test = suite('depdendencies');
@@ -41,10 +37,11 @@ test.before.each(async (tcx) => {
     tcx.site = site;
     tcx.es = site.es;
     tcx.e = site.getEntity();
+    tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
 });
 
 
-test('get dependency parents', async ({ es, site }) => {
+test('get dependency parents', async ({ es, site, options }) => {
     await loadRootB(site);
 
     let eids = await getDependencyParents(site.es, 1015, 'dir');
@@ -89,5 +86,5 @@ async function loadRootB(site: Site) {
     const stmt = site.es.prepare(insts)
     await stmt.run();
 
-    await buildDeps(site);
+    await buildDeps(site, {siteRef:site.getRef()});
 }

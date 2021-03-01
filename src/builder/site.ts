@@ -33,7 +33,7 @@ import {
 } from './query';
 import { DependencyType, ProcessOptions, SiteIndex } from './types';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
-import { isEmpty, isString, parseUri } from '@odgn/utils';
+import { isEmpty, isInteger, isString, parseUri } from '@odgn/utils';
 import { printEntity } from 'odgn-entity/src/util/print';
 import { createUUID } from '@odgn/utils';
 import { info, Level, Reporter, setLevel, setLocation } from './reporter';
@@ -86,11 +86,11 @@ export class Site {
         // log('[create]', options);
 
         // attempt to initialise the ES from the configPath
-        await initialiseES(site, {...options, reporter});
+        await initialiseES(site, { ...options, reporter });
 
         // await readConfig(site, options);
 
-        
+
 
         return site;
     }
@@ -126,7 +126,7 @@ export class Site {
 
 
     async getUpdatedEntityIds() {
-        return await selectUpdated(this.es, {siteRef:this.getRef()});
+        return await selectUpdated(this.es, { siteRef: this.getRef() });
     }
 
     /**
@@ -139,10 +139,10 @@ export class Site {
         let res = uriToPath(this.e.Src?.url);
         if (appendPath) {
             let path = isString(appendPath) ? appendPath : (appendPath as Entity).Src?.url ?? '';
-            if( isEmpty(path) ){
+            if (isEmpty(path)) {
                 return undefined;
             }
-            res = Path.join(res, uriToPath(path) );
+            res = Path.join(res, uriToPath(path));
         }
         return res;
     }
@@ -157,7 +157,7 @@ export class Site {
 
         if (appendPath) {
             res = uriToPath(res);
-            res = Path.join(res, uriToPath(appendPath) );
+            res = Path.join(res, uriToPath(appendPath));
         }
 
         return res;
@@ -199,15 +199,21 @@ export class Site {
      * otherwise reads from /component/src#url
      * @param e 
      */
-    async getEntityData( e:Entity ): Promise<string> {
-        if( e?.Data?.data !== undefined ){
-            return e.Data.data;
+    async getEntityData(e: Entity | EntityId): Promise<string> {
+        if (isInteger(e)) {
+            e = await this.es.getEntity(e as EntityId);
         }
-        let srcUrl = this.getSrcUrl( e );
-        if( srcUrl === undefined ){
+
+        const data = (e as Entity).Data?.data;
+        if (data !== undefined) {
+            return data;
+        }
+        let srcUrl = this.getSrcUrl(e as Entity);
+
+        if (srcUrl === undefined) {
             return undefined;
         }
-        return this.readUrl( srcUrl );
+        return this.readUrl(srcUrl);
     }
 
     // async setEntityData( e:Entity, data:string ){
@@ -255,10 +261,10 @@ export class Site {
      * @param path 
      * @param src 
      */
-    async copyToUrl(path:string, src:string){
+    async copyToUrl(path: string, src: string) {
         path = uriToPath(path);
         src = uriToPath(src);
-        
+
         // log('writing', path);
         await Fs.ensureDir(Path.dirname(path));
         await Fs.copyFile(src, path);
@@ -303,7 +309,7 @@ export class Site {
      * @param url 
      */
     async addSrc(url: string): Promise<Entity> {
-        return selectEntityBySrc(this, url, { createIfNotFound: true, siteRef:this.getRef() }) as Promise<Entity>;
+        return selectEntityBySrc(this, url, { createIfNotFound: true, siteRef: this.getRef() }) as Promise<Entity>;
     }
 
     /**
@@ -311,7 +317,7 @@ export class Site {
      * @param url
      */
     async getEntityIdBySrc(url: string): Promise<EntityId> {
-        return selectEntityBySrc(this, url, { returnEid: true, createIfNotFound: false, siteRef:this.getRef() }) as Promise<EntityId>;
+        return selectEntityBySrc(this, url, { returnEid: true, createIfNotFound: false, siteRef: this.getRef() }) as Promise<EntityId>;
     }
 
     /**
@@ -319,7 +325,7 @@ export class Site {
      * @param url
      */
     async getEntityBySrc(url: string): Promise<Entity> {
-        return selectEntityBySrc(this, url, { returnEid: false, createIfNotFound: false, siteRef:this.getRef() }) as Promise<Entity>;
+        return selectEntityBySrc(this, url, { returnEid: false, createIfNotFound: false, siteRef: this.getRef() }) as Promise<Entity>;
     }
 
     /**
@@ -404,8 +410,8 @@ export class Site {
      * 
      * @param type 
      */
-    async getDependencyLeafEntityIds(type: DependencyType, options:ProcessOptions ) {
-        return findLeafDependenciesByType(this.es, type, options ); //{ siteRef: this.e.id });
+    async getDependencyLeafEntityIds(type: DependencyType, options: ProcessOptions) {
+        return findLeafDependenciesByType(this.es, type, options); //{ siteRef: this.e.id });
     }
 
     /**
@@ -413,8 +419,8 @@ export class Site {
      * 
      * @param options 
      */
-    async getDirectoryMetaComponents(options:ProcessOptions){
-        return await selectSrcByFilename( this.es, ['dir.e'], {...options,ignoreExt:true} );
+    async getDirectoryMetaComponents(options: ProcessOptions) {
+        return await selectSrcByFilename(this.es, ['dir.e'], { ...options, ignoreExt: true });
     }
 
 
@@ -461,7 +467,7 @@ export class Site {
                 }
 
                 for (const [key, eid, ...rest] of rows) {
-                    idx.set(key, eid, ...rest );// [eid, ...rest]);
+                    idx.set(key, eid, ...rest);// [eid, ...rest]);
                 }
             }
 
@@ -490,10 +496,10 @@ async function loadConfig(options: SiteOptions): Promise<SiteOptions> {
     let uuid = options.uuid ?? createUUID();
 
     if (configPath === undefined) {
-        return {...options, uuid};
+        return { ...options, uuid };
     }
     configPath = uriToPath(configPath);
-    
+
     if (rootPath === undefined) {
         rootPath = Path.dirname(configPath);
     }
@@ -521,8 +527,8 @@ async function initialiseES(site: Site, options: SiteOptions) {
     let { data, rootPath, configPath, reporter } = options;
     // let { configPath, rootPath, data } = await loadConfig(options);
 
-    
-    
+
+
     let es: EntitySet;
 
     // attempt to initialise an es from the loaded config data
@@ -560,7 +566,7 @@ async function initialiseES(site: Site, options: SiteOptions) {
         es = options.es;
     }
 
-    
+
 
     if (es === undefined) {
         es = new EntitySetMem(undefined, options);
@@ -568,7 +574,7 @@ async function initialiseES(site: Site, options: SiteOptions) {
 
     site.es = es;
 
-    info(reporter,`created ${site.es.getUrl()}`);
+    info(reporter, `created ${site.es.getUrl()}`);
 
     // register defs against the entityset
     for (const def of defs) {
@@ -646,7 +652,7 @@ async function readSiteFromConfig(site: Site, e: Entity, options: SiteOptions = 
         return e;
     }
 
-    e = await parse(site.es, data, 'yaml', { add: false, e, siteRef:site.getRef() });
+    e = await parse(site.es, data, 'yaml', { add: false, e, siteRef: site.getRef() });
 
     // resolve the src and dst paths
     let url = e.Src?.url ?? pathToFileURL(rootPath).href;

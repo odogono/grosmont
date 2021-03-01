@@ -4,10 +4,10 @@ import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import Day from 'dayjs';
 import { Site } from './site';
-import { buildQueryString, slugify, stringify, toBoolean } from "@odgn/utils";
+import { buildQueryString, parseUri, slugify, stringify, toBoolean, toInteger } from "@odgn/utils";
 import { isString } from "@odgn/utils";
 import { FindEntityOptions } from './query';
-import { getDefId } from 'odgn-entity/src/component_def';
+import { ComponentDefUrl, getDefId } from 'odgn-entity/src/component_def';
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
 
@@ -218,3 +218,33 @@ export function resolveUrlPath( path:string, base?:string ): string {
     return url.href;
 }
 
+interface ParseEntityUriResult {
+    eid: EntityId;
+    did: ComponentDefUrl;
+    attr?: string; 
+}
+
+/**
+ * 
+ * @param uri 
+ */
+export function parseEntityUri( uri:string ): ParseEntityUriResult {
+    let parts = parseUri( uri );
+    if( parts === undefined ){
+        return undefined;
+    }
+    const {protocol, host, path, anchor:attr} = parts;
+
+    // log('[parseEntityUri]', parts);
+
+    if( protocol !== 'e' ){
+        return undefined;
+    }
+
+    let eid = toInteger(host);
+
+    return {eid, did:path, attr};
+
+    // let url = new URL(requirePath);
+
+}

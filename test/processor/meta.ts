@@ -50,7 +50,7 @@ test('selects src by extension', async ({site,es, options}) => {
     `);
 
     await parse( site, `
-    src: file:///pages/meta.yaml
+    src: file:///pages/dir.e.yaml
     dst: /pages/
     `);
 

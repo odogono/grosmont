@@ -10,10 +10,14 @@ import traverse from "@babel/traverse";
 import { parse as babelParser } from '@babel/parser';
 
 import { Entity } from 'odgn-entity/src/entity';
-import { selectJsx } from '../../query';
+import { getDependencies, getDependencyEntities, selectJsx } from '../../query';
 import { Site } from '../../site';
 import { parse as parseConfig } from '../../config';
 import { ProcessOptions } from '../../types';
+import { parseJS } from './resolve_imports';
+import { parseEntityUri } from '../../util';
+import { printAll, printEntity } from 'odgn-entity/src/util/print';
+import { parseUri, toInteger } from '@odgn/utils';
 
 
 
@@ -26,13 +30,13 @@ const log = (...args) => console.log('[ProcJSX]', ...args);
 export async function process(site: Site, options:ProcessOptions = {}){
     const es = options.es ?? site.es;
 
-    let ents = await selectJsx(es, options);
+    let ents = await selectJsx(es, {...options, siteRef:site.getRef()});
     let output = [];
 
     for (const e of ents) {
 
         try {
-            const data = await renderJsx( site, e, options );
+            const { data } = await renderJsx( site, e, options );
 
             e.Text = { data };
         } catch( err ){
@@ -40,7 +44,6 @@ export async function process(site: Site, options:ProcessOptions = {}){
         }
         
         output.push(e);
-
     }
 
     await es.add(output);
@@ -53,18 +56,23 @@ export async function process(site: Site, options:ProcessOptions = {}){
 export async function preprocess(site: Site, options:ProcessOptions = {}){
     const es = options.es ?? site.es;
 
-    let ents = await selectJsx(es, options);
+    let ents = await selectJsx(es, {...options, siteRef:site.getRef()});
     let output = [];
+
+    // log( ents );
 
     for (const e of ents) {
 
         try {
+
+            // gather the import dependencies
+            let importData = await buildImportData(site, e, options);
+
             let props = await buildProps(site, e);
             let code = transformJSX(props.data);
-            let {Component,requires, ...meta} = evalCode(code, props.path, {site});
+            let {Component,requires, ...meta} = evalCode(code, props.path, {site, importData});
 
             await parseConfig(site, meta, undefined, {add:false, e} );
-
 
         } catch( err ){
             e.Error = {message:err.message, stack:err.stack};
@@ -87,14 +95,22 @@ async function renderJsx(site: Site, e: Entity, options: ProcessOptions) {
     const {data,path} = props;
 
     try {
+        // log('[renderJsx]', e.Src.url );
+        // gather the import dependencies
+        let importData = await buildImportData(site, e, options);
+        
+        // log('imports');
+        // printAll(site.es, imports);
         
         let code = transformJSX(data);
 
-        let el = evalCode(code, path, {site});
+        let el = evalCode(code, path, {site, importData});
 
-        log( el );
+        // log( el );
 
-        return renderHTML(el);
+        const result = renderHTML(el);
+
+        return {...el, data:result};
 
         // return '';
 
@@ -106,21 +122,50 @@ async function renderJsx(site: Site, e: Entity, options: ProcessOptions) {
 
 }
 
-function processAST( code:string ){
-    const ast = babelParser(code, { sourceType: 'module' });
+async function buildImportData(site:Site, e:Entity, options:ProcessOptions){
+    const {es} = site;
+    let imports = await getDependencyEntities(es, e.id, 'import');
 
-    // log('ast', ast);
-    const alterObj = {
+    let result = {};
+
+    for( const imp of imports ){
+        // const dst = imp.Dep.dst;
+        const url = imp.Url?.url;
+
+        // figure out what kind of data the url is asking for
+        let {host, path:did} = parseUri( url );
+        let eid = toInteger(host);
+
+        let dstE = await es.getEntity(eid, true);
+
+        // log('[buildImportData]', eid, url);
+        // printEntity(es, dstE);
+
+        if( did === '/component/jsx' ){
+            const ren = await renderJsx( site, dstE, options );
+            result[url] = ren.default;
+        } else {
+            result[url] = dstE;
+        }
     }
-
-    traverse(ast, alterObj);
+    return result;
 }
+
+// function processAST( code:string ){
+//     const ast = babelParser(code, { sourceType: 'module' });
+
+//     // log('ast', ast);
+//     const alterObj = {
+//     }
+
+//     traverse(ast, alterObj);
+// }
 
 
 
 export const PageContext = React.createContext({})
 
-function renderHTML({ components, Component, children }) {
+function renderHTML({ components, default:Component, children }) {
 
     const ctxValue = {
         status: 'ready to go',
@@ -141,41 +186,51 @@ function renderHTML({ components, Component, children }) {
 }
 
 
+export interface EvalCodeResult {
+    default: any;
+    components: any;
+    children: any;
+    [key: string]: any;
+}
+
 /**
  * 
  * @param code 
  * @param path 
  */
-function evalCode(code: string, path: string, context:any = {}) {
+function evalCode(code: string, path: string, context:any = {}): EvalCodeResult {
     let requires = [];
-    const requireManual = (requirePath) => {
-        log('[evalCode][requireManual]', requirePath);
+    const {importData} = context;
 
-        if( requirePath === '@odgn-ssg' ){
+    const requireManual = (requirePath) => {
+        // log('[evalCode][requireManual]', requirePath);
+
+        if( requirePath === '@site' || requirePath === '@odgn/grosmont' ){
             return context;
         }
 
-        const fullPath = Path.resolve(Path.dirname(path), requirePath);
-
-        let extPath = findFileWithExt(fullPath, ['mdx']);
-
-        // if (Fs.existsSync(extPath) && extPath.endsWith('.mdx')) {
-        //     requires.push({ path: extPath });
-        //     const data = Fs.readFileSync(path, 'utf8');
-        //     const out = parseMdx(data, extPath, {});
-        //     // console.log('[require]', requirePath, Object.keys(out), out);
-        //     out.__esModule = true;
-
-        //     return out;
+        if( importData && importData[requirePath] ){
+            // log('[evalCode][requireManual]', importData[requirePath] );
+            return importData[requirePath];
+        }
+        // if( requirePath.startsWith('e://') ){
+        //     let euri = parseEntityUri(requirePath);
+        //     if( euri !== undefined ){
+        //         euri.eid
+        //     }
         // }
 
-        extPath = findFileWithExt(fullPath, ['jsx', 'js']);
-        if (extPath.endsWith('.jsx')) {
-            requires.push({ path: extPath });
-            let jsx = Fs.readFileSync(extPath, 'utf8');
-            let code = transformJSX(jsx);
-            return evalCode(code, extPath);
-        }
+        // const fullPath = Path.resolve(Path.dirname(path), requirePath);
+
+        // let extPath = findFileWithExt(fullPath, ['mdx']);
+
+        // extPath = findFileWithExt(fullPath, ['jsx', 'js']);
+        // if (extPath.endsWith('.jsx')) {
+        //     requires.push({ path: extPath });
+        //     let jsx = Fs.readFileSync(extPath, 'utf8');
+        //     let code = transformJSX(jsx);
+        //     return evalCode(code, extPath);
+        // }
 
         // the default behaviour - normal require
         const req = require(requirePath);
@@ -195,9 +250,9 @@ function evalCode(code: string, path: string, context:any = {}) {
 
     // log('[evalCode]', code );
 
-    const { default: Component, ...rest } = out;
+    // const { default, ...rest } = out;
 
-    return { ...rest, requires, Component };
+    return { ...out, requires };
 }
 
 const presets = [
@@ -240,7 +295,7 @@ function findFileWithExt(path: string, exts: string[]) {
 
 
 export async function buildProps(site:Site, e: Entity) {
-    let data = e.Jsx?.data;
+    let data = e.Data?.data;
 
     if( data === undefined ){
         // attempt to load from src

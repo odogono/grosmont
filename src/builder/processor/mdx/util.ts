@@ -1,3 +1,4 @@
+import Path from 'path';
 import { toComponentId } from "odgn-entity/src/component";
 import { Entity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
@@ -26,7 +27,7 @@ export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> 
     }
 
     let eMeta = e.Meta?.meta ?? {};
-    let path = e.Dst?.url ?? '';
+    let path = site.getSrcUrl(e);// e.Src.url; // e.Dst?.url ?? '';
     let props: TranspileProps = { path, data, meta: eMeta };
 
     return props;
@@ -80,15 +81,32 @@ export async function buildPageLinks( es:EntitySet, linkIndex:SiteIndex ){
  * @param fileIndex 
  * @param path 
  */
-export function getEntityImportUrlFromPath(fileIndex: SiteIndex, path: string) {
+export function getEntityImportUrlFromPath(fileIndex: SiteIndex, path: string, mimes?: string[] ) {
     // console.log('[getEntityImportUrlFromPath]', path);
     if (fileIndex === undefined || path == '') {
         return undefined;
     }
-    const entry = fileIndex.index.get(path);
+    let entry = fileIndex.index.get(path);
     if (entry === undefined) {
-        return undefined;
+        // attempt to find without ext
+        for( const [url,idxEntry] of fileIndex.index ){
+            let ext = Path.extname(url);
+            let wit = url.substring(0, url.length-ext.length);
+            if( path === wit ){
+                const [mime] = idxEntry;
+                if( mimes !== undefined && mimes.indexOf(mime) === -1 ){
+                    continue;
+                }
+                // log('[gE]', url, idxEntry);
+                entry = idxEntry;
+                break;
+            }
+        }
+        if( entry === undefined ){
+            return undefined;
+        }
     }
+    // log('[gE]', 'found??', path, entry, fileIndex.index);
     const [eid, mime] = entry;
     return buildUrl(`e://${eid}/component/text`, { mime }) + '#text';
 }

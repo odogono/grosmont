@@ -41,6 +41,7 @@ import {
     PageImgs,
     PageImg
 } from '../../types';
+import { Site } from '../../site';
 
 const log = (...args) => console.log('[TranspileMDX]', ...args);
 
@@ -56,7 +57,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     let { css, cssLinks: inputCssLinks, children, applyLinks, imgs } = props;
 
     let { data, path } = props;
-    const { resolveImport } = options;
+    const { resolveImport, require, context } = options;
     const forceRender = options.forceRender ?? false;
     const doRender = forceRender || (options.render ?? false);
 
@@ -89,10 +90,10 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     }
 
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
-    
-    const mdxResult = await parseMdx(data, path, 
-        { pageProps: inPageProps, applyLinks, imgs, resolveImport });
-    
+
+    const mdxResult = await parseMdx(data, path,
+        { pageProps: inPageProps, applyLinks, imgs, resolveImport, require, context });
+
     const { component, frontMatter,
         code, jsx, ast, page, default: d,
         requires, links, cssLinks,
@@ -107,7 +108,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
         path, jsx, code, ast, /* code, ast,*/ component, links, imgs, meta, cssLinks, additional: rest
     };
 
-    
+
 
     // log('[transpile]', 'requires', requires);
     // log('[transpile]', 'cssLinks', cssLinks);
@@ -164,13 +165,13 @@ function renderHTML({ components, component: Component, children }) {
 
 
 async function parseMdx(data: string, path: string, options: ProcessMDXOptions) {
-    
+
     try {
-        let {jsx, links, ast, imgs} = await processMdx(data, options);
-        
+        let { jsx, links, ast, imgs } = await processMdx(data, options);
+
 
         let code = transformJSX(jsx);
-        let el = evalCode(code, path);
+        let el = evalCode(code, path, options);
 
         return { ...el, code, jsx, ast, links, imgs };
 
@@ -188,6 +189,8 @@ export type ProcessMDXOptions = {
     applyLinks?: PageLinks;
     imgs?: PageImgs;
     resolveImport?: (path) => string | undefined;
+    require?: (path: string, fullPath: string) => any;
+    context?: any;
 }
 
 // export type ProcessMDXResult = [string, PageLinks, any];
@@ -204,8 +207,8 @@ export async function processMdx(content: string, options: ProcessMDXOptions): P
     let links = new Map<string, any>();
     let ast;
 
-    if( imgs === undefined ){
-        imgs = new Map<string,PageImg>();
+    if (imgs === undefined) {
+        imgs = new Map<string, PageImg>();
     }
 
     // remark-mdx has a really bad time with html comments even
@@ -277,45 +280,84 @@ function transformJSX(jsx: string) {
 }
 
 
+interface EvalOptions {
+    require?: (path, fullPath) => any;
+    context?: any;
+}
+
 /**
  * 
  * @param code 
  * @param path 
  */
-function evalCode(code: string, path: string) {
+function evalCode(code: string, path: string, options: EvalOptions = {}) {
     let requires = [];
+    const { context } = options;
+
+
     const requireManual = async (requirePath) => {
-        log('[evalCode][requireManual]', requirePath);
+        if (requirePath === '@odgn/grosmont') {
+            return context;
+        }
+
+        log('[evalCode]', requirePath, path);
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
 
-        let extPath = findFileWithExt(fullPath, ['mdx']);
-
-        if (Fs.existsSync(extPath) && extPath.endsWith('.mdx')) {
-            requires.push({ path: extPath });
-            console.log('[require]', requirePath);
-            const data = Fs.readFileSync(path, 'utf8');
-            // const out = await parseMdx(data, extPath, {});
-            // console.log('[require]', requirePath, Object.keys(out), out);
-            // out.__esModule = true;
-
-            // return out;
-            throw new Error('not yet supported');
+        let result;
+        if (options.require) {
+            result = await options.require(requirePath, fullPath);
         }
 
-        extPath = findFileWithExt(fullPath, ['jsx', 'js']);
-        if (extPath.endsWith('.jsx')) {
-            requires.push({ path: extPath });
-            let jsx = Fs.readFileSync(extPath, 'utf8');
-            let code = transformJSX(jsx);
-            return evalCode(code, extPath);
+        if (result === undefined) {
+            result = require(requirePath);
         }
-
-        // the default behaviour - normal require
-        const req = require(requirePath);
-
-        requires.push({ exports: Object.keys(req).join(','), path: requirePath })
-        return req;
+        return result;
     }
+
+    // let requireManual = options.require;
+
+    // if (requireManual === undefined) {
+    //     requireManual = (requirePath) => {
+    //         // the default behaviour - normal require
+    //         const req = require(requirePath);
+
+    //         requires.push({ exports: Object.keys(req).join(','), path: requirePath })
+    //         return req;
+    //     }
+    // }
+
+    // const requireManual = async (requirePath) => {
+    //     const fullPath = Path.resolve(Path.dirname(path), requirePath);
+    //     log('[evalCode][requireManual]', requirePath, fullPath);
+
+    //     let extPath = findFileWithExt(fullPath, ['mdx']);
+
+    //     if (Fs.existsSync(extPath) && extPath.endsWith('.mdx')) {
+    //         requires.push({ path: extPath });
+    //         console.log('[require]', requirePath);
+    //         const data = Fs.readFileSync(path, 'utf8');
+    //         // const out = await parseMdx(data, extPath, {});
+    //         // console.log('[require]', requirePath, Object.keys(out), out);
+    //         // out.__esModule = true;
+
+    //         // return out;
+    //         throw new Error('not yet supported');
+    //     }
+
+    //     extPath = findFileWithExt(fullPath, ['jsx', 'js', 'tsx']);
+    //     if (extPath.endsWith('.jsx')) {
+    //         requires.push({ path: extPath });
+    //         let jsx = Fs.readFileSync(extPath, 'utf8');
+    //         let code = transformJSX(jsx);
+    //         return evalCode(code, extPath);
+    //     }
+
+    //     // the default behaviour - normal require
+    //     const req = require(requirePath);
+
+    //     requires.push({ exports: Object.keys(req).join(','), path: requirePath })
+    //     return req;
+    // }
 
     let out = _eval(code, path, {
         mdx: mdxReact,

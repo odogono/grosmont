@@ -12,126 +12,146 @@ import { process as applyTags } from '../../src/builder/processor/mdx/apply_tags
 import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
-import { process as markMdx } from '../../src/builder/processor/mdx/mark';
-import { 
-    process as processJSX, 
-    preprocess as preProcessJSX 
+import { process as mark } from '../../src/builder/processor/mark';
+import {
+    process as processJSX,
+    preprocess as preProcessJSX,
 } from '../../src/builder/processor/jsx';
+import {
+    process as resolveImports
+} from '../../src/builder/processor/jsx/resolve_imports';
 
 import { parse } from '../../src/builder/config';
 
 import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
+import { buildSrcIndex } from '../../src/builder/query';
 
 
 const log = (...args) => console.log('[TestProcMDX]', ...args);
 
-const printES = async (site:Site) => {
+const printES = async (site: Site) => {
     console.log('\n\n---\n');
-    await printAll( site.es );
+    await printAll(site.es);
 }
 
 const rootPath = Path.resolve(__dirname, "../../");
 const test = suite('processor/jsx');
 
 
-test.before.each(async (tcx) => {
+// test.before.each(async (tcx) => {
+//     let id = 1000;
+//     let idgen = () => ++id;
+
+//     const dst = `file://${rootPath}/dist/`;
+//     tcx.site = await Site.create({ idgen, name: 'test', dst });
+//     // tcx.siteEntity = tcx.site.getEntity();
+//     tcx.es = tcx.site.es;
+// });
+
+
+// test('render code', async () => {
+//     let id = 1000;
+//     const idgen = () => ++id;
+
+//     // const configPath = `file://${rootPath}/test/fixtures/rootC.yaml`;
+//     const site = await Site.create({ idgen });
+
+
+//     let e = await addJsx(site, 'file:///sitemap.jsx', `
+//     import {site} from '@odgn-ssg';
+// // import { Text as message } from 'e:///component/file?src=file:///message.jsx';
+// // import { Text as message } from '[ /component/file#src !ca file://message.jsx == @e] select';
+
+// const XmlHeader = (props) => React.createElement("?xml", props);
+
+// export const mime = 'text/xml';
+// export const dst = '/sitemap.xml';
+
+// const url = site.getUrl();
+
+// export default () => (
+
+//     <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+//     <sitemap>
+//        <loc>http://www.example.com/sitemap1.xml.gz</loc>
+//        <lastmod>2014-10-01T18:23:17+00:00</lastmod>
+//     </sitemap>
+//  </sitemapindex>
+
+// );
+//     `);
+
+//     await addJsx(site, 'file:///message.jsx', `
+// export default () => "Hello World";
+// `);
+
+//     await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
+
+//     await preProcessJSX(site);
+//     await processJSX(site);
+
+//     // await buildDstIndex(site);
+
+//     await printES(site);
+
+//     e = await site.getEntityByDst('/sitemap.xml');
+
+//     // log( Beautify.html(e.Text.data) );
+
+
+// });
+
+function idgen() {
     let id = 1000;
-    let idgen = () => ++id;
-
-    const dst = `file://${rootPath}/dist/`;
-    tcx.site = await Site.create({ idgen, name: 'test', dst });
-    // tcx.siteEntity = tcx.site.getEntity();
-    tcx.es = tcx.site.es;
-});
+    return () => ++id;
+}
 
 
+test('resolve imports', async () => {
+    const site = await Site.create({ idgen: idgen() });
 
-test.only('render code', async () => {
-    let id = 1000;
-    const idgen = () => ++id;
-
-    const configPath = `file://${rootPath}/test/fixtures/rootC.yaml`;
-    const site = await Site.create({ idgen, configPath });
-
-
-    let e = await addJsx( site, 'file:///sitemap.jsx',`
-
-    import {site} from '@odgn-ssg';
-// import { Text as message } from 'e:///component/file?src=file:///message.jsx';
-// import { Text as message } from '[ /component/file#src !ca file://message.jsx == @e] select';
-
-const XmlHeader = (props) => React.createElement("?xml", props);
-
-export const mime = 'text/xml';
-export const dst = '/sitemap.xml';
-
-const url = site.getUrl();
-
-export default () => (
-
-    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <sitemap>
-       <loc>http://www.example.com/sitemap1.xml.gz</loc>
-       <lastmod>2014-10-01T18:23:17+00:00</lastmod>
-    </sitemap>
- </sitemapindex>
-
-);
+    
+    await addJsx(site, 'file:///main.jsx', `
+    import Message from 'file:///message.jsx';
+    export const dst = '/main.html';
+    
+    export default () => <div>Message: <Message /></div>;
     `);
+    await addJsx(site, 'file:///message.jsx', `export default () => "Hello World";`);
 
-    await addJsx( site, 'file:///message.jsx', `
-export default () => "Hello World";
-`);
-
-    // await markMdx( site );
-    // await mdxPreprocess(site);
-
-    // await assignTitle(site);
-
-    // await mdxRender(site, {target:'text/html'} );
+    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
+    
+    await buildSrcIndex(site);
+    
+    await resolveImports(site);
 
     await preProcessJSX(site);
+
     await processJSX(site);
 
     await buildDstIndex(site);
 
-    await printES(site);
+    // await printES(site);
 
-    e = await site.getEntityByDst('/sitemap.xml');
+    let e = await site.getEntityByDst('/main.html');
 
-    log( Beautify.html(e.Text.data) );
-
-
+    assert.equal( e.Text.data, '<div>Message: Hello World</div>');
 });
+
+
 
 
 test.run();
 
 
-
-
-async function addScss( site:Site,  url:string, data:string ){
+async function addJsx(site: Site, url: string, data: string, meta?: any) {
     let e = await site.addSrc(url);
-    e.Scss = {data};
-    await site.update(e);
-}
-
-async function addMdx( site:Site, url:string, data:string, meta?:any ){
-    let e = await site.addSrc(url);
-    e.Mdx = { data };
-    if( meta !== undefined ){
-        e.Meta = { meta };
-    }
-    return await site.update(e);
-}
-
-async function addJsx( site:Site, url:string, data:string, meta?:any ){
-    let e = await site.addSrc(url);
-    e.Jsx = { data };
-    if( meta !== undefined ){
-        e.Meta = { meta };
-    }
+    e.Data = { data };
+    // e.Jsx = { data };
+    // if( meta !== undefined ){
+    //     e.Meta = { meta };
+    // }
     return await site.update(e);
 }

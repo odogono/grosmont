@@ -1,4 +1,4 @@
-
+import Path from 'path';
 
 
 import { Entity, EntityId } from "odgn-entity/src/entity";
@@ -73,6 +73,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
 
 
+
 /**
  * Pulls data from and prepares the mdx for rendering
  * 
@@ -83,13 +84,25 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
     const { es } = site;
     const siteRef = site.getRef();
     const { fileIndex } = options;
-    const resolveImport = (path: string) => getEntityImportUrlFromPath(fileIndex, path);
+    const resolveImport = (path: string, mimes?:string[]) => getEntityImportUrlFromPath(fileIndex, path, mimes);
+    const require = (path:string, fullPath) => {
+        log('[preProcessMdx]', path);
+        
+        // const fullPath = Path.resolve(Path.dirname(path), path);
+        let url = getEntityImportUrlFromPath(fileIndex, path)
+        log('[require]', url);
+
+        // log('[preProcessMdx]', fileIndex.index);
+
+        return false;
+    };
 
     
     try {
         let props = await buildProps(site, e);
+        let context = {site, e};
         
-        let result = await transpile(props, { render: false, resolveImport });
+        let result = await transpile(props, { render: false, resolveImport, require, context });
 
         const { meta } = result;
 

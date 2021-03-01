@@ -5,7 +5,7 @@ import babelGenerate from '@babel/generator';
 
 
 export interface ImportCSSPluginOptions {
-    resolve?: (path) => string | undefined;
+    resolve?: (path:string, mimes?:string[]) => string | undefined;
 }
 
 /**
@@ -27,9 +27,9 @@ export function importCSSPlugin(options: ImportCSSPluginOptions = {}) {
                     const { value } = node.source;
 
                     if (options.resolve) {
-                        let cssPath = options.resolve(value);
+                        let cssPath = options.resolve(value, ['text/css', 'text/scss'] );
                         if( cssPath !== undefined ){
-                            // log('adding cssPath', cssPath);
+                            log('adding cssPath', cssPath);
                             cssPaths.push(cssPath);
                             found = true;
                             return false;

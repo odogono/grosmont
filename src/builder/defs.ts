@@ -11,6 +11,7 @@ export const defs = [
         uri: '/component/dst',
         properties: [
             { name: 'url', type: 'string' },
+            { name: 'mime', type: 'string' },
         ]
     },
     {
@@ -44,23 +45,6 @@ export const defs = [
             { name: 'data', type: 'string' /* base64 encoded */ },
         ]
     },
-    // DEPRECATED - use /component/src
-    // {
-    //     uri: '/component/file',
-    //     properties: [
-    //         { name: 'uri', type: 'string' },
-    //         { name: 'path', type: 'string' },
-    //         { name: 'ext', type: 'string' }
-    //     ]
-    // },
-    // DEPRECATED - use /component/src
-    // {
-    //     uri: '/component/dir',
-    //     properties: [
-    //         { name: 'uri', type: 'string' },
-    //         { name: 'path', type: 'string' }
-    //     ]
-    // },
     // timestamps
     {
         uri: '/component/times',
@@ -69,26 +53,6 @@ export const defs = [
             { name: 'mtime', type: 'datetime' },
         ]
     },
-
-    // DEPRECATED - use /component/src
-    // {
-    //     uri: '/component/source',
-    //     properties: [
-    //         { name: 'uri', type:'string' },
-    //         { name: 'data', type:'string' },
-    //     ]
-    // },
-    // DEPRECATED - use /component/dst and others
-    // {
-    //     uri: '/component/target',
-    //     properties: [
-    //         {name:'uri', type:'string'},
-    //         {name:'path', type:'string'},
-    //         {name:'filename', type:'string'},
-    //         {name:'content', type:'string', persist:false},
-    //         {name:'minify', type:'boolean'}
-    //     ]
-    // },
     {
         uri: '/component/title',
         properties: [ 

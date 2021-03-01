@@ -1,5 +1,5 @@
 import Path from 'path';
-import { Component, getComponentEntityId } from "odgn-entity/src/component";
+import { Component, getComponentEntityId, setEntityId } from "odgn-entity/src/component";
 import { Entity, EntityId, isEntity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { Site } from "./site";
@@ -27,7 +27,7 @@ export interface ParseOptionsOptions extends FindEntityOptions {
 function parseOptions(options: FindEntityOptions = {}) {
     const ref = options.siteRef ?? 0;
     const onlyUpdated = options.onlyUpdated ?? false;
-    if( ref === 0 ){
+    if (ref === 0) {
         // console.warn('[parseOptions]', 'empty siteRef passed');
         throw new Error('[parseOptions] empty siteRef passed');
     }
@@ -36,7 +36,7 @@ function parseOptions(options: FindEntityOptions = {}) {
 
 export async function selectTagBySlug(es: EntitySet, name: string, options: FindEntityOptions = {}) {
     const slug = slugify(name);
-    const {ref} = parseOptions(options);
+    const { ref } = parseOptions(options);
 
     const stmt = es.prepare(`
     [
@@ -107,7 +107,7 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
 
 
 export async function selectMeta(es: EntitySet, options: FindEntityOptions = {}) {
-    const {ref} = parseOptions(options);
+    const { ref } = parseOptions(options);
 
 
     const stmt = es.prepare(`
@@ -269,8 +269,9 @@ export async function selectJsx(es: EntitySet, options: FindEntityOptions = {}):
         
         @e ] select` :
         `[
-                /component/jsx !bf
+            // debug
                 /component/site_ref#ref !ca $ref ==
+                /component/jsx !bf
             and
             @e
         ] select`;
@@ -365,7 +366,7 @@ export async function selectScss(es: EntitySet, options: FindEntityOptions = {})
  * @param ext
  * @param options 
  */
-export async function selectSrcByExt(es: EntitySet, ext: string[], options: FindEntityOptions = {}):Promise<Component[]> {
+export async function selectSrcByExt(es: EntitySet, ext: string[], options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const regexExt = ext.join('|');
@@ -406,7 +407,7 @@ export interface FindEntityFilenameOptions extends FindEntityOptions {
  * @param names 
  * @param options 
  */
-export async function selectSrcByFilename(es: EntitySet, names: string[], options: FindEntityFilenameOptions = {}):Promise<Component[]> {
+export async function selectSrcByFilename(es: EntitySet, names: string[], options: FindEntityFilenameOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const regexExt = names.join('|');
@@ -702,7 +703,7 @@ export async function selectTextByEntity(es: EntitySet, e: EntityId | Entity): P
  */
 export async function selectEntityBySrc(site: Site, url: string, options: FindEntityOptions = {}): Promise<(Entity | EntityId)> {
     const { es } = site;
-    const {ref} = parseOptions(options);
+    const { ref } = parseOptions(options);
     // const {ref, onlyUpdated} = parseOptions(options);
 
     const stmt = es.prepare(`
@@ -951,11 +952,11 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
  * @param dst 
  * @param type 
  */
-export async function insertDependency(es: EntitySet, src: EntityId, dst: EntityId, type: DependencyType): Promise<EntityId> {
+export async function insertDependency(es: EntitySet, src: EntityId, dst: EntityId, type: DependencyType, extra?: Component[]): Promise<EntityId> {
     if (src === 0 || dst === 0) {
         return 0;
     }
-    if( src === dst ){
+    if (src === dst) {
         return 0;
     }
 
@@ -966,9 +967,11 @@ export async function insertDependency(es: EntitySet, src: EntityId, dst: Entity
         return getComponentEntityId(depCom);
     }
 
-    let e = es.createEntity();
-    e.Dep = { src, dst, type };
-    await es.add(e);
+    // let e = es.createEntity();
+    let com = es.createComponent('/component/dep', { src, dst, type });
+
+    await es.add([com, ...extra]);
+
     let reid = es.getUpdatedEntities()[0];
     return reid;
 }
@@ -1123,7 +1126,7 @@ export async function applyUpdatesToDependencies(site: Site) {
  * @param site 
  */
 export async function selectUpdated(es: EntitySet, options: FindEntityOptions = {}): Promise<EntityId[]> {
-    const {ref} = parseOptions(options);
+    const { ref } = parseOptions(options);
 
     const stmt = es.prepare(`
         [
@@ -1147,7 +1150,7 @@ export async function selectUpdated(es: EntitySet, options: FindEntityOptions = 
  * @param es 
  */
 export async function clearUpdates(es: EntitySet, options: FindEntityOptions = {}) {
-    const {ref} = parseOptions(options);
+    const { ref } = parseOptions(options);
 
     // TODO - select only within the site
     const stmt = es.prepare(`
@@ -1392,7 +1395,7 @@ export async function getDependencyChildren(es: EntitySet, eid: EntityId, type: 
  * @param options 
  */
 export async function findLeafDependenciesByType(es: EntitySet, type: DependencyType, options: FindEntityOptions = {}): Promise<EntityId[]> {
-    const {ref, onlyUpdated} = parseOptions(options);
+    const { ref, onlyUpdated } = parseOptions(options);
 
     // select dependency components by type
     // build a list of all src and all dst
@@ -1489,7 +1492,7 @@ export async function getDependencyComponent(es: EntitySet, src: EntityId, dst: 
     return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getDepdendencyComponentBySrc(es:EntitySet, src:EntityId): Promise<Component[]> {
+export async function getDepdendencyComponentBySrc(es: EntitySet, src: EntityId): Promise<Component[]> {
     const q = `
     [
         /component/dep#src !ca $src ==
@@ -1497,7 +1500,7 @@ export async function getDepdendencyComponentBySrc(es:EntitySet, src:EntityId): 
         @c
     ] select
     `;
-    return es.prepare(q).getResult({src});
+    return es.prepare(q).getResult({ src });
 }
 
 export async function getDependencyComponents(es: EntitySet, eid: EntityId, type: DependencyType): Promise<Component[]> {

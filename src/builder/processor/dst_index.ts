@@ -27,7 +27,7 @@ export async function process(site: Site, options:DstIndexOptions = {}) {
 
     for( const eid of eids ){
         const url = await getDstUrl(es, eid);
-        dstIndex.index.set(url, [eid]);
+        dstIndex.set(url, eid);
     }
 
     // return await site.addQueryIndex('/index/srcUrl', query, { ref: siteEntity.id });

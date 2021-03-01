@@ -37,8 +37,6 @@ export async function process(site: Site, options:ProcessMDXRenderOptions = {}) 
     let linkIndex = site.getIndex('/index/links', true);
     let imgIndex = site.getIndex('/index/imgs', true);
 
-    // log('LINK index', linkIndex);
-
     const pageLinks = await buildPageLinks(es, linkIndex );
     const imgs = await buildPageImgs(es, imgIndex);
 
@@ -114,7 +112,11 @@ async function renderMdx(site: Site, e: Entity, options: ProcessMDXRenderOptions
 async function renderEntity(site: Site, src: Entity, child: TranspileResult, options: ProcessMDXRenderOptions) {
     const { es } = site;
     const { fileIndex } = options;
-    const resolveImport = (path: string) => getEntityImportUrlFromPath(fileIndex, path);
+    const resolveImport = (path: string, mimes?:string[]) => getEntityImportUrlFromPath(fileIndex, path, mimes);
+    const require = async (path:string) => {
+        log('[require]', path);
+        return null;
+    };
 
     let props = await buildProps(site, src);
 
@@ -133,7 +135,7 @@ async function renderEntity(site: Site, src: Entity, child: TranspileResult, opt
     // props.cssLinks = cssLinks;
 
 
-    let result = await transpile(props, { render: true, resolveImport });
+    let result = await transpile(props, { render: true, resolveImport, require });
 
     // log('[renderEntity]', src.Src.url, result );
     result.css = props.css;
