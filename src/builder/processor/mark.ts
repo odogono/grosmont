@@ -53,18 +53,21 @@ export async function process(site: Site, options: MarkOptions) {
     for (const com of coms) {
         let eid = getComponentEntityId(com);
 
-        let jsx = await es.getComponent(toComponentId(eid, did));
+        let typeCom = await es.getComponent(toComponentId(eid, did));
 
-        if (jsx === undefined) {
-            jsx = es.createComponent(did);
-            jsx = setEntityId(jsx, eid);
+        if (typeCom === undefined) {
+            typeCom = es.createComponent(did);
+            typeCom = setEntityId(typeCom, eid);
             if (!loadData) {
-                addComs.push(jsx);
+                addComs.push(typeCom);
             }
             info(reporter, `mark`, { eid });
         }
 
         // set the mime type
+        com.mime = mime;
+        addComs.push( com );
+
         let meta = await applyMimeToEntityId(es, eid, mime);
         addComs.push(meta);
 
@@ -77,8 +80,8 @@ export async function process(site: Site, options: MarkOptions) {
 
             let content = await Fs.readFile(path, 'utf8');
             if (content) {
-                jsx.data = content;
-                addComs.push(jsx);
+                typeCom.data = content;
+                addComs.push(typeCom);
             }
         }
     }

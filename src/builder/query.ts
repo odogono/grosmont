@@ -575,7 +575,7 @@ export async function buildSrcIndex(site: Site) {
         and
         @e
     ] select
-    [ /component/src#url /id /component/meta#/meta/mime ] pluck
+    [ /component/src#url /id /component/src#/mime /bitField ] pluck
     `;
 
     return await site.addQueryIndex('/index/srcUrl', query, { ref });
@@ -970,7 +970,7 @@ export async function insertDependency(es: EntitySet, src: EntityId, dst: Entity
     // let e = es.createEntity();
     let com = es.createComponent('/component/dep', { src, dst, type });
 
-    await es.add([com, ...extra]);
+    await es.add( extra ? [com, ...extra] : com );
 
     let reid = es.getUpdatedEntities()[0];
     return reid;
