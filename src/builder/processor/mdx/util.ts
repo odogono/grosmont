@@ -1,11 +1,12 @@
 import Path from 'path';
 import { toComponentId } from "odgn-entity/src/component";
-import { Entity } from "odgn-entity/src/entity";
+import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { buildUrl, resolveUrlPath, uriToPath } from "../../util";
-import { PageLink, PageImg, PageImgs, PageLinks, SiteIndex, TranspileProps } from "../../types";
-import { getDependencyEntities, getDstUrl } from "../../query";
+import { PageLink, PageImg, PageImgs, PageLinks, SiteIndex, TranspileProps, ProcessOptions } from "../../types";
+import { getDependencyEntities, getDepenendencyDst, getDstUrl } from "../../query";
 import { Site } from "../../site";
+import { toInteger } from '@odgn/utils';
 
 
 const log = (...args) => console.log('[Util]', ...args);
@@ -167,3 +168,16 @@ export function resolveImport( site:Site, url:string, base:string ){
     }
     return undefined;
 }
+
+
+export function parseEntityUrl( url:string ){
+    const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "i");
+    let match = re.exec( url );
+    if( match !== null ){
+        const [ m, eid, path ] = match;
+        return { eid:toInteger(eid), path, val:m };
+    }
+    return undefined;
+}
+
+

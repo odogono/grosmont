@@ -50,7 +50,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         } catch (err) {
             let ee = es.createComponent('/component/error', { message: err.message, from: Label });
-            ee = setEntityId(ee, e.id);
+            output.push( setEntityId(ee, e.id) );
             error(reporter, 'error', err, { eid: e.id });
             log('error', err);
         }
@@ -86,7 +86,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     }
 
     const require = (path: string, fullPath) => {
-        log('[preProcessMdx]', path);
+        log('[processEntity]', path);
 
         // const fullPath = Path.resolve(Path.dirname(path), path);
         // let url = getEntityImportUrlFromPath(fileIndex, path)
@@ -108,7 +108,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
             links.push(['int', entry[0], url, text]);
             return entry[1];
         }
-        
+
 
         return url;
     }
@@ -139,6 +139,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     // index for use at the point of rendering
     await applyLinks(site, e, links, options);
 
+    await applyImports(site, e, imports, options);
+
     // log('[processEntity]', result);
 
     return [jsCom];
@@ -150,13 +152,32 @@ function isUrlInternal(url: string) {
 }
 
 
+async function applyImports(site: Site, e: Entity, imports, options: EvalMdxOptions) {
+    const { es } = site;
+    const existingIds = new Set(await getDependencies(es, e.id, 'import'));
+
+    for (let [importEid, url] of imports) {
+        let urlCom = es.createComponent('/component/url', { url });
+        let depId = await insertDependency(es, e.id, importEid, 'import', [urlCom] );
+
+        if (existingIds.has(depId)) {
+            existingIds.delete(depId);
+        }
+    }
+
+    // remove dependencies that don't exist anymore
+    await es.removeEntity(Array.from(existingIds));
+
+    return e;
+}
+
 async function applyLinks(site: Site, e: Entity, links, options: EvalMdxOptions) {
     const { es } = site;
     const existingIds = new Set(await getDependencies(es, e.id, 'link'));
 
     for (let [type, linkEid, url, text] of links) {
         if (type === 'ext') {
-            linkEid = await getUrlEntityId( es, url, options );
+            linkEid = await getUrlEntityId(es, url, options);
         }
 
         let depId = await insertDependency(es, e.id, linkEid, 'link');
@@ -173,57 +194,14 @@ async function applyLinks(site: Site, e: Entity, links, options: EvalMdxOptions)
 }
 
 
-async function getUrlEntityId(es:EntitySet, url:string, options:EvalMdxOptions) {
+async function getUrlEntityId(es: EntitySet, url: string, options: EvalMdxOptions) {
     let com = await getUrlComponent(es, url, options);
 
     if (com === undefined) {
-        com = es.createComponent('/component/url', {url});
+        com = es.createComponent('/component/url', { url });
         await es.add(com);
         return es.getUpdatedEntities()[0];
     }
     return com;
 }
 
-/**
- * takes links found from the transpile result, rewrites the urls, 
- * and creates dependency entities
- */
-async function applyLinksO(es: EntitySet, e: Entity, result: TranspileResult, options: ProcessOptions) {
-
-    const { links } = result;
-    const { linkIndex } = options;
-    const siteRef = e.SiteRef?.ref;
-
-    const existingIds = new Set(await getDependencies(es, e.id, 'link'));
-
-    // log('[applyLinks]', links );
-
-    for (let [linkUrl, { url, child }] of links) {
-
-        const linkE = await findEntityByUrl(es, url, { siteRef, title: child });
-
-        if (linkE === undefined) {
-            continue;
-        }
-
-        // log('[applyLinks]', 'found', url, linkE.id );
-
-        // add a link dependency
-        let depId = await insertDependency(es, e.id, linkE.id, 'link');
-
-        if (existingIds.has(depId)) {
-            existingIds.delete(depId);
-        }
-
-        const type = linkE.Src !== undefined ? 'internal' : 'external';
-
-        linkIndex.set(linkUrl, linkE.id, type, child);
-        // linkIndex.index.set(linkUrl, [linkE.id, type, child]);
-    }
-
-    // remove dependencies that don't exist anymore
-    await es.removeEntity(Array.from(existingIds));
-
-
-    return e;
-}

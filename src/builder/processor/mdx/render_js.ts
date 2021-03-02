@@ -11,6 +11,7 @@ import { parse as parseConfig } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
 import { toInteger } from '@odgn/utils';
+import { buildImports } from './eval_js';
 
 const Label = '/processor/mdx/render_js';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -64,10 +65,8 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     const resolveImportLocal = (path: string, mimes?: string[]) => undefined;
 
-    const require = (path: string, fullPath) => {
-        log('[require]', path);
-        return false;
-    };
+    const require = await buildImports( site, e, options );
+
 
     if( meta.isEnabled === false ){
         return undefined;

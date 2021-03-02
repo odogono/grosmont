@@ -270,12 +270,8 @@ export async function selectJsx(es: EntitySet, options: FindEntityOptions = {}):
         @e ] select` :
         `[
             // debug
+                /component/jsx !bf
                 /component/site_ref#ref !ca $ref ==
-                // /component/src#mime !ca "text/mdx" ==
-                // /component/src#mime !ca "text/jsx" ==
-                    /component/jsx !bf
-                    // /component/mdx !bf
-                or
             and
             @e
         ] select`;
@@ -1565,6 +1561,7 @@ export async function getDepenendencyDst(es: EntitySet, src: EntityId, type: Dep
         /component/dep#type !ca $type ==
         /component/dep#src !ca $src ==
         and
+        /component/dep !bf
         @c
     ] select
     /dst pluck!
@@ -1585,6 +1582,7 @@ export async function getDependencies(es: EntitySet, eid: EntityId, type: Depend
         /component/dep#type !ca ${type} ==
         /component/dep#src !ca ${eid} ==
         and
+        /component/dep !bf
         @eid
     ] select
     `);
@@ -1597,6 +1595,7 @@ export async function getDependencyEntities(es: EntitySet, eid: EntityId, type: 
         /component/dep#type !ca ${type} ==
         /component/dep#src !ca ${eid} ==
         and
+        /component/dep !bf
         @e
     ] select
     `);
@@ -1636,6 +1635,7 @@ export async function getDependencyComponents(es: EntitySet, eid: EntityId, type
         /component/dep#type !ca ${type} ==
         /component/dep#src !ca ${eid} ==
         and
+        /component/dep !bf
         @c
     ] select
     `);

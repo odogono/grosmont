@@ -197,6 +197,7 @@ export class Site {
     /**
      * Returns data from the entity looking at /component/data#data first,
      * otherwise reads from /component/src#url
+     * 
      * @param e 
      */
     async getEntityData(e: Entity | EntityId): Promise<string> {
