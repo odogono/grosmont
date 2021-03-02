@@ -6,9 +6,10 @@ import {select,selectAll} from 'unist-util-select';
 export interface LinkProcProps {
     links: PageLinks;
     applyLinks?: PageLinks;
+    resolveLink?: (url:string, text?:string) => any;
 }
 
-export function linkProc({ links, applyLinks }: LinkProcProps) {
+export function linkProc({ links, applyLinks, resolveLink }: LinkProcProps) {
     
     return (tree, vFile) => {
         // let links =  {};
@@ -30,6 +31,13 @@ export function linkProc({ links, applyLinks }: LinkProcProps) {
 
             if( url === undefined ){
                 return;
+            }
+
+            if( resolveLink ){
+                let resultUrl = resolveLink( url, text?.value as string )
+                if( resultUrl !== undefined ){
+                    ctx.url = resultUrl;
+                }
             }
 
             // incoming links can overwrite the link url

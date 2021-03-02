@@ -19,11 +19,12 @@ import {
     selectEntitiesByMime,
 } from "../../query";
 import { parseUri, toInteger } from "@odgn/utils";
-import { buildProps, getEntityImportUrlFromPath } from "./util";
+import { buildProps, getEntityImportUrlFromPath, resolveImport } from "./util";
 import { parse as parseConfig } from '../../config';
 import { isString } from "@odgn/utils";
 import { error, info, setLocation } from "../../reporter";
 import { getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
+import { resolveUrlPath } from '../../util';
 
 
 
@@ -38,8 +39,8 @@ const log = (...args) => console.log('[ProcMDXParse]', ...args);
  */
 export async function process(site: Site, options: ProcessOptions = {}) {
     const es = site.es;
-    const {reporter} = options;
-    setLocation(reporter,'/processor/mdx/parse');
+    const { reporter } = options;
+    setLocation(reporter, '/processor/mdx/parse');
 
     // build an index of /src#url
     let fileIndex = await buildSrcIndex(site);
@@ -48,28 +49,28 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     // select mdx entities
     // let ents = await selectMdx(es, options);
-    let ents = await selectEntitiesByMime( es, ['text/mdx'], options );
+    let ents = await selectEntitiesByMime(es, ['text/mdx'], options);
 
 
     let output: Entity[] = [];
 
-    
+
     // first pass at parsing the mdx - pulling out links, local meta etc
     for (const e of ents) {
-        
+
         try {
 
             output.push(await preProcessMdx(site, e, { fileIndex, imgIndex, linkIndex }));
 
-            info(reporter,``, {eid:e.id});
-            
+            info(reporter, ``, { eid: e.id });
+
         } catch (err) {
-            
+
             e.Error = { message: err.message, stack: err.stack };
             output.push(e);
-            error(reporter, 'error', err, {eid:e.id});
+            error(reporter, 'error', err, { eid: e.id });
         }
-        
+
     }
 
     await es.add(output);
@@ -91,25 +92,37 @@ async function preProcessMdx(site: Site, e: Entity, options: ProcessOptions) {
     const { es } = site;
     const siteRef = site.getRef();
     const { fileIndex } = options;
-    const resolveImport = (path: string, mimes?:string[]) => getEntityImportUrlFromPath(fileIndex, path, mimes);
-    const require = (path:string, fullPath) => {
+    const { url:base } = e.Src;
+
+    let imports = [];
+
+    const resolveImportLocal = (path: string, mimes?: string[]) => {
+
+        let entry = resolveImport(site, path, base );
+        if( entry !== undefined ){
+            imports.push( entry );
+            return entry[1];
+        }
+        // return getEntityImportUrlFromPath(fileIndex, path, mimes);
+    }
+    
+    const require = (path: string, fullPath) => {
         log('[preProcessMdx]', path);
-        
+
         // const fullPath = Path.resolve(Path.dirname(path), path);
-        let url = getEntityImportUrlFromPath(fileIndex, path)
-        log('[require]', url);
+        // let url = getEntityImportUrlFromPath(fileIndex, path)
+        // log('[require]', url);
 
         // log('[preProcessMdx]', fileIndex.index);
-
         return false;
     };
 
-    
+
     try {
         let props = await buildProps(site, e);
-        let context = {site, e};
-        
-        let result = await transpile(props, { render: false, resolveImport, require, context });
+        let context = { site, e };
+
+        let result = await transpile(props, { render: false, resolveImport:resolveImportLocal, require, context });
 
         const { meta } = result;
 
@@ -148,7 +161,6 @@ async function applyCSSLinks(es: EntitySet, e: Entity, result: TranspileResult) 
     // get a list of existing css dependencies
     const existingIds = new Set(await getDependencies(es, e.id, 'css'));
 
-
     // log('[applyCSSLinks]', {existingIds} );
 
     if (cssLinks !== undefined && cssLinks.length > 0) {
@@ -162,11 +174,11 @@ async function applyCSSLinks(es: EntitySet, e: Entity, result: TranspileResult) 
 
             // const path = await selectTargetPath(es, eid);
             // log('[applyCSSLinks]', eid, com, attr, queryKey, '=', link);
-            let comUrl = es.createComponent('/component/url', {url:link} );
+            let comUrl = es.createComponent('/component/url', { url: link });
             // comUrl = setEntityId( comUrl, e.id );
 
             // add a css dependency
-            let depId = await insertDependency(es, e.id, eid, 'css', [comUrl] );
+            let depId = await insertDependency(es, e.id, eid, 'css', [comUrl]);
 
             if (existingIds.has(depId)) {
                 existingIds.delete(depId);
@@ -184,24 +196,24 @@ async function applyCSSLinks(es: EntitySet, e: Entity, result: TranspileResult) 
 }
 
 async function applyImgLinks(es: EntitySet, e: Entity, result: TranspileResult, options: ProcessOptions) {
-    const {imgs} = result;
+    const { imgs } = result;
     const siteRef = e.SiteRef?.ref;
     const { imgIndex } = options;
 
     const existingIds = new Set(await getDependencies(es, e.id, 'img'));
 
     // log('[applyImgLinks]', imgs);
-    
-    for( let [imgId, {url,alt}] of imgs ){
-        const srcE = await findEntityByUrl( es, url, {siteRef});
-        
+
+    for (let [imgId, { url, alt }] of imgs) {
+        const srcE = await findEntityByUrl(es, url, { siteRef });
+
         // log('[applyImgLinks]', url, srcE);
 
-        if( srcE === undefined ){
+        if (srcE === undefined) {
             continue;
         }
 
-        let depId = await insertDependency(es, e.id, srcE.id, 'img' );
+        let depId = await insertDependency(es, e.id, srcE.id, 'img');
 
         if (existingIds.has(depId)) {
             existingIds.delete(depId);

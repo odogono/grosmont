@@ -23,12 +23,13 @@ export interface TranspileProps {
 }
 
 export interface TranspileResult {
-    path: string;
+    path?: string;
     html?: string;
     component?: any;
-    meta: PageMeta;
-    additional: object;
+    meta?: PageMeta;
+    additional?: object;
     code?: string;
+    js?: string;
     ast?: any;
     jsx?: string;
     links?: PageLinks;
@@ -36,6 +37,7 @@ export interface TranspileResult {
     css?: string;
     cssLinks?: string[];
     imgs?: PageImgs;
+    pageProps?: any;
 }
 
 
@@ -50,10 +52,15 @@ export class SiteIndex {
     query?: string;
     args?: StatementArgs;
     index: Map<any, any[]>;
+    eIndex: Map<EntityId, any[]>;
     constructor(query?: string, args?:StatementArgs ){
         this.query = query;
         this.args = args;
         this.index = new Map<any, any[]>();
+        this.eIndex = new Map<EntityId, any[]>();
+    }
+    get( key:string ){
+        return this.index.get(key);
     }
     getEid( key ):EntityId {
         let entry = this.index.get(key);
@@ -62,11 +69,19 @@ export class SiteIndex {
         }
         return undefined;
     }
+    getByEid( eid:EntityId, full:boolean = false ) {
+        let entry = this.eIndex.get(eid);
+        return entry !== undefined ? 
+            full ? entry : entry[0]
+            : undefined;
+    }
     set( key, eid:EntityId, ...args){
         this.index.set( key, [eid,...args]);
+        this.eIndex.set( eid, [key,...args]);
     }
     clear(){
         this.index.clear();
+        this.eIndex.clear();
     }
 }
 
@@ -77,6 +92,7 @@ export interface ProcessOptions {
     dryRun?: boolean;
     onlyUpdated?: boolean;
     fileIndex?: SiteIndex;
+    srcIndex?: SiteIndex;
     imgIndex?: SiteIndex;
     linkIndex?: SiteIndex;
     pageLinks?: PageLinks;
@@ -122,6 +138,7 @@ export interface TranspileOptions {
     render?: boolean;
     forceRender?: boolean;
     resolveImport: (path: string) => string | undefined;
+    resolveLink?: (url:string, text?:string) => any;
     require: (path:string, fullPath:string) => any;
     context?: any;
 }

@@ -144,7 +144,6 @@ function resolvePath(site: Site, path: string, base: string): EntityId {
     }
     path = resolveUrlPath(path, base);
     let eid = srcIndex.getEid(path);
-    // log('[resolvePath]', to, srcIndex.index.get(to), eid );
     if (eid !== undefined) {
         return eid;
     }

@@ -7,12 +7,12 @@ import { PageImgs, ProcessOptions, TranspileProps, TranspileResult } from '../..
 import { Site } from '../../site';
 
 import { transpile } from './transpile';
-import { buildPageImgs, buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath } from "./util";
+import { buildPageImgs, buildPageLinks, buildProps, getEntityCSSDependencies, getEntityImportUrlFromPath, resolveImport } from "./util";
 import { buildSrcIndex, getLayoutFromDependency, selectMdx } from "../../query";
 import { info, setLocation } from "../../reporter";
 import { printEntity } from "odgn-entity/src/util/print";
 
-
+const Label = '/processor/mdx/render';
 const log = (...args) => console.log('[ProcMDXRender]', ...args);
 
 
@@ -30,7 +30,7 @@ export async function process(site: Site, options:ProcessMDXRenderOptions = {}) 
     const es = site.es;
     const {reporter} = options;
 
-    setLocation(reporter,'/processor/mdx/render');
+    setLocation(reporter,Label);
 
     // resolve linkIndex
     let fileIndex = site.getIndex('/index/srcUrl');
@@ -112,7 +112,20 @@ async function renderMdx(site: Site, e: Entity, options: ProcessMDXRenderOptions
 async function renderEntity(site: Site, src: Entity, child: TranspileResult, options: ProcessMDXRenderOptions) {
     const { es } = site;
     const { fileIndex } = options;
-    const resolveImport = (path: string, mimes?:string[]) => getEntityImportUrlFromPath(fileIndex, path, mimes);
+    const { url:base } = src.Src;
+    // let imports = [];
+    // const resolveImport = (path: string, mimes?:string[]) => getEntityImportUrlFromPath(fileIndex, path, mimes);
+    const resolveImportLocal = (path: string, mimes?: string[]) => {
+
+        let entry = resolveImport(site, path, base );
+        if( entry !== undefined ){
+            // imports.push( entry );
+            return entry[1];
+        }
+
+        // return getEntityImportUrlFromPath(fileIndex, path, mimes);
+    }
+
     const require = async (path:string) => {
         log('[require]', path);
         return null;
@@ -135,7 +148,7 @@ async function renderEntity(site: Site, src: Entity, child: TranspileResult, opt
     // props.cssLinks = cssLinks;
 
 
-    let result = await transpile(props, { render: true, resolveImport, require });
+    let result = await transpile(props, { render: true, resolveImport:resolveImportLocal, require });
 
     // log('[renderEntity]', src.Src.url, result );
     result.css = props.css;

@@ -307,6 +307,30 @@ export async function selectMdx(es: EntitySet, options: FindEntityOptions = {}):
     return await es.prepare(q).getEntities({ ref });
 }
 
+export async function selectJs(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
+    const { ref, onlyUpdated } = parseOptions(options);
+
+    let q = onlyUpdated ? `
+        [
+                    /component/js !bf
+                        /component/upd#op !ca 1 ==
+                        /component/upd#op !ca 2 ==
+                    or
+                    /component/site_ref#ref !ca $ref ==
+                and
+            and
+            @e 
+        ] select` :
+        `[
+                /component/js !bf
+                /component/site_ref#ref !ca $ref ==
+            and
+            @e
+        ] select`;
+
+    return await es.prepare(q).getEntities({ ref });
+}
+
 
 
 
@@ -512,7 +536,7 @@ export async function selectSrcByFilename(es: EntitySet, names: string[], option
 export async function selectDstTextIds(es: EntitySet): Promise<EntityId[]> {
 
     const q = `
-        [ [ /component/dst /component/text ] !bf @eid] select
+        [ [ /component/dst ] !bf @eid] select
     `;
 
     const stmt = es.prepare(q);
@@ -615,6 +639,20 @@ export async function findEntityByUrl(es: EntitySet, url: string, options: FindE
     // log('[findEntityByUrl]', { protocol, host, path, queryKey });
 
     return undefined;
+}
+
+
+export async function getUrlComponent(es: EntitySet, url: string, options:FindEntityOptions = {}) {
+    const { ref, onlyUpdated } = parseOptions(options);
+    const stmt = es.prepare(`
+    [
+        /component/site_ref#ref !ca $ref ==
+        /component/url#url !ca $url ==
+        @c
+    ] select
+    `);
+    const r = await stmt.getResult({ ref, url });
+    return r.length > 0 ? r[0] : undefined;
 }
 
 
@@ -970,8 +1008,6 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
         // finished
         dup [ drop drop @! ] swap "abs" == if
         
-        
-
         // es eid false
         
         

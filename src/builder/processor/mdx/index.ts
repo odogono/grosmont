@@ -1,14 +1,9 @@
 import { Site } from '../../site';
 
-
 import { process as preprocess } from './parse';
 import { process as resolveMeta } from './resolve_meta';
 import { process as render } from './render';
 import { ProcessOptions } from '../../types';
-
-
-const log = (...args) => console.log('[ProcMDX]', ...args);
-
 
 /**
  * Compiles Mdx

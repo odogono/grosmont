@@ -43,6 +43,7 @@ export const defs = [
         uri: '/component/data',
         properties: [
             { name: 'data', type: 'string' /* base64 encoded */ },
+            { name: 'mime', type: 'string' },
         ]
     },
     // timestamps
@@ -226,6 +227,12 @@ export const defs = [
         ]
     },
     {
+        uri: '/component/js',
+        properties: [
+            {name:'data', type:'string'}
+        ]
+    },
+    {
         uri: '/component/error',
         properties: [
             {name:'message'}
@@ -241,6 +248,14 @@ export const defs = [
     // },
     {
         uri: '/component/text',
+        properties: [
+            {name: 'data', type:'string'},
+            {name: 'mime', type:'string'}
+        ]
+    },
+
+    {
+        uri: '/component/output',
         properties: [
             {name: 'data', type:'string'},
             {name: 'mime', type:'string'}

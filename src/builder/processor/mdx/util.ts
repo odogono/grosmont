@@ -2,7 +2,7 @@ import Path from 'path';
 import { toComponentId } from "odgn-entity/src/component";
 import { Entity } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
-import { buildUrl, uriToPath } from "../../util";
+import { buildUrl, resolveUrlPath, uriToPath } from "../../util";
 import { PageLink, PageImg, PageImgs, PageLinks, SiteIndex, TranspileProps } from "../../types";
 import { getDependencyEntities, getDstUrl } from "../../query";
 import { Site } from "../../site";
@@ -138,4 +138,32 @@ export async function getEntityCSSDependencies(es: EntitySet, e: Entity) {
     }
 
     return result;
+}
+
+export function resolveImport( site:Site, url:string, base:string ){
+    const srcIndex = site.getIndex('/index/srcUrl');
+    if (srcIndex === undefined) {
+        throw new Error('/index/srcUrl not present');
+    }
+
+    let path = resolveUrlPath(url, base);
+    let entry = srcIndex.get(path);
+
+    // log('[resolveImport]', eid, path, url);
+    if (entry !== undefined) {
+        const [eid, mime, bf] = entry;
+        if (mime === 'text/jsx') {
+            return [eid, `e://${eid}/component/jsx`];
+        }
+        if (mime === 'text/mdx') {
+            return [eid, `e://${eid}/component/mdx`];
+        }
+        if (mime === 'text/scss') {
+            return [eid, `e://${eid}/component/scss`];
+        }
+        else {
+            return [eid, `e://${eid}/`];
+        }
+    }
+    return undefined;
 }

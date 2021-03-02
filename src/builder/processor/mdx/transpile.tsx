@@ -50,6 +50,111 @@ const log = (...args) => console.log('[TranspileMDX]', ...args);
 export const PageContext = React.createContext({})
 
 
+
+
+/**
+ * 
+ * @param data 
+ * @param path 
+ * @param options 
+ */
+export function mdxToJs( mdxData:string, props: TranspileProps, options: TranspileOptions ): TranspileResult {
+    let meta = props.meta ?? {};
+    let { css, cssLinks: inputCssLinks, children, applyLinks, imgs } = props;
+    const { resolveImport, resolveLink, require, context } = options;
+    
+    const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
+    let processOpts = { pageProps: inPageProps, applyLinks, imgs, resolveLink, resolveImport, require, context };
+
+    // convert the mdx to jsx
+    let { jsx, links, ast, imgs:outImgs } = processMdx(mdxData, processOpts);
+    // log('[parseMdx]', jsx );
+
+    // convert from jsx to js
+    let js = transformJSX(jsx);
+    
+
+    return { js, jsx, ast, links, imgs:outImgs };
+}
+
+
+export interface JsToComponentResult {
+    pageProps: any;
+    component: any;
+}
+
+/**
+ * 
+ * @param jsCode 
+ * @param props 
+ * @param options 
+ */
+export function jsToComponent(jsCode:string, props:TranspileProps, options: TranspileOptions): TranspileResult{
+
+    const {path} = props;
+
+    // evaluate the js into a component
+    let evaled = evalCode(jsCode, path, options);
+
+    return evaled;
+}
+
+/**
+ * 
+ * @param component 
+ * @param props 
+ * @param options 
+ */
+export function componentToString( component:any, props:TranspileProps, options:TranspileOptions ){
+    let { css, cssLinks: inputCssLinks, children, applyLinks, imgs } = props;
+
+    const components = {
+        Head,
+        InlineCSS: (props) => {
+            return <style dangerouslySetInnerHTML={{ __html: css }} />;
+        },
+        CSSLinks: () => {
+            inputCssLinks = inputCssLinks.filter(Boolean);
+            // if( inputCssLinks ) log('[transpile][CSSLinks]',inputCssLinks);
+
+            // { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)}
+            return inputCssLinks ? <>
+                {inputCssLinks.map(c => <link key={c} rel="stylesheet" href={c} />)}
+            </> : null;
+        }
+        // Layout,
+        // a: (props) => {
+        //     const {href,children} = props;
+        //     links[href] = {children};
+        //     console.log('[transpile]', 'link', href, children );
+        //     // links.push( {href, children} );
+        //     return <a {...props}></a>
+        // }
+    }
+
+    const ctxValue = {
+        status: 'ready to go',
+        children,
+        components
+    };
+
+    let child = children !== undefined ?
+        React.createElement(children, { components })
+        : undefined;
+    
+    const Component = component;
+
+    const output = ReactDOMServer.renderToStaticMarkup(
+        <PageContext.Provider value={ctxValue}>
+            <MDXProvider components={components}>
+                <Component>{child}</Component>
+            </MDXProvider></PageContext.Provider>, { pretty: true });
+
+    return output;
+}
+
+
+
 export async function transpile(props: TranspileProps, options: TranspileOptions): Promise<TranspileResult> {
 
     let meta = props.meta ?? {};
@@ -167,10 +272,15 @@ function renderHTML({ components, component: Component, children }) {
 async function parseMdx(data: string, path: string, options: ProcessMDXOptions) {
 
     try {
+        // convert the mdx to jsx
         let { jsx, links, ast, imgs } = await processMdx(data, options);
 
-
+        // convert from jsx to js
         let code = transformJSX(jsx);
+        
+        log('[parseMdx]', code );
+
+        // evaluate the js into a component
         let el = evalCode(code, path, options);
 
         return { ...el, code, jsx, ast, links, imgs };
@@ -189,6 +299,7 @@ export type ProcessMDXOptions = {
     applyLinks?: PageLinks;
     imgs?: PageImgs;
     resolveImport?: (path) => string | undefined;
+    resolveLink?: (url: string, text?:string) => any;
     require?: (path: string, fullPath: string) => any;
     context?: any;
 }
@@ -201,9 +312,9 @@ export interface ProcessMDXResult {
     imgs: PageImgs
 }
 
-export async function processMdx(content: string, options: ProcessMDXOptions): Promise<ProcessMDXResult> {
+export function processMdx(content: string, options: ProcessMDXOptions): ProcessMDXResult {
 
-    let { pageProps, applyLinks, resolveImport, imgs } = options;
+    let { pageProps, applyLinks, resolveImport, resolveLink, imgs } = options;
     let links = new Map<string, any>();
     let ast;
 
@@ -216,7 +327,7 @@ export async function processMdx(content: string, options: ProcessMDXOptions): P
     // force replace is neccesary here until i can figure it out
     content = content.replace(/<!--(.*?)-->/, '');
 
-    let output = await unified()
+    let output = unified()
         .use(parse)
         .use(stringify)
         .use(frontmatter)
@@ -225,7 +336,7 @@ export async function processMdx(content: string, options: ProcessMDXOptions): P
         .use(removeCommentPlugin)
         // .use(() => console.dir)
         .use(imgProc, { imgs })
-        .use(linkProc, { links, applyLinks })
+        .use(linkProc, { links, applyLinks, resolveLink })
         // take a snap of the AST
         .use(() => tree => { ast = JSON.stringify(tree, null, '\t') })
         .use(mdx)
@@ -237,7 +348,8 @@ export async function processMdx(content: string, options: ProcessMDXOptions): P
         .use(mdxHastToJsx)
         // .use(() => console.dir)
         // .use( () => console.log('💦doh') )
-        .process(content);
+        // .process(content);
+        .processSync(content);
     // console.log( output.toString());
 
     // log( 'ast', ast ); throw 'stop';
@@ -294,13 +406,15 @@ function evalCode(code: string, path: string, options: EvalOptions = {}) {
     let requires = [];
     const { context } = options;
 
+    // log('[evalCode]', path, code );
+
 
     const requireManual = async (requirePath) => {
-        if (requirePath === '@odgn/grosmont') {
+        log('[evalCode]', requirePath );
+        if (requirePath === '@odgn/grosmont' || requirePath === '@site') {
             return context;
         }
 
-        log('[evalCode]', requirePath, path);
         const fullPath = Path.resolve(Path.dirname(path), requirePath);
 
         let result;
