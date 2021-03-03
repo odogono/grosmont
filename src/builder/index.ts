@@ -50,28 +50,28 @@ export async function build(site: Site, options: BuildProcessOptions = {}) {
 
     await renderScss(site, updateOptions);
 
-    await evalJsx(site, options);
+    await evalJsx(site, updateOptions);
 
     // creates a /component/js with the data
-    await evalMdx(site, options);
+    await evalMdx(site, updateOptions);
 
     await applyTags(site, updateOptions);
     // if( true ){
 
     // evaluates the js, and returns metadata
-    await evalJs(site, options);
+    await evalJs(site, updateOptions);
 
     // resolve meta with parents
-    await resolveMeta( site, options );
+    await resolveMeta( site, updateOptions );
 
-    await buildDstIndex(site, options);
+    await buildDstIndex(site, updateOptions);
 
     // renders the js to /component/output
-    await renderJs(site, options);
+    await renderJs(site, updateOptions);
 
     await assignTitle(site, updateOptions);
 
-    await buildDstIndex(site, options);
+    await buildDstIndex(site, updateOptions);
 
     await write(site, updateOptions);
 

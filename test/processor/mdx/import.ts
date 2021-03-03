@@ -15,15 +15,9 @@ import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { ProcessOptions } from '../../../src/builder/types';
 import { buildSrcIndex, FindEntityOptions } from '../../../src/builder/query';
 import { EntityId } from 'odgn-entity/src/entity';
-import { Level, Reporter } from '../../../src/builder/reporter';
 
 
 const log = (...args) => console.log('[TestProcMDX]', ...args);
-
-const printES = async (site: Site) => {
-    console.log('\n\n---\n');
-    await printAll(site.es);
-}
 
 const rootPath = Path.resolve(__dirname, "../../../");
 const test = suite('processor/mdx/import');
@@ -44,7 +38,7 @@ test.before.each(async (tcx) => {
     const testDB = { uuid: 'TEST-1', isMemory: true, idgen };
     const es = new EntitySetSQL({ ...testDB });
 
-    tcx.site = await Site.create({ idgen, name: 'test', es, dst, level:Level.DEBUG });
+    tcx.site = await Site.create({ idgen, name: 'test', es, dst });
     // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
     tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
@@ -76,6 +70,25 @@ Message: <Message />
         `<p>Message: Hello World</p>`);
 
     // console.log('\n\n---\n');
+});
+
+test('import without ext', async ({ es, site, options }) => {
+
+    await addJsx(site, 'file:///message.jsx', `export default () => "Hello World";`);
+    await addMdx(site, 'file:///pages/main.mdx', `
+import Message from '../message';
+
+Message: <Message />
+`);
+
+    await process(site, options);
+
+    // await printAll(es);
+
+    let e = await site.getEntityBySrc('file:///pages/main.mdx');
+
+    assert.equal(e.Output.data,
+        `<p>Message: Hello World</p>`);
 });
 
 

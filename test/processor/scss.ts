@@ -2,17 +2,10 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import Path from 'path';
 import { Site } from '../../src/builder/site';
-import { process as assignMime } from '../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../src/builder/processor/scss';
-import { process as renderMdx } from '../../src/builder/processor/mdx';
-import { process as assignTitle } from '../../src/builder/processor/assign_title';
-import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
-import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
-import { process as applyTags } from '../../src/builder/processor/mdx/apply_tags';
-import { process as mdxRender } from '../../src/builder/processor/mdx/render';
-import { process as buildDeps } from '../../src/builder/processor/build_deps';
+import { process as mark } from '../../src/builder/processor/mark';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
-import { process as markScss } from '../../src/builder/processor/scss/mark';
+
 
 import { parse } from '../../src/builder/config';
 
@@ -21,14 +14,11 @@ import { printAll } from 'odgn-entity/src/util/print';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntityId } from 'odgn-entity/src/entity';
 import { FindEntityOptions } from '../../src/builder/query';
+import { Level } from '../../src/builder/reporter';
 
 
 const log = (...args) => console.log('[TestProcSCSS]', ...args);
 
-const printES = async (site:Site) => {
-    console.log('\n\n---\n');
-    await printAll( site.es );
-}
 
 const rootPath = Path.resolve(__dirname, "../../");
 const test = suite('processor/scss');
@@ -39,7 +29,7 @@ test.before.each(async (tcx) => {
     let idgen = () => ++id;
 
     const dst = `file://${rootPath}/dist/`;
-    tcx.site = await Site.create({ idgen, name: 'test', dst });
+    tcx.site = await Site.create({ idgen, name: 'test', dst, level:Level.FATAL });
     // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
     tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
@@ -47,7 +37,7 @@ test.before.each(async (tcx) => {
 
 
 
-test('mark will only consider updated', async({es,site}) => {
+test('mark will only consider updated', async({es,site,options}) => {
     await parse( site, `
     id: 2000
     src: alpha.scss
@@ -59,7 +49,7 @@ test('mark will only consider updated', async({es,site}) => {
         op: 2
     `);
 
-    await markScss( site, {onlyUpdated:true} );
+    await mark(site, { ...options, onlyUpdated:true, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
 
     // await printES( site.es );
     
@@ -68,26 +58,26 @@ test('mark will only consider updated', async({es,site}) => {
     assert.equal( e.Scss, undefined );
 });
 
-test('render will only consider updated', async({es,site}) => {
+test('render will only consider updated', async({es,site,options}) => {
     await parse( site, `
     id: 2000
     src: alpha.scss
-    /component/scss:
+    /component/data:
         data: "$primary-color: #333; body { color: $primary-color; }"
     `);
     await parse( site, `
     id: 2001
     src: beta.scss
-    /component/scss:
+    /component/data:
         data: "$primary-color: #FFF; body { color: $primary-color; }"
     /component/upd:
         op: 1
     `);
 
-    await markScss( site, {onlyUpdated:true} );
-    await renderScss( site, {onlyUpdated:true} );
+    await mark(site, { ...options, onlyUpdated:true, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+    await renderScss( site, {...options,onlyUpdated:true} );
 
-    // await printES( site );
+    // await printAll( es );
     
     let e = await site.es.getEntity(2000);
     assert.equal( e.Output, undefined );
@@ -103,9 +93,10 @@ test('process directly from file', async () => {
 
     await parse( site, `
     src: file:///styles/main.scss
+    dst: /main.css
     `);
 
-    await markScss( site, options );
+    await mark(site, { ...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
 
     await renderScss(site, options);
 

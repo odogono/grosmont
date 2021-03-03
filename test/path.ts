@@ -12,28 +12,28 @@ test('resolve path', () => {
 
     assert.equal(
         resolveUrlPath('./components/header.jsx', 'file:///index.mdx'),
-        'file:///components/header.jsx' );
-    
-        assert.equal(
+        'file:///components/header.jsx');
+
+    assert.equal(
         resolveUrlPath('header.jsx', 'file:///index.mdx'),
-        'file:///header.jsx' );
-    
+        'file:///header.jsx');
+
     assert.equal(
         resolveUrlPath('./header.jsx', 'file:///index.mdx'),
-        'file:///header.jsx' );
-    
+        'file:///header.jsx');
+
     assert.equal(
         resolveUrlPath('../components/header.jsx', 'file:///pages/index.mdx'),
-        'file:///components/header.jsx' );
-    
+        'file:///components/header.jsx');
+
     assert.equal(
         resolveUrlPath('../components/header.jsx', 'file:///pages/blog/index.mdx'),
-        'file:///pages/components/header.jsx' );
-    
+        'file:///pages/components/header.jsx');
+
     assert.equal(
         resolveUrlPath('file:///components/header.jsx', 'file:///pages/blog/index.mdx'),
-        'file:///components/header.jsx' );
-    
+        'file:///components/header.jsx');
+
 });
 
 

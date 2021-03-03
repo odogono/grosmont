@@ -21,25 +21,25 @@ export function applyMeta(e: Entity, data: any): Entity {
     return e;
 }
 
-export async function applyMimeToEntityId( es:EntitySet, eid:EntityId, mime:string ): Promise<Component> {
-    return applyMetaComponentToEntityId(es, eid, {mime} );
+export async function applyMimeToEntityId(es: EntitySet, eid: EntityId, mime: string): Promise<Component> {
+    return applyMetaComponentToEntityId(es, eid, { mime });
 }
 
-export async function applyMetaComponentToEntityId( es:EntitySet, eid:EntityId, data:any ): Promise<Component>{
+export async function applyMetaComponentToEntityId(es: EntitySet, eid: EntityId, data: any): Promise<Component> {
     const metaDef = es.getByUri('/component/meta');
     const metaDid = getDefId(metaDef);
 
-    let meta = await es.getComponent( toComponentId(eid,metaDid) );
-    if( meta === undefined ){
-        meta = es.createComponent( metaDid, {meta:{}} );
+    let meta = await es.getComponent(toComponentId(eid, metaDid));
+    if (meta === undefined) {
+        meta = es.createComponent(metaDid, { meta: {} });
     }
-    meta = applyMetaToComponent( meta, data );
-    return setEntityId( meta, eid );
+    meta = applyMetaToComponent(meta, data);
+    return setEntityId(meta, eid);
 }
 
-export function applyMetaToComponent(com:Component, data:any): Component {
+export function applyMetaToComponent(com: Component, data: any): Component {
     let meta = com.meta ?? {};
-    com.meta = mergeMeta([meta,data]);
+    com.meta = mergeMeta([meta, data]);
     return com;
 }
 
@@ -165,14 +165,14 @@ export function createTimes() {
 }
 
 
-export async function createTag(es:EntitySet, name:string, options: FindEntityOptions = {} ){
-    if( !isString(name) ){
+export async function createTag(es: EntitySet, name: string, options: FindEntityOptions = {}) {
+    if (!isString(name)) {
         name = stringify(name);
     }
     let e = es.createEntity();
     e.Tag = { slug: slugify(name) };
-    e.Title = { title:name };
-    if( options.siteRef !== undefined ){
+    e.Title = { title: name };
+    if (options.siteRef !== undefined) {
         e.SiteRef = { ref: options.siteRef };
     }
     e.Times = createTimes();
@@ -212,7 +212,7 @@ export function buildUrl(action: string, qs = {}, options: BuildUrlOptions = {})
  * @param path 
  * @param base 
  */
-export function resolveUrlPath( path:string, base?:string ): string {
+export function resolveUrlPath(path: string, base?: string): string {
     path = Path.normalize(path);
     const url = new URL(path, base);
     return url.href;
@@ -221,29 +221,29 @@ export function resolveUrlPath( path:string, base?:string ): string {
 interface ParseEntityUriResult {
     eid: EntityId;
     did: ComponentDefUrl;
-    attr?: string; 
+    attr?: string;
 }
 
 /**
  * 
  * @param uri 
  */
-export function parseEntityUri( uri:string ): ParseEntityUriResult {
-    let parts = parseUri( uri );
-    if( parts === undefined ){
+export function parseEntityUri(uri: string): ParseEntityUriResult {
+    let parts = parseUri(uri);
+    if (parts === undefined) {
         return undefined;
     }
-    const {protocol, host, path, anchor:attr} = parts;
+    const { protocol, host, path, anchor: attr } = parts;
 
     // log('[parseEntityUri]', parts);
 
-    if( protocol !== 'e' ){
+    if (protocol !== 'e') {
         return undefined;
     }
 
     let eid = toInteger(host);
 
-    return {eid, did:path, attr};
+    return { eid, did: path, attr };
 
     // let url = new URL(requirePath);
 

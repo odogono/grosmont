@@ -6,6 +6,7 @@ import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 import { process as write } from '../../src/builder/processor/write';
 import { printAll } from 'odgn-entity/src/util/print';
+import { FindEntityOptions } from '../../src/builder/query';
 
 
 const log = (...args) => console.log('[TestProcMeta]', ...args);
@@ -28,11 +29,12 @@ test.before.each(async (tcx) => {
     
     // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
+    tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
 });
 
 
 
-test('writes', async ({site,es}) => {
+test('writes', async ({site,es, options}) => {
 
     await parse( site, `
     id: 1999
@@ -41,7 +43,7 @@ test('writes', async ({site,es}) => {
 
     let e = await parse( site, `
     id: 2001
-    text: css-data-here
+    data: css-data-here
     dst: main.css
     /component/upd:
         op: 1
@@ -49,15 +51,15 @@ test('writes', async ({site,es}) => {
 
     await addDirDep(site, 2001, 1999 );
 
-    await buildDstIndex(site);
+    await buildDstIndex(site, options);
 
-    await write(site);
+    await write(site, options);
 
     // const dst = await getDstUrl(es, 2001);
 
     // log( dst );
 
-    printES(es);
+    // printES(es);
 });
 
 

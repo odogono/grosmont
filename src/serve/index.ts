@@ -1,3 +1,4 @@
+import 'stateful-hooks';
 import Chokidar from 'chokidar';
 import express from 'express';
 import parseUrl from 'parseurl';

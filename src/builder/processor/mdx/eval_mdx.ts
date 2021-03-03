@@ -1,6 +1,6 @@
 import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { findEntityByUrl, getDependencies, getEntityByUrl, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
-import { setLocation, info, debug, error } from '../../reporter';
+import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
 
@@ -41,6 +41,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     // first pass at parsing the mdx - pulling out links, local meta etc
     for (const e of ents) {
+        const srcUrl = e.Src?.url;
 
         try {
             let coms = await processEntity(site, e, options);
@@ -51,8 +52,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         } catch (err) {
             let ee = es.createComponent('/component/error', { message: err.message, from: Label });
             output.push( setEntityId(ee, e.id) );
-            error(reporter, 'error', err, { eid: e.id });
-            log('error', err);
+            error(reporter, `error ${srcUrl}`, err, { eid: e.id });
+            log(`error: ${srcUrl}`, err);
         }
 
     }
@@ -71,6 +72,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const siteRef = site.getRef();
     const { srcIndex } = options;
     const { url: base } = e.Src;
+    const {reporter} = options;
 
     let imports = [];
     let links = [];
@@ -78,10 +80,13 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     // function passed into the mdx parser and called whenever
     // an import is found
     function resolveImportLocal(path: string, mimes?: string[]){
+        // log('[resolveImportLocal]', path);
         let entry = resolveImport(site, path, base);
         if (entry !== undefined) {
             imports.push(entry);
             return entry[1];
+        } else {
+            warn(reporter, `import ${path} not resolved`, {eid:e.id});
         }
     }
 
@@ -124,28 +129,16 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return [];
     }
 
-    const result = mdxToJs(data, props, { resolveLink, resolveImport: resolveImportLocal, require, context });
-
-    const { js } = result;
-
-    // log('result', result);
+    const {js} = mdxToJs(data, props, { resolveLink, resolveImport: resolveImportLocal, require, context });
 
     const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
 
-    // await parseConfig(es, meta, undefined, { add: false, e, siteRef });
-
-    // creates css dependencies
-    // e = await applyCSSLinks(es, e, result);
-
-    // e = await applyImgLinks(es, e, result, options);
 
     // creates link dependencies and adds to the link
     // index for use at the point of rendering
     await applyLinks(site, e, links, options);
 
     await applyImports(site, e, imports, options);
-
-    // log('[processEntity]', result);
 
     return [jsCom];
 }

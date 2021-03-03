@@ -1,3 +1,4 @@
+import 'stateful-hooks';
 import { suite } from 'uvu';
 import Path from 'path';
 import Fs from 'fs-extra';
@@ -12,15 +13,8 @@ import {
     applyEntitySetDiffs,
 } from '../../src/builder/processor/file';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
-import { process as assignMime } from '../../src/builder/processor/assign_mime';
-import { process as renderScss } from '../../src/builder/processor/scss';
-import { process as renderMdx } from '../../src/builder/processor/mdx';
-import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
-import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
-import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as markMdx } from '../../src/builder/processor/mdx/mark';
-import { process as markScss } from '../../src/builder/processor/scss/mark';
-import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
+
 
 import { Entity } from 'odgn-entity/src/entity';
 import { EntitySet, EntitySetMem } from 'odgn-entity/src/entity_set';
@@ -37,13 +31,10 @@ import {
 } from '../../src/builder/query';
 import { isDate } from '@odgn/utils';
 import { buildUrl } from '../../src/builder/util';
+import { Level, Reporter } from '../../src/builder/reporter';
 
 const log = (...args) => console.log('[TestFile]', ...args);
 
-const printES = async (site:Site) => {
-    console.log('\n\n---\n');
-    await printAll(site.es);
-}
 
 const rootPath = Path.resolve(__dirname, "../../");
 const test = suite('processor/file');
@@ -86,13 +77,38 @@ test.only('using sql es', async () => {
     // sqlClear( liveDB.path );
     // const es = new EntitySetSQL({...testDB});
     // const es = new EntitySetMem(undefined, {idgen});
-    const site = await Site.create({configPath});
-
-    // printEntity( site.es, site.e );
+    const site = await Site.create({configPath, level:Level.ERROR});
 
     await build(site);
+    // await printAll(site.es, undefined, ['/component/src', '/component/dst', '/component/meta', '/component/times']);
+    // await printAll(site.es, undefined, ['/component/title']);
 
-    await printES(site);
+    // select 5 entities tagged with weeknotes ordered by date desc
+    const eids = await site.findByTags([ 'weeknotes'] );
+    const q = `
+    [
+        // debug
+        $eids
+        /component/times#/ctime !ca desc order
+        4 0 limit
+        [/component/title /component/mdx] !bf
+        // prints
+        @e
+    ] select`;
+
+    log('>>---');
+    let mdxEids = await site.es.prepare(q).getResult({eids});
+
+    let page = await site.getEntityByDst('/index.html');
+    printEntity( site.es, page );
+
+    page = await site.getEntityBySrc('file:///components/contents.tsx');
+    printEntity( site.es, page );
+    // await printAll(site.es);
+    
+    // mdxEids.forEach( e => { log( e.id, e.Title.title )});
+    // mdxEids.forEach( e => printEntity(site.es,e));
+    // log('weeknotes', eids );
 
 });
 
@@ -108,15 +124,7 @@ test('using sql es', async () => {
     const es = new EntitySetMem(undefined, {idgen});
     const site = await Site.create({es, idgen, configPath});
 
-    await scanSrc(site); // dont use updates - in fact skip when only updating
-    await markMdx(site, {loadData:true}); // use updates ✓
-    await markScss(site, { loadData: true }); // use updates ✓
-    await renderScss(site); // use updates ✓
-    await mdxPreprocess( site ); // use updates ✓
-    await mdxResolveMeta( site ); // use updates ✓
-    await mdxRender( site ); // use updates ✓
-
-    await buildDstIndex(site); // remove with update = remove
+    await build(site);
 
     await clearUpdates(site.es, {siteRef:site.getRef()});
 
@@ -125,7 +133,7 @@ test('using sql es', async () => {
     
     await applyUpdatesToDependencies(site);
 
-    await printES( site );
+    await printAll( site.es );
 
     log('>---');
     const eids = await site.getUpdatedEntityIds();
@@ -161,7 +169,7 @@ test('reading a site entity', async ({ es, site }) => {
 
     // await mdxResolveMeta(site, { e: 1014 });
 
-    // printES(es);
+    // printAll(es);
 });
 
 // test('reading a site entity', async ({ es, site }) => {
@@ -174,7 +182,7 @@ test('reading a site entity', async ({ es, site }) => {
 //         pk: [["/component/site", "e:///component/src#/url"]]
 //     }
 //     let insts = await exportEntitySet(es, exportOptions);
-//     // printES(es);
+//     // printAll(es);
 //     log(insts);
 // });
 
@@ -203,7 +211,7 @@ test('dependencies are also marked as updated', async ({ es, site }) => {
 
     // await mdxResolveMeta(site);
 
-    // printES(es);
+    // printAll(es);
     
     let e = await es.getEntity(1006);
     assert.equal( e.Upd.op, 2 );
@@ -245,9 +253,9 @@ test('dependencies are also marked as updated', async ({ es, site }) => {
 
 //     let diffs = await diffEntitySets( es, esnx );
 
-//     printES(es);
+//     printAll(es);
 //     log('-----');
-//     printES(esnx);
+//     printAll(esnx);
 //     log('=====');
 
 //     log( diffs );
@@ -255,7 +263,7 @@ test('dependencies are also marked as updated', async ({ es, site }) => {
 //     await applyEntitySetDiffs( es, esnx, diffs );
 
 //     log('result');
-//     printES(es);
+//     printAll(es);
 // });
 
 
@@ -274,15 +282,15 @@ test('apply added entities', async ({ es, site }) => {
 
     await esnx.add(ents);
 
-    // printES(es);
+    // printAll(es);
     // log('-----');
-    // printES(esnx);
+    // printAll(esnx);
     // log('=====');
 
     let diffs = await diffEntitySets(es, esnx);
     await applyEntitySetDiffs(es, esnx, diffs);
 
-    // printES(es);
+    // printAll(es);
 
     let e = await getEntityBySrcUrl(es, 'file:///pages/index.mdx');
     assert.equal(e.Upd.op, ChangeSetOp.Add);
@@ -302,15 +310,15 @@ test('apply updated entities', async ({ es, site }) => {
 
     await esnx.add(ents);
 
-    // printES(es);
+    // printAll(es);
     // log('-----');
-    // printES(esnx);
+    // printAll(esnx);
     // log('=====');
 
     let diffs = await diffEntitySets(es, esnx);
     await applyEntitySetDiffs(es, esnx, diffs);
 
-    // printES(es);
+    // printAll(es);
 
     let e = await getEntityBySrcUrl(es, 'file:///pages/index.mdx');
     assert.equal(e.Upd.op, ChangeSetOp.Update);
@@ -341,9 +349,9 @@ test('apply updated component entities', async ({ es, site }) => {
     // log('update', e.id)
     await esnx.add(e);
 
-    // printES(es);
+    // printAll(es);
     // log('-----');
-    // printES(esnx);
+    // printAll(esnx);
     // log('=====');
 
     let diffs = await diffEntitySets(es, esnx);
@@ -372,15 +380,15 @@ test('apply removed entities', async ({ es, site }) => {
 
     await esnx.add(ents);
 
-    // printES(es);
+    // printAll(es);
     // log('-----');
-    // printES(esnx);
+    // printAll(esnx);
     // log('=====');
 
     let diffs = await diffEntitySets(es, esnx);
     await applyEntitySetDiffs(es, esnx, diffs);
 
-    // printES(es);
+    // printAll(es);
 
     // log( es.getRemovedEntities() );
 

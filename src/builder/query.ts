@@ -160,10 +160,7 @@ export async function selectOutputWithDst(es: EntitySet, options: FindEntityOpti
     `
         : `
     [ 
-        [ /component/dst /component/output /component/upd ] !bf 
-                /component/upd#op !ca 1 ==
-                /component/upd#op !ca 2 ==
-            or
+            [ /component/dst /component/output ] !bf 
             /component/site_ref#ref !ca $ref ==
         and
         @eid

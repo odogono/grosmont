@@ -5,6 +5,7 @@ import { parse } from '../../src/builder/config';
 import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
 import { getDstUrl } from '../../src/builder/query';
+import { Level } from '../../src/builder/reporter';
 
 const log = (...args) => console.log('[TestProcTargetPath]', ...args);
 
@@ -22,7 +23,7 @@ test.before.each( async (tcx) => {
     let idgen = () => ++id;
 
     const dst = `file://${rootPath}/dist/`;
-    tcx.site = await Site.create({idgen, name:'test', dst});
+    tcx.site = await Site.create({idgen, name:'test', dst, level: Level.FATAL});
     tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
 });

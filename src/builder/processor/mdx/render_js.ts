@@ -1,3 +1,4 @@
+import React from 'react';
 import { Entity } from 'odgn-entity/src/entity';
 import { findEntityByUrl, getDependencies, getLayoutFromDependency, insertDependency, selectJs } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
@@ -10,8 +11,9 @@ import { buildProps, getEntityCSSDependencies, resolveImport } from './util';
 import { parse as parseConfig } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
-import { toInteger } from '@odgn/utils';
+import { hash, toInteger } from '@odgn/utils';
 import { buildImports } from './eval_js';
+import { useServerEffect, serverEffectValue, beginServerEffects, endServerEffects } from '../jsx/server_effect';
 
 const Label = '/processor/mdx/render_js';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -34,6 +36,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     let updates = [];
 
     for (const e of ents) {
+        const srcUrl = e.Src?.url;
 
         try {
 
@@ -42,7 +45,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         } catch (err) {
             let ee = es.createComponent('/component/error', { message: err.message, from: Label });
             ee = setEntityId(ee, e.id);
-            error(reporter, 'error', err, { eid: e.id });
+            error(reporter, `error ${srcUrl}`, err, { eid: e.id });
         }
     }
 
@@ -55,8 +58,6 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 async function processEntity(site: Site, e: Entity, child: TranspileResult, options: ProcessOptions):Promise<Component> {
 
     const { es } = site;
-    const siteRef = site.getRef();
-    const { fileIndex } = options;
     const { url: base } = e.Src;
 
     const {data} = e.Js;
@@ -81,18 +82,27 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     if (child !== undefined) {
         props.children = child.component;
     }
-    props.applyLinks = options.pageLinks;
     // props.imgs = options.imgs;
     props = await applyCSSDependencies(es, e, child, props);
 
     
+
+    const context = { 
+        site, 
+        e,
+        log: (...args) => console.log(`[${base}]`, ...args),
+        useServerEffect,
+    };
     
-    let result:any = jsToComponent(data, props, { resolveImport: resolveImportLocal, require });
+
+    // reset requests
+    beginServerEffects(base);
+    
+    let result:any = jsToComponent(data, props, { context, resolveImport: resolveImportLocal, require });
 
     result.css = props.css;
     result.cssLinks = props.cssLinks;
 
-    // log('[processEntity]', base, Object.keys(result) );
 
     const layoutE = await getLayoutFromDependency(es, e.id);
 
@@ -101,11 +111,16 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
         return setEntityId( com, e.id );
     }
 
-    // result = await renderLayoutEntity(site, e, result, options);
-
     const {component} = result;
 
-    let output = componentToString( component, props, { resolveImport: resolveImportLocal, require });
+    let output = await componentToString( component, props, { resolveImport: resolveImportLocal, require });
+
+    // resolve all the server effects
+    await endServerEffects(base);
+
+    // render again to reconcile any server effects
+    // let {component:com2} = jsToComponent(data, props, { context, resolveImport: resolveImportLocal, require });
+    output = await componentToString( component, props, { resolveImport: resolveImportLocal, require });
 
     // replace any e:// urls with dst url links
     output = replaceEntityUrls(site, output);

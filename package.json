@@ -51,6 +51,7 @@
     "remark-footnotes": "^2.0.0",
     "remark-frontmatter": "^2.0.0",
     "remark-mdx": "^2.0.0-next.8",
+    "stateful-hooks": "^1.0.1",
     "through2": "^4.0.2",
     "to-vfile": "^6.1.0",
     "toml": "^3.0.0",

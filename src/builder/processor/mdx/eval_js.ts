@@ -1,15 +1,15 @@
 import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { findEntityByUrl, getDependencies, getDependencyEntities, getDepenendencyDst, insertDependency, selectJs } from '../../query';
+import { getDependencyEntities, selectJs } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { ProcessOptions, TranspileResult } from '../../types';
-import { jsToComponent, mdxToJs } from './transpile';
-import { buildProps, parseEntityUrl, resolveImport } from './util';
+import { ProcessOptions } from '../../types';
+import { jsToComponent } from './transpile';
+import { parseEntityUrl, resolveImport } from './util';
 import { parse as parseConfig } from '../../config';
-import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
+import { useServerEffect } from '../jsx/server_effect';
 
 const Label = '/processor/mdx/eval_js';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -66,6 +66,12 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const { data } = e.Js;
     let path = site.getSrcUrl(e);
     let meta = e.Meta?.meta ?? {};
+    const context = { 
+        e,
+        site, 
+        log: (...args) => console.log(`[${base}]`, ...args),
+        useServerEffect,
+    };
 
     debug(reporter, `process ${base}`, {eid:e.id});
     // log(`process ${base} (${e.id})`);
@@ -76,13 +82,12 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
     const resolveImportLocal = (path: string, mimes?: string[]) => undefined;
 
-    const result = jsToComponent(data, { path }, { resolveImport: resolveImportLocal, require });
+
+    let result = jsToComponent(data, { path }, { context, resolveImport: resolveImportLocal, require });
 
     const { pageProps, component } = result;
 
     meta = { ...meta, ...pageProps };
-
-    // log(e.id, result);
 
     await parseConfig(es, meta, undefined, { add: false, e, siteRef });
 
@@ -100,12 +105,9 @@ export async function buildImports(site: Site, e: Entity, options:ProcessOptions
     const {es} = site;
 
     // retrieve import dependencies for this e and place them
-    // const importIds = await getDepenendencyDst(es, e.id, 'import');
     let imports = await getDependencyEntities(es, e.id, 'import');
 
     let importComs = new Map<EntityId, any>();
-
-    // log('[buildImports]', imports );
 
     for( const imp of imports ){
         const url = imp.Url?.url;
@@ -136,7 +138,7 @@ export async function buildImports(site: Site, e: Entity, options:ProcessOptions
     function require(path: string, fullPath:string){
         const match = parseEntityUrl(path);
         let result = importComs.get(match?.eid);
-        return result !== undefined ? result : false;
+        return result !== undefined ? result : undefined;
     };
 
     return require;

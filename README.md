@@ -60,7 +60,7 @@ dependency entities are created for files and dirs using uri paths
 
 ### Dir Meta Read
 
-meta.yaml is read inside directories
+dir.e.yaml is read inside directories
 
 
 ### Disabled Dirs/Files removed

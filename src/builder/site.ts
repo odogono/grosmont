@@ -81,7 +81,7 @@ export class Site {
 
         let reporter = new Reporter();
         setLocation(reporter, '/site');
-        setLevel(reporter, options.level ?? Level.DEBUG);
+        setLevel(reporter, options.level ?? Level.FATAL);
         site.reporter = reporter;
         // log('[create]', options);
 

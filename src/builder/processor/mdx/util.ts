@@ -147,8 +147,31 @@ export function resolveImport( site:Site, url:string, base:string ){
         throw new Error('/index/srcUrl not present');
     }
 
+    // convert to file:// if not already
+    // if( !url.match(/^.+:\/\//) ){
+    //     // if( !url.startsWith('/') ){
+    //     //     url = '/' + url;
+    //     // }
+    //     url = 'file://' + url;
+    // }
+    
     let path = resolveUrlPath(url, base);
+    // log('[resolveImport]', 'whaaa', path, base, url);
     let entry = srcIndex.get(path);
+
+    if( entry === undefined ){
+        // attempt to find with an extension
+        // log('[resolveImport]', 'whaaa', path, url);
+        
+        const reUrl = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(`^${reUrl}\..+`,'i');
+        for( const key of srcIndex.index.keys() ){
+        
+            if( re.test(key) ){
+                entry = srcIndex.get(key);
+            }
+        }
+    }
 
     // log('[resolveImport]', eid, path, url);
     if (entry !== undefined) {

@@ -10,7 +10,6 @@ import traverse from "@babel/traverse";
 import babelGenerate from '@babel/generator';
 
 import { configPlugin } from '../../unified/plugin/config';
-import { importCSSPlugin } from '../../unified/plugin/import_css';
 import { removeCommentPlugin } from '../../unified/plugin/remove_comment';
 import { titlePlugin } from '../../unified/plugin/title';
 import { ProcessOptions } from '../../types';

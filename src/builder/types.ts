@@ -15,10 +15,8 @@ export interface TranspileProps {
     wrapper?: JSX.Element;
     meta?: PageMeta;
     children?: any;
-    links?: PageLinks;
     css?: string;
     cssLinks?: string[];
-    applyLinks?: PageLinks;
 }
 
 export interface TranspileResult {
@@ -31,7 +29,6 @@ export interface TranspileResult {
     js?: string;
     ast?: any;
     jsx?: string;
-    links?: PageLinks;
     requires?: string[];
     css?: string;
     cssLinks?: string[];
@@ -93,7 +90,6 @@ export interface ProcessOptions {
     srcIndex?: SiteIndex;
     imgIndex?: SiteIndex;
     linkIndex?: SiteIndex;
-    pageLinks?: PageLinks;
     reporter?: Reporter;
 }
 

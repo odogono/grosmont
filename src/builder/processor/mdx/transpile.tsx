@@ -11,7 +11,6 @@ import unified from 'unified';
 import parse from 'remark-parse';
 import stringify from 'remark-stringify';
 import frontmatter from 'remark-frontmatter';
-import report from 'vfile-reporter';
 
 import mdx from 'remark-mdx';
 import mdxjs from 'remark-mdxjs';
@@ -22,7 +21,7 @@ import mdxHastToJsx from './mdx-hast-to-jsx';
 const _eval = require('eval');
 const emoji = require('remark-emoji')
 
-import { importCSSPlugin } from '../../unified/plugin/import_css';
+import { importPlugin } from '../../unified/plugin/import';
 import { linkProc } from '../../unified/plugin/link';
 import { process as imgProc } from '../../unified/plugin/img';
 import { configPlugin } from '../../unified/plugin/config';
@@ -31,15 +30,14 @@ import { titlePlugin } from '../../unified/plugin/title';
 
 
 import { Head } from '../../../components/head';
-import { isObject } from "@odgn/utils";
+import { isObject, isPromise } from "@odgn/utils";
 
 import {
     TranspileProps,
     TranspileOptions,
     TranspileResult,
-    PageLinks,
 } from '../../types';
-import { Site } from '../../site';
+import { ServerEffectProvider } from '../jsx/server_effect';
 
 const log = (...args) => console.log('[TranspileMDX]', ...args);
 
@@ -58,21 +56,21 @@ export const PageContext = React.createContext({})
  */
 export function mdxToJs(mdxData: string, props: TranspileProps, options: TranspileOptions): TranspileResult {
     let meta = props.meta ?? {};
-    let { css, cssLinks: inputCssLinks, children, applyLinks } = props;
+    let { css, cssLinks: inputCssLinks, children } = props;
     const { resolveImport, resolveLink, require, context } = options;
 
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
-    let processOpts = { pageProps: inPageProps, applyLinks, resolveLink, resolveImport, require, context };
+    let processOpts = { pageProps: inPageProps, resolveLink, resolveImport, require, context };
 
     // convert the mdx to jsx
-    let { jsx, links, ast } = processMdx(mdxData, processOpts);
+    let { jsx, ast } = processMdx(mdxData, processOpts);
     // log('[parseMdx]', jsx );
 
     // convert from jsx to js
     let js = transformJSX(jsx);
 
 
-    return { js, jsx, ast, links };
+    return { js, jsx, ast };
 }
 
 
@@ -90,6 +88,9 @@ export interface JsToComponentResult {
 export function jsToComponent(jsCode: string, props: TranspileProps, options: TranspileOptions): TranspileResult {
 
     const { path } = props;
+    let { context } = options;
+
+
 
     try {
         // evaluate the js into a component
@@ -109,8 +110,8 @@ export function jsToComponent(jsCode: string, props: TranspileProps, options: Tr
  * @param props 
  * @param options 
  */
-export function componentToString(component: any, props: TranspileProps, options: TranspileOptions) {
-    let { css, cssLinks: inputCssLinks, children, applyLinks } = props;
+export async function componentToString(component: any, props: TranspileProps, options: TranspileOptions) {
+    let { css, cssLinks: inputCssLinks, children } = props;
 
     const components = {
         Head,
@@ -142,193 +143,192 @@ export function componentToString(component: any, props: TranspileProps, options
     };
 
 
-
-
     let child = children !== undefined ?
         React.createElement(children, { components })
         : undefined;
 
-    const Component = component;
+    const Component = await component;
 
 
     try {
 
         const output = ReactDOMServer.renderToStaticMarkup(
-            <PageContext.Provider value={ctxValue}>
-                <MDXProvider components={components}>
-                    <Component>{child}</Component>
-                </MDXProvider>
-            </PageContext.Provider>, { pretty: true });
+            <ServerEffectProvider>
+                <PageContext.Provider value={ctxValue}>
+                    <MDXProvider components={components}>
+                        <Component>{child}</Component>
+                    </MDXProvider>
+                </PageContext.Provider>
+            </ServerEffectProvider>
+            , { pretty: true });
 
         return output;
 
     } catch (err) {
         log('WTFFFFF', err.message);
-        // log('WTFFFFF', Component.toString() );
+        log('WTFFFFF', Component);
+        // log('WTFFFFF', child );
+        throw err;
         // log( {components, child, Component})
     }
 }
 
 
 
-export async function transpile(props: TranspileProps, options: TranspileOptions): Promise<TranspileResult> {
+// export async function transpile(props: TranspileProps, options: TranspileOptions): Promise<TranspileResult> {
 
-    let meta = props.meta ?? {};
+//     let meta = props.meta ?? {};
 
-    let { css, cssLinks: inputCssLinks, children, applyLinks } = props;
+//     let { css, cssLinks: inputCssLinks, children } = props;
 
-    let { data, path } = props;
-    const { resolveImport, require, context } = options;
-    const forceRender = options.forceRender ?? false;
-    const doRender = forceRender || (options.render ?? false);
-
-
-    const components = {
-        Head,
-        InlineCSS: (props) => {
-            return <style dangerouslySetInnerHTML={{ __html: css }} />;
-        },
-        CSSLinks: () => {
-            inputCssLinks = inputCssLinks.filter(Boolean);
-            // if( inputCssLinks ) log('[transpile][CSSLinks]',inputCssLinks);
-
-            // { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)}
-            return inputCssLinks ? <>
-                {inputCssLinks.map(c => <link key={c} rel="stylesheet" href={c} />)}
-            </> : null;
-        }
-        // Layout,
-        // a: (props) => {
-        //     const {href,children} = props;
-        //     links[href] = {children};
-        //     console.log('[transpile]', 'link', href, children );
-        //     // links.push( {href, children} );
-        //     return <a {...props}></a>
-        // }
-    }
-    if (path !== undefined) {
-        // data = await Fs.readFile(path, 'utf8');
-    }
-
-    const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
-
-    const mdxResult = await parseMdx(data, path,
-        { pageProps: inPageProps, applyLinks, resolveImport, require, context });
-
-    const { component, frontMatter,
-        code, jsx, ast, page, default: d,
-        requires, links, cssLinks,
-        pageProps, ...rest } = mdxResult;
-
-    meta = { ...meta, ...pageProps };
-
-    // log('[transpile]', 'imgs', imgs );
-
-    let result: TranspileResult = {
-        path, jsx, code, ast, /* code, ast,*/ component, links, meta, cssLinks, additional: rest
-    };
+//     let { data, path } = props;
+//     const { resolveImport, require, context } = options;
+//     const forceRender = options.forceRender ?? false;
+//     const doRender = forceRender || (options.render ?? false);
 
 
+//     const components = {
+//         Head,
+//         InlineCSS: (props) => {
+//             return <style dangerouslySetInnerHTML={{ __html: css }} />;
+//         },
+//         CSSLinks: () => {
+//             inputCssLinks = inputCssLinks.filter(Boolean);
+//             // if( inputCssLinks ) log('[transpile][CSSLinks]',inputCssLinks);
 
-    // log('[transpile]', 'requires', requires);
-    // log('[transpile]', 'cssLinks', cssLinks);
+//             // { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)}
+//             return inputCssLinks ? <>
+//                 {inputCssLinks.map(c => <link key={c} rel="stylesheet" href={c} />)}
+//             </> : null;
+//         }
+//         // Layout,
+//         // a: (props) => {
+//         //     const {href,children} = props;
+//         //     links[href] = {children};
+//         //     console.log('[transpile]', 'link', href, children );
+//         //     // links.push( {href, children} );
+//         //     return <a {...props}></a>
+//         // }
+//     }
+//     if (path !== undefined) {
+//         // data = await Fs.readFile(path, 'utf8');
+//     }
 
-    let depends = [];
-    for (let r of requires) {
-        r = isObject(r) ? r.path : r;
-        // r = await resolveRelativePath(path, r);
-        depends.push(r);
-    }
+//     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
 
-    result.requires = depends;
+//     const mdxResult = await parseMdx(data, path,
+//         { pageProps: inPageProps, resolveImport, require, context });
 
-    // if( cssLinks ){
-    //     // resolve these to absolute
-    //     result.cssLinks = await Promise.all( cssLinks.map( link => resolveRelativePath(path,link)) );
-    // }
+//     const { component, frontMatter,
+//         code, jsx, ast, page, default: d,
+//         requires, links, cssLinks,
+//         pageProps, ...rest } = mdxResult;
 
-    // console.log('[transpile]', path, 'and now', rest );
-    if (!forceRender && (frontMatter !== undefined && frontMatter.enabled === false)) {
-        return result;
-        // return { code, jsx, ast, meta, component, requires:depends, links, ...rest };
-    }
+//     meta = { ...meta, ...pageProps };
 
-    if (doRender) {
-        result.html = renderHTML({ components, component, children });
-    }
+//     // log('[transpile]', 'imgs', imgs );
 
-    return result;
-}
-
-
-function renderHTML({ components, component: Component, children }) {
-
-    const ctxValue = {
-        status: 'ready to go',
-        children,
-        components
-    };
-
-    let child = children !== undefined ?
-        React.createElement(children, { components })
-        : undefined;
-
-    const html = ReactDOMServer.renderToStaticMarkup(
-        <PageContext.Provider value={ctxValue}>
-            <MDXProvider components={components}>
-                <Component>{child}</Component>
-            </MDXProvider></PageContext.Provider>, { pretty: true });
-
-    return html;
-}
+//     let result: TranspileResult = {
+//         path, jsx, code, ast, /* code, ast,*/ component, meta, cssLinks, additional: rest
+//     };
 
 
 
-async function parseMdx(data: string, path: string, options: ProcessMDXOptions) {
+//     // log('[transpile]', 'requires', requires);
+//     // log('[transpile]', 'cssLinks', cssLinks);
 
-    try {
-        // convert the mdx to jsx
-        let { jsx, links, ast } = await processMdx(data, options);
+//     let depends = [];
+//     for (let r of requires) {
+//         r = isObject(r) ? r.path : r;
+//         // r = await resolveRelativePath(path, r);
+//         depends.push(r);
+//     }
 
-        // convert from jsx to js
-        let code = transformJSX(jsx);
+//     result.requires = depends;
 
-        // log('[parseMdx]', code);
+//     // if( cssLinks ){
+//     //     // resolve these to absolute
+//     //     result.cssLinks = await Promise.all( cssLinks.map( link => resolveRelativePath(path,link)) );
+//     // }
 
-        // evaluate the js into a component
-        let el = evalCode(code, path, options);
+//     // console.log('[transpile]', path, 'and now', rest );
+//     if (!forceRender && (frontMatter !== undefined && frontMatter.enabled === false)) {
+//         return result;
+//         // return { code, jsx, ast, meta, component, requires:depends, links, ...rest };
+//     }
 
-        return { ...el, code, jsx, ast, links };
+//     if (doRender) {
+//         result.html = renderHTML({ components, component, children });
+//     }
 
-    } catch (err) {
-        log('[parseMdx]', `failed to process mdx ${path}`, err.stack);
-        log('[parseMdx]', data);
-        throw err;
-    }
+//     return result;
+// }
 
-}
+
+// function renderHTML({ components, component: Component, children }) {
+
+//     const ctxValue = {
+//         status: 'ready to go',
+//         children,
+//         components
+//     };
+
+//     let child = children !== undefined ?
+//         React.createElement(children, { components })
+//         : undefined;
+
+//     const html = ReactDOMServer.renderToStaticMarkup(
+//         <PageContext.Provider value={ctxValue}>
+//             <MDXProvider components={components}>
+//                 <Component>{child}</Component>
+//             </MDXProvider></PageContext.Provider>, { pretty: true });
+
+//     return html;
+// }
+
+
+
+// async function parseMdx(data: string, path: string, options: ProcessMDXOptions) {
+
+//     try {
+//         // convert the mdx to jsx
+//         let { jsx, ast } = await processMdx(data, options);
+
+//         // convert from jsx to js
+//         let code = transformJSX(jsx);
+
+//         // log('[parseMdx]', code);
+
+//         // evaluate the js into a component
+//         let el = evalCode(code, path, options);
+
+//         return { ...el, code, jsx, ast };
+
+//     } catch (err) {
+//         log('[parseMdx]', `failed to process mdx ${path}`, err.stack);
+//         log('[parseMdx]', data);
+//         throw err;
+//     }
+
+// }
 
 
 export type ProcessMDXOptions = {
     pageProps?: any;
-    applyLinks?: PageLinks;
     resolveImport?: (path) => string | undefined;
     resolveLink?: (url: string, text?: string) => any;
     require?: (path: string, fullPath: string) => any;
     context?: any;
 }
 
-// export type ProcessMDXResult = [string, PageLinks, any];
 export interface ProcessMDXResult {
     jsx: string;
-    links: PageLinks,
     ast: any;
 }
 
 export function processMdx(content: string, options: ProcessMDXOptions): ProcessMDXResult {
 
-    let { pageProps, applyLinks, resolveImport, resolveLink } = options;
-    let links = new Map<string, any>();
+    let { pageProps, resolveImport, resolveLink } = options;
     let ast;
 
     // remark-mdx has a really bad time with html comments even
@@ -345,29 +345,20 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
         .use(removeCommentPlugin)
         // .use(() => console.dir)
         .use(imgProc, { resolveLink })
-        .use(linkProc, { links, applyLinks, resolveLink })
+        .use(linkProc, { resolveLink })
         // take a snap of the AST
         .use(() => tree => { ast = JSON.stringify(tree, null, '\t') })
         .use(mdx)
         .use(mdxjs)
         .use(titlePlugin)
-        .use(importCSSPlugin, { resolve: resolveImport })
+        .use(importPlugin, { resolve: resolveImport })
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
-        // .use(() => console.dir)
-        // .use( () => console.log('💦doh') )
-        // .process(content);
         .processSync(content);
-    // console.log( output.toString());
-
-    // log( 'ast', ast ); throw 'stop';
-
-    // return ['/* @jsx mdx */\n' + output.toString(), links, ast];
 
     return {
         jsx: '/* @jsx mdx */\n' + output.toString(),
-        links,
         ast
     };
 }
@@ -412,10 +403,16 @@ interface EvalOptions {
  */
 function evalCode(code: string, path: string, options: EvalOptions = {}) {
     let requires = [];
-    const { context } = options;
+    let { context } = options;
 
     // log('[evalCode]', path, code );
 
+    context = {
+        useServerEffect: () => { },
+        ...context
+    }
+
+    // log('[evalCode]', path, context.useServerEffect.toString() );
 
     const requireManual = (requirePath) => {
 
@@ -430,11 +427,11 @@ function evalCode(code: string, path: string, options: EvalOptions = {}) {
             result = options.require(requirePath, fullPath);
         }
 
-        // log('[evalCode]', requirePath, result);
 
         if (result === undefined) {
             result = require(requirePath);
         }
+        // log('[evalCode]', requirePath, result);
         return result;
     }
 
@@ -443,23 +440,12 @@ function evalCode(code: string, path: string, options: EvalOptions = {}) {
         createElement: mdxReact,
         React,
         require: requireManual,
-        console: console
+        console: console,
+        setTimeout,
+        log: (...args) => log('[evalCode]', ...args)
     });
 
     const { default: component, page: pageProps, ...rest } = out;
 
     return { ...rest, pageProps, requires, component };
-}
-
-
-
-function findFileWithExt(path: string, exts: string[]) {
-    exts = ['', ...exts];
-    for (const ext of exts) {
-        let epath = path + `.${ext}`;
-        if (Fs.existsSync(epath)) {
-            return epath;
-        }
-    }
-    return path;
 }

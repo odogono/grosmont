@@ -1,12 +1,16 @@
-import {site} from '@odgn/grosmont';
+import {site, log, useServerEffect} from '@site';
+import { useState } from 'react';
 
+export default () => {
 
+    const [weeknoteEids, setWeeknoteEids] = useState([]);
 
-export default async () => {
-    const eids = await site.findByTags([ 'weeknotes'] );
+    useServerEffect( async () => {
+        const eids = await site.findByTags([ 'weeknotes'] );
+        setWeeknoteEids(eids);
+    }, []);
 
-    <div>
-        <div>Contents</div>
+    return <div>
+        <div>Contents {JSON.stringify(weeknoteEids)}</div>
     </div>
-
 };

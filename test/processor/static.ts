@@ -9,7 +9,7 @@ import { process as copyStatic } from '../../src/builder/processor/static/copy';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 import { printAll } from 'odgn-entity/src/util/print';
 import { FindEntityOptions, selectSrcByExt } from '../../src/builder/query';
-import { Reporter } from '../../src/builder/reporter';
+import { Level, Reporter } from '../../src/builder/reporter';
 
 
 
@@ -29,7 +29,7 @@ test.before.each(async (tcx) => {
     let idgen = () => ++id;
 
     const dst = `file://${rootPath}/test/fixtures/dist/`;
-    tcx.site = await Site.create({ idgen, name: 'test', dst });
+    tcx.site = await Site.create({ idgen, name: 'test', dst, level: Level.FATAL });
     
     // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
