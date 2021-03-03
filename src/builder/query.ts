@@ -145,12 +145,12 @@ export async function selectTitleAndMeta(es: EntitySet, options: FindEntityOptio
 }
 
 
-export async function selectTextWithDst(es: EntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
+export async function selectOutputWithDst(es: EntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const q = onlyUpdated ? `
         [ 
-            [ /component/dst /component/text /component/upd ] !bf 
+            [ /component/dst /component/output /component/upd ] !bf 
                         /component/upd#op !ca 1 ==
                         /component/upd#op !ca 2 ==
                     or
@@ -158,11 +158,11 @@ export async function selectTextWithDst(es: EntitySet, options: FindEntityOption
                 and
             @eid
         ] select
-        swap [ *^$1 @eid /component/text !bf @c ] select
+        swap [ *^$1 @eid /component/output !bf @c ] select
     `
         : `
     [ 
-        [ /component/dst /component/text /component/upd ] !bf 
+        [ /component/dst /component/output /component/upd ] !bf 
                 /component/upd#op !ca 1 ==
                 /component/upd#op !ca 2 ==
             or
@@ -170,7 +170,7 @@ export async function selectTextWithDst(es: EntitySet, options: FindEntityOption
         and
         @eid
     ] select
-    swap [ *^$1 @eid /component/text !bf @c ] select
+    swap [ *^$1 @eid /component/output !bf @c ] select
     `
 
     return await es.prepare(q).getResult({ ref });
@@ -780,11 +780,11 @@ export async function selectSrcByEntity(es: EntitySet, e: EntityId | Entity): Pr
     return res.length > 0 ? res[0] : undefined;
 }
 
-export async function selectTextByEntity(es: EntitySet, e: EntityId | Entity): Promise<[string, string]> {
+export async function selectOutputByEntity(es: EntitySet, e: EntityId | Entity): Promise<[string, string]> {
     const eid = isEntity(e) ? (e as Entity).id : e as EntityId;
     const stmt = es.prepare(`[
         $eid @eid
-        /component/text !bf
+        /component/output !bf
         @c
     ] select [/data /mime] pluck!`);
 

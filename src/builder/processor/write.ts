@@ -1,7 +1,7 @@
 import { Site } from "../site";
 import { Component, getComponentEntityId } from 'odgn-entity/src/component';
 import { ProcessOptions } from '../types';
-import { getDstUrl, selectTextWithDst } from '../query';
+import { getDstUrl, selectOutputWithDst } from '../query';
 import { debug, error, info, setLocation } from "../reporter";
 import { printEntity } from "odgn-entity/src/util/print";
 
@@ -19,7 +19,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     const { reporter } = options;
     setLocation(reporter, '/processor/write');
 
-    const coms = await selectTextWithDst(es, options);
+    const coms = await selectOutputWithDst(es, options);
     // log('eids', coms);
 
     for (const com of coms) {

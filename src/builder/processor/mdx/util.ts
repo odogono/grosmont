@@ -112,7 +112,7 @@ export function getEntityImportUrlFromPath(fileIndex: SiteIndex, path: string, m
     }
     // log('[gE]', 'found??', path, entry, fileIndex.index);
     const [eid, mime] = entry;
-    return buildUrl(`e://${eid}/component/text`, { mime }) + '#text';
+    return buildUrl(`e://${eid}/component/output`, { mime }) + '#text';
 }
 
 
@@ -123,7 +123,7 @@ export async function getEntityCSSDependencies(es: EntitySet, e: Entity) {
         return undefined;
     }
 
-    const did = es.resolveComponentDefId('/component/text');
+    const did = es.resolveComponentDefId('/component/output');
     let result = [];
 
     for (const dep of cssDeps) {
@@ -174,8 +174,8 @@ export function parseEntityUrl( url:string ){
     const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "i");
     let match = re.exec( url );
     if( match !== null ){
-        const [ m, eid, path ] = match;
-        return { eid:toInteger(eid), path, val:m };
+        const [ url, eid, did ] = match;
+        return { eid:toInteger(eid), did, url };
     }
     return undefined;
 }

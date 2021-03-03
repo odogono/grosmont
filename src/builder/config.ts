@@ -95,8 +95,8 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
                 // applyUrlToCom( e, 'Dst', other[key] );
                 e.Dst = {url: other[key] };
             }
-            else if( key === 'text'){
-                e.Text = {data: other[key] };
+            else if( key === 'output'){
+                e.Output = {data: other[key] };
             }
             else if( key === 'mime'){
                 // e.Mime = {type: other[key] };

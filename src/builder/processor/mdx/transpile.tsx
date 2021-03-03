@@ -296,7 +296,7 @@ async function parseMdx(data: string, path: string, options: ProcessMDXOptions) 
         // convert from jsx to js
         let code = transformJSX(jsx);
 
-        log('[parseMdx]', code);
+        // log('[parseMdx]', code);
 
         // evaluate the js into a component
         let el = evalCode(code, path, options);

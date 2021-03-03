@@ -28,7 +28,7 @@ import {
     selectSrcByEntity,
     selectSrcByFilename,
     selectSrcByUrl,
-    selectTextByEntity,
+    selectOutputByEntity,
     selectUpdated
 } from './query';
 import { DependencyType, ProcessOptions, SiteIndex } from './types';
@@ -183,13 +183,13 @@ export class Site {
         // return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id  : eid as EntityId );
     }
     /**
-     * Returns the /component/text #data and #mime of the given entity
+     * Returns the /component/output #data and #mime of the given entity
      * 
      * @param eid 
      * @param appendRoot 
      */
-    async getEntityText(eid: EntityId | Entity) {
-        return selectTextByEntity(this.es, eid);
+    async getEntityOutput(eid: EntityId | Entity) {
+        return selectOutputByEntity(this.es, eid);
         // return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id  : eid as EntityId );
     }
 

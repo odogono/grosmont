@@ -10,7 +10,7 @@ import traverse from "@babel/traverse";
 import { parse as babelParser } from '@babel/parser';
 
 import { Entity } from 'odgn-entity/src/entity';
-import { getDependencies, getDependencyEntities, selectJsx } from '../../query';
+import { getDependencies, getDependencyEntities, insertDependency, selectJsx } from '../../query';
 import { Site } from '../../site';
 import { parse as parseConfig } from '../../config';
 import { ProcessOptions } from '../../types';
@@ -20,8 +20,8 @@ import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { parseUri, toInteger } from '@odgn/utils';
 
 import { process as resolveImports } from './resolve_imports';
-import { buildProps } from '../mdx/util';
-import { setEntityId,  } from 'odgn-entity/src/component';
+import { buildProps, resolveImport } from '../mdx/util';
+import { Component, setEntityId, } from 'odgn-entity/src/component';
 import { setLocation, info, error, debug } from '../../reporter';
 
 const Label = '/processor/jsx/eval';
@@ -34,43 +34,27 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
  * @param site 
  * @param options 
  */
-export async function process(site: Site, options:ProcessOptions = {}){
+export async function process(site: Site, options: ProcessOptions = {}) {
     const es = options.es ?? site.es;
     const { reporter } = options;
     setLocation(reporter, Label);
 
-    let ents = await selectJsx(es, {...options, siteRef:site.getRef()});
+    let ents = await selectJsx(es, { ...options, siteRef: site.getRef() });
     let output = [];
 
     // log( ents );
 
+
+
     for (const e of ents) {
 
-        try {
 
-            // gather the import dependencies
-            // let importData = await buildImportData(site, e, options);
-            let data = await site.getEntityData(e);
+        let coms = await processEntity(site, e, options);
+        output = output.concat(coms);
 
-            // let props = await buildProps(site, e);
+        info(reporter, ``, { eid: e.id });
 
-            let js = transformJSX(data);
-            // let {Component,requires, ...meta} = evalCode(code, props.path, {site, importData});
-
-            const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
-
-            output.push( jsCom );
-            // await parseConfig(site, meta, undefined, {add:false, e} );
-
-        } catch( err ){
-            let ee = es.createComponent('/component/error', { message: err.message, from: Label });
-            output.push( setEntityId(ee, e.id) );
-            error(reporter, 'error', err, { eid: e.id });
-            log('error', err);
-        }
-        
         // output.push(e);
-
     }
 
     await es.add(output);
@@ -78,6 +62,71 @@ export async function process(site: Site, options:ProcessOptions = {}){
     return site;
 }
 
+async function processEntity(site: Site, e: Entity, options: ProcessOptions): Promise<Component[]> {
+    const { es } = site;
+    const { reporter } = options;
+    const { url: base } = e.Src;
+    let imports = [];
+
+    const resolveImportLocal = (path: string, mimes?: string[]) => {
+        let entry = resolveImport(site, path, base);
+        // log('[resolveImportLocal]', path, entry);
+        if (entry !== undefined) {
+            imports.push(entry);
+            return entry[1];
+        }
+    }
+
+    try {
+
+        // gather the import dependencies
+        // let importData = await buildImportData(site, e, options);
+        let data = await site.getEntityData(e);
+
+        // let props = await buildProps(site, e);
+
+        let js = transformJSX(data, resolveImportLocal);
+        // let {Component,requires, ...meta} = evalCode(code, props.path, {site, importData});
+
+        const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
+
+
+        await applyImports(site, e, imports, options);
+
+        return [jsCom];
+        // output.push( jsCom );
+        // await parseConfig(site, meta, undefined, {add:false, e} );
+
+    } catch (err) {
+        let ee = es.createComponent('/component/error', { message: err.message, from: Label });
+        log('error', err);
+        error(reporter, 'error', err, { eid: e.id });
+        return [setEntityId(ee, e.id)];
+    }
+
+
+}
+
+async function applyImports(site: Site, e: Entity, imports, options: ProcessOptions) {
+    const { es } = site;
+    const existingIds = new Set(await getDependencies(es, e.id, 'import'));
+
+    // log('[applyImports]', imports);
+
+    for (let [importEid, url] of imports) {
+        let urlCom = es.createComponent('/component/url', { url });
+        let depId = await insertDependency(es, e.id, importEid, 'import', [urlCom]);
+
+        if (existingIds.has(depId)) {
+            existingIds.delete(depId);
+        }
+    }
+
+    // remove dependencies that don't exist anymore
+    await es.removeEntity(Array.from(existingIds));
+
+    return e;
+}
 
 
 const presets = [
@@ -91,14 +140,31 @@ const presets = [
 ];
 
 
-function transformJSX(jsx: string) {
+function transformJSX(jsx: string, resolveImport: Function) {
     const plugins = [
         ["module-resolver", {
             "root": ["."],
             // alias
         }]
     ]
-    const {code,...other} = Babel.transform(jsx, { presets, plugins });
+    
+    let ast = babelParser(jsx, { sourceType: 'module', plugins: ['jsx', 'typescript'] });
+    
+    traverse(ast, {
+        ImportDeclaration(path) {
+            let resolvedPath = resolveImport(path.node.source.value);
+            if (resolvedPath !== undefined) {
+                path.node.source.value = resolvedPath;
+            }
+        }
+    });
+    
+    let generateResult = babelGenerate(ast);
+    if (generateResult) {
+        jsx = generateResult.code;
+    }
+    
+    let { code, ...other } = Babel.transform(jsx, { presets, plugins });
 
     // log('[transformJSX]', other);
     return code;

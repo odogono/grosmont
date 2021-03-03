@@ -193,7 +193,7 @@ app.use(async (req, res, next) => {
 
     if( e !== undefined ){
         log('found', e);
-        let text = await site.getEntityText( e );
+        let text = await site.getEntityOutput( e );
         if( text !== undefined ){
             let [data,mime] = text;
 

@@ -4,9 +4,9 @@ import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { ProcessOptions, SiteIndex, TranspileResult } from '../../types';
+import { DependencyType, ProcessOptions, SiteIndex, TranspileResult } from '../../types';
 import { mdxToJs } from './transpile';
-import { buildProps, resolveImport } from './util';
+import { buildProps, parseEntityUrl, resolveImport } from './util';
 import { parse as parseConfig } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
@@ -75,14 +75,14 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     let imports = [];
     let links = [];
 
-    const resolveImportLocal = (path: string, mimes?: string[]) => {
-
+    // function passed into the mdx parser and called whenever
+    // an import is found
+    function resolveImportLocal(path: string, mimes?: string[]){
         let entry = resolveImport(site, path, base);
         if (entry !== undefined) {
             imports.push(entry);
             return entry[1];
         }
-        // return getEntityImportUrlFromPath(fileIndex, path, mimes);
     }
 
     const require = (path: string, fullPath) => {
@@ -155,15 +155,34 @@ function isUrlInternal(url: string) {
 async function applyImports(site: Site, e: Entity, imports, options: EvalMdxOptions) {
     const { es } = site;
     const existingIds = new Set(await getDependencies(es, e.id, 'import'));
+    const cssIds = await getDependencies(es, e.id, 'css');
+    cssIds.forEach(existingIds.add, existingIds);
+
+    // log('[applyImports]', 'existing', existingIds );
 
     for (let [importEid, url] of imports) {
+        let type:DependencyType = 'import';
+        // let additionalComs = [];
+        const match = parseEntityUrl(url);
+        // log('[applyImports]', match);
+        if( match !== undefined ){
+            const {eid, did} = match;
+            if( did === '/component/scss' ){
+                type = 'css';
+            }
+        }
+
+        // log('[applyImports]', type, url );
+        
         let urlCom = es.createComponent('/component/url', { url });
-        let depId = await insertDependency(es, e.id, importEid, 'import', [urlCom] );
+        let depId = await insertDependency(es, e.id, importEid, type, [urlCom] );
 
         if (existingIds.has(depId)) {
             existingIds.delete(depId);
         }
     }
+
+    // log('[applyImports]', 'remove', existingIds );
 
     // remove dependencies that don't exist anymore
     await es.removeEntity(Array.from(existingIds));

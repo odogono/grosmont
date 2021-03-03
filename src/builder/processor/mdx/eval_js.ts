@@ -1,5 +1,5 @@
 import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { findEntityByUrl, getDependencies, getDepenendencyDst, insertDependency, selectJs } from '../../query';
+import { findEntityByUrl, getDependencies, getDependencyEntities, getDepenendencyDst, insertDependency, selectJs } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
 
@@ -68,26 +68,21 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     let meta = e.Meta?.meta ?? {};
 
     debug(reporter, `process ${base}`, {eid:e.id});
-    log(`process ${base} (${e.id})`);
+    // log(`process ${base} (${e.id})`);
 
-    // log('imports', existingIds);
+    // provides a require function to the component builder which fetches
+    // the import data ahead of time to work with the synchronous import of evaluation
     const require = await buildImports( site, e, options );
 
-
     const resolveImportLocal = (path: string, mimes?: string[]) => undefined;
-
-    // const require = (path: string, fullPath) => {
-    //     const match = parseEntityUrl(path);
-    //     log('[require]', match?.eid, path);
-    //     let result = importComs.get(match?.eid);
-    //     return result !== undefined ? result : false;
-    // };
 
     const result = jsToComponent(data, { path }, { resolveImport: resolveImportLocal, require });
 
     const { pageProps, component } = result;
 
     meta = { ...meta, ...pageProps };
+
+    // log(e.id, result);
 
     await parseConfig(es, meta, undefined, { add: false, e, siteRef });
 
@@ -105,27 +100,74 @@ export async function buildImports(site: Site, e: Entity, options:ProcessOptions
     const {es} = site;
 
     // retrieve import dependencies for this e and place them
-    const importIds = await getDepenendencyDst(es, e.id, 'import');
+    // const importIds = await getDepenendencyDst(es, e.id, 'import');
+    let imports = await getDependencyEntities(es, e.id, 'import');
+
     let importComs = new Map<EntityId, any>();
 
-    for (const importEid of importIds) {
-        const ie = await es.getEntity(importEid, true);
-        if (ie) {
-            let out = await processEntity(site, ie, options);
-            // log('[buildImports]', e.id, ie.id, out);
-            importComs.set(importEid, out.component);
-        }
-    }
+    // log('[buildImports]', imports );
 
+    for( const imp of imports ){
+        const url = imp.Url?.url;
+        const impEid = imp.Dep.dst;
+        const match = parseEntityUrl(url);
+        if( match !== undefined ){
+            const {eid, did} = match;
+
+            if( did === '/component/scss' ){
+
+            }
+            else if( did === '/component/jsx' || did === '/component/js' ){
+                const ie = await es.getEntity(impEid, true);
+                let out = await processEntity(site, ie, options);
+                // log('[buildImports]', e.id, ie.id, out);
+                importComs.set(ie.id, out.component);
+            }
+            else {
+                const ie = await es.getEntity(impEid, true);
+                importComs.set(ie.id, ie);
+            }
+        }
+
+        // log('import', imp.Dep.dst, match);
+
+    }
+    
     function require(path: string, fullPath:string){
         const match = parseEntityUrl(path);
         let result = importComs.get(match?.eid);
-        // log('[require]', match?.eid, path, result);
-        // log('[require]', 'but', result() )
-        // result = { default:() => "BOOOO!"};
-        // return undefined;
         return result !== undefined ? result : false;
     };
 
     return require;
 }
+
+/*
+async function buildImportData(site:Site, e:Entity, options:ProcessOptions){
+    const {es} = site;
+    let imports = await getDependencyEntities(es, e.id, 'import');
+
+    let result = {};
+
+    for( const imp of imports ){
+        // const dst = imp.Dep.dst;
+        const url = imp.Url?.url;
+
+        // figure out what kind of data the url is asking for
+        let {host, path:did} = parseUri( url );
+        let eid = toInteger(host);
+
+        let dstE = await es.getEntity(eid, true);
+
+        // log('[buildImportData]', eid, url);
+        // printEntity(es, dstE);
+
+        if( did === '/component/jsx' ){
+            const ren = await renderJsx( site, dstE, options );
+            result[url] = ren.default;
+        } else {
+            result[url] = dstE;
+        }
+    }
+    return result;
+}//*/

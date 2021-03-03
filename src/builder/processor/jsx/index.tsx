@@ -59,7 +59,7 @@ export async function render(site: Site, options:ProcessOptions = {}){
         try {
             const { data } = await renderJsx( site, e, options );
 
-            e.Text = { data };
+            e.Output = { data };
         } catch( err ){
             e.Error = {message:err.message, stack:err.stack};
         }

@@ -85,7 +85,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // props.imgs = options.imgs;
     props = await applyCSSDependencies(es, e, child, props);
 
-
+    
     
     let result:any = jsToComponent(data, props, { resolveImport: resolveImportLocal, require });
 
@@ -115,6 +115,12 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 }
 
 
+/**
+ * Looks through the data looking for entity urls and replaces
+ * them with associated dst url
+ * @param site 
+ * @param data 
+ */
 function replaceEntityUrls( site:Site, data:string ){
     const idx = site.getIndex('/index/dstUrl');
     // log('[replaceEntityUrls]', idx);
@@ -129,26 +135,26 @@ function replaceEntityUrls( site:Site, data:string ){
 
 
 
-async function renderLayoutEntity(site: Site, src: Entity, child: TranspileResult, options: ProcessOptions) {
-    const { es } = site;
+// async function renderLayoutEntity(site: Site, src: Entity, child: TranspileResult, options: ProcessOptions) {
+//     const { es } = site;
 
-    if (child === undefined || child.meta.layout === undefined) {
-        return child;
-    }
+//     if (child === undefined || child.meta.layout === undefined) {
+//         return child;
+//     }
 
-    const layoutE = await getLayoutFromDependency(es, src.id);
+//     const layoutE = await getLayoutFromDependency(es, src.id);
 
-    // log('[renderLayoutEntity]', 'returned', layoutE.id, 'for', src.id );
+//     // log('[renderLayoutEntity]', 'returned', layoutE.id, 'for', src.id );
 
-    // log('[renderLayoutEntity]', layoutE );
-    // printEntity(es, layoutE);
+//     // log('[renderLayoutEntity]', layoutE );
+//     // printEntity(es, layoutE);
 
-    if (layoutE === undefined) {
-        return child;
-    }
+//     if (layoutE === undefined) {
+//         return child;
+//     }
 
-    return await processEntity(site, layoutE, child, options);
-}
+//     return await processEntity(site, layoutE, child, options);
+// }
 
 
 
@@ -156,6 +162,8 @@ async function renderLayoutEntity(site: Site, src: Entity, child: TranspileResul
 async function applyCSSDependencies(es: EntitySet, e: Entity, child: TranspileResult, props: TranspileProps): Promise<TranspileProps> {
     // build css links and content from deps
     const cssEntries = await getEntityCSSDependencies(es, e);
+
+    // log('[applyCSSDependencies]', e.id, cssEntries);
 
     if (cssEntries === undefined) {
         return props;

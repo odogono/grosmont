@@ -39,9 +39,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         try {
             const { css, srcPath, dstPath } = await renderScss(site, srcCom, options);
-            // e.Text = { data: css, mime: 'text/css' };
-
-            let com = es.createComponent( '/component/text', {data:css, mime:'text/css'} );
+            
+            let com = es.createComponent( '/component/output', {data:css, mime:'text/css'} );
             addComs.push( setEntityId(com, eid) );
 
 

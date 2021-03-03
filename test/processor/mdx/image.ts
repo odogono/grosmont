@@ -60,7 +60,7 @@ test('renders image', async ({site,es, options}) => {
     
     e = await site.getEntityBySrc('file:///pages/main.mdx');
 
-    assert.equal(e.Text.data,
+    assert.equal(e.Output.data,
         `<h1>My home</h1><img src="/image.jpg" alt="Image alt"/>`);
 });
 

@@ -22,7 +22,7 @@ export interface ProcessMDXRenderOptions extends ProcessOptions {
 }
 
 /**
- * Renders /component/mdx into /component/text
+ * Renders /component/mdx into /component/output
  * 
  * @param es 
  */
@@ -58,7 +58,7 @@ export async function process(site: Site, options:ProcessMDXRenderOptions = {}) 
         if( data === undefined ){
             continue;
         }
-        e.Text = { data, mime };
+        e.Output = { data, mime };
 
         info(reporter, '', {eid:e.id});
 
