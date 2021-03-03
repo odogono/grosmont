@@ -1,22 +1,22 @@
 /component/title:
-  title: Open Door Go North
+  title: Test Site A
 
 /component/url:
   url: https://www.opendoorgonorth.com/
 
 /component/uuid:
-  uuid: ED07584D-7070-4C04-A90B-1F79AAFBC26F
+  uuid: 7481CA68-0BAD-4348-90FC-1E2A2C1CE476
 
 /component/src:
-  url: file:///rootC/
+  url: file:///rootA/
 
 /component/dst:
-  url: file:///dist/siteC/
+  url: file:///dist/siteB/
 
 /component/meta:
   meta:
     es:
-      url: es://sqlite/siteC.sqlite?isMemory=false
+      url: es://sqlite/siteA.sqlite?isMemory=true
 
 /component/patterns:
   include: 
