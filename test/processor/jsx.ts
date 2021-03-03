@@ -13,20 +13,17 @@ import { process as mdxRender } from '../../src/builder/processor/mdx/render';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 import { process as mark } from '../../src/builder/processor/mark';
-import {
-    process as processJSX,
-    preprocess as preProcessJSX,
-} from '../../src/builder/processor/jsx';
-import {
-    process as resolveImports
-} from '../../src/builder/processor/jsx/resolve_imports';
 
-import { parse } from '../../src/builder/config';
+
+import { process as evalJsx } from '../../src/builder/processor/jsx/eval_jsx';
+import { process as evalJs } from '../../src/builder/processor/mdx/eval_js';
+import { process as renderJs } from '../../src/builder/processor/mdx/render_js';
 
 import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
-import { buildSrcIndex } from '../../src/builder/query';
+import { buildSrcIndex, FindEntityOptions } from '../../src/builder/query';
+import { EntityId } from 'odgn-entity/src/entity';
 
 
 const log = (...args) => console.log('[TestProcMDX]', ...args);
@@ -98,7 +95,7 @@ const test = suite('processor/jsx');
 
 //     e = await site.getEntityByDst('/sitemap.xml');
 
-//     // log( Beautify.html(e.Text.data) );
+//     // log( Beautify.html(e.Output.data) );
 
 
 // });
@@ -111,11 +108,11 @@ function idgen() {
 
 test('resolve imports', async () => {
     const site = await Site.create({ idgen: idgen() });
-
+    let options = { siteRef: site.getRef() as EntityId } as FindEntityOptions;
     
     await addJsx(site, 'file:///main.jsx', `
     import Message from 'file:///message.jsx';
-    export const dst = '/main.html';
+    export const page = { dst: '/main.html' };
     
     export default () => <div>Message: <Message /></div>;
     `);
@@ -124,12 +121,14 @@ test('resolve imports', async () => {
     await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
     
     await buildSrcIndex(site);
+
+    await evalJsx(site, options);
+
+    await evalJs(site, options);
+
+    await renderJs(site, options);
     
-    await resolveImports(site);
-
-    await preProcessJSX(site);
-
-    await processJSX(site);
+    // await processJSX(site);
 
     await buildDstIndex(site);
 
@@ -137,7 +136,7 @@ test('resolve imports', async () => {
 
     let e = await site.getEntityByDst('/main.html');
 
-    assert.equal( e.Text.data, '<div>Message: Hello World</div>');
+    assert.equal( e.Output.data, '<div>Message: Hello World</div>');
 });
 
 

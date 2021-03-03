@@ -516,13 +516,13 @@ async function process( site:Site, options?:ProcessOptions ){
 
 async function addScss(site: Site, url: string, data: string) {
     let e = await site.addSrc(url);
-    e.Scss = { data };
+    e.Data = { data };
     await site.update(e);
 }
 
 async function addMdx(site: Site, url: string, data: string, meta?: any) {
     let e = await site.addSrc(url);
-    e.Mdx = { data };
+    e.Data = { data };
     if (meta !== undefined) {
         e.Meta = { meta };
     }

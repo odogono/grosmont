@@ -72,7 +72,7 @@ test.run();
 
 async function addMdx(site: Site, url: string, data: string, meta?: any) {
     let e = await site.addSrc(url);
-    e.Mdx = { data };
+    e.Data = { data };
     if (meta !== undefined) {
         e.Meta = { meta };
     }

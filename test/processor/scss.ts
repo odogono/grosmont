@@ -90,7 +90,7 @@ test('render will only consider updated', async({es,site}) => {
     // await printES( site );
     
     let e = await site.es.getEntity(2000);
-    assert.equal( e.Text, undefined );
+    assert.equal( e.Output, undefined );
 });
 
 test('process directly from file', async () => {
@@ -114,7 +114,7 @@ test('process directly from file', async () => {
     // await printES(site);
 
     let e = await site.getEntityByDst('/main.css');
-    assert.is.not( e.Text, undefined );
+    assert.is.not( e.Output, undefined );
 
 });
 

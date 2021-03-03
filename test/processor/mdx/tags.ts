@@ -1,31 +1,22 @@
 import { suite } from 'uvu';
+import assert from 'uvu/assert';
 import Path from 'path';
-import Beautify from 'js-beautify';
 import { Site } from '../../../src/builder/site';
-import { process as assignMime } from '../../../src/builder/processor/assign_mime';
-import { process as renderScss } from '../../../src/builder/processor/scss';
-import { process as renderMdx } from '../../../src/builder/processor/mdx';
-import { process as assignTitle } from '../../../src/builder/processor/assign_title';
-import { process as mdxPreprocess } from '../../../src/builder/processor/mdx/parse';
-import { process as mdxResolveMeta } from '../../../src/builder/processor/mdx/resolve_meta';
-import { process as applyTags } from '../../../src/builder/processor/mdx/apply_tags';
-import { process as mdxRender } from '../../../src/builder/processor/mdx/render';
-import { process as buildDeps } from '../../../src/builder/processor/build_deps';
-import { process as buildDstIndex } from '../../../src/builder/processor/dst_index';
-import { process as markMdx } from '../../../src/builder/processor/mdx/mark';
-import {
-    process as processJSX,
-    preprocess as preProcessJSX
-} from '../../../src/builder/processor/jsx';
 
+import { process as buildDirDeps } from '../../../src/builder/processor/build_deps';
+import { process as renderScss } from '../../../src/builder/processor/scss';
+import { process as mark } from '../../../src/builder/processor/mark';
+import { process as evalMdx } from '../../../src/builder/processor/mdx/eval_mdx';
+import { process as evalJs } from '../../../src/builder/processor/mdx/eval_js';
+import { process as evalJsx } from '../../../src/builder/processor/jsx/eval_jsx';
+import { process as renderJs } from '../../../src/builder/processor/mdx/render_js';
+import { process as applyTags } from '../../../src/builder/processor/mdx/apply_tags';
+import { buildSrcIndex, FindEntityOptions } from '../../../src/builder/query';
+import { ProcessOptions } from '../../../src/builder/types';
 import { parse } from '../../../src/builder/config';
 
-import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
-import { ProcessOptions } from '../../../src/builder/types';
-import { FindEntityOptions } from '../../../src/builder/query';
 import { EntityId } from 'odgn-entity/src/entity';
 
 
@@ -79,7 +70,7 @@ tags:
 
     e = await addMdx(site, 'file:///pages/about.mdx', `## About Me`, { tags: 'blog' });
 
-    await mdxPreprocess(site, options);
+    await process(site, options);
 
     // convert /meta tags into dependencies
     // await applyTags(site);
@@ -92,7 +83,7 @@ tags:
 });
 
 
-test.only('tags inherited from dir', async ({ es, site, options }) => {
+test('tags inherited from dir', async ({ es, site, options }) => {
     await parse(site, `
     id: 1998
     src: /pages/
@@ -116,28 +107,22 @@ tags:
 # Things that happened
     `);
 
-    await buildDeps(site, options);
+    await process(site, options);
 
-    await mdxPreprocess(site, options);
+    // await printAll(es);
 
-    await applyTags(site, options);
-
-    await printAll(es);
-
-    assert.equal(
-        await site.findByTags(['blog', 'odgn']),
-        [1008, 1998, 1999]);
     assert.equal(
         await site.findByTags(['things']),
         [1008]);
+    assert.equal(
+        await site.findByTags(['blog', 'odgn']),
+        [1008, 1998, 1999]);
     assert.equal(
         await site.findByTags(['2021', 'blog']),
         [1008, 1999]);
     assert.equal(
         await site.findByTags(['2021', 'things']),
         [1008]);
-    // let eids = await site.findByTags(['2021', 'blog'] );
-    // log( eids );
 });
 
 
@@ -149,15 +134,41 @@ test.run();
 
 
 
+
+async function process(site: Site, options: ProcessOptions) {
+    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
+    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
+    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+
+    await buildDirDeps(site, options);
+
+    await buildSrcIndex(site);
+
+    await renderScss(site, options);
+
+    await evalJsx(site, options);
+
+    await evalMdx(site, options);
+
+    await applyTags(site, options);
+
+    // evaluates the js, and returns metadata
+    await evalJs(site, options);
+
+    // renders the js to /component/output
+    await renderJs(site, options);
+
+}
+
 async function addScss(site: Site, url: string, data: string) {
     let e = await site.addSrc(url);
-    e.Scss = { data };
+    e.Data = { data };
     await site.update(e);
 }
 
 async function addMdx(site: Site, url: string, data: string, meta?: any) {
     let e = await site.addSrc(url);
-    e.Mdx = { data };
+    e.Data = { data };
     if (meta !== undefined) {
         e.Meta = { meta };
     }

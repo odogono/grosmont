@@ -1,30 +1,16 @@
 import { suite } from 'uvu';
+import assert from 'uvu/assert';
 import Path from 'path';
-import Beautify from 'js-beautify';
 import { Site } from '../../../src/builder/site';
-import { process as assignMime } from '../../../src/builder/processor/assign_mime';
 import { process as renderScss } from '../../../src/builder/processor/scss';
-import { process as renderMdx } from '../../../src/builder/processor/mdx';
-import { process as assignTitle } from '../../../src/builder/processor/assign_title';
-import { process as mdxPreprocess } from '../../../src/builder/processor/mdx/parse';
-import { process as applyTags } from '../../../src/builder/processor/mdx/apply_tags';
-import { process as mdxRender } from '../../../src/builder/processor/mdx/render';
-import { process as buildDeps } from '../../../src/builder/processor/build_deps';
-import { process as buildDstIndex } from '../../../src/builder/processor/dst_index';
-import { process as markMdx } from '../../../src/builder/processor/mdx/mark';
 import { process as mark } from '../../../src/builder/processor/mark';
 import { process as evalJsx } from '../../../src/builder/processor/jsx/eval_jsx';
 
 import { process as evalMdx } from '../../../src/builder/processor/mdx/eval_mdx';
 import { process as evalJs } from '../../../src/builder/processor/mdx/eval_js';
 import { process as renderJs } from '../../../src/builder/processor/mdx/render_js';
-import { process as resolveMeta } from '../../../src/builder/processor/mdx/resolve_meta';
 
-import { parse } from '../../../src/builder/config';
-
-import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { ProcessOptions } from '../../../src/builder/types';
 import { buildSrcIndex, FindEntityOptions } from '../../../src/builder/query';
@@ -80,21 +66,7 @@ Message: <Message />
 `);
 
 
-    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
-    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
-    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
-    await buildSrcIndex(site);
-    await renderScss(site, options);
-
-    await evalJsx(site, options);
-
-    await evalMdx(site, options);
-    
-    // evaluates the js, and returns metadata
-    await evalJs(site, options);
-
-    // renders the js to /component/output
-    await renderJs(site, options);
+    await process(site, options);
 
     // await printAll(es);
 
@@ -116,6 +88,29 @@ Message: <Message />
 
 
 test.run();
+
+
+
+async function process(site: Site, options: ProcessOptions) {
+    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
+    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
+    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+    
+    await buildSrcIndex(site);
+    
+    await renderScss(site, options);
+
+    await evalJsx(site, options);
+
+    await evalMdx(site, options);
+
+    // evaluates the js, and returns metadata
+    await evalJs(site, options);
+
+    // renders the js to /component/output
+    await renderJs(site, options);
+}
+
 
 async function addScss(site: Site, url: string, data: string) {
     let e = await site.addSrc(url);
