@@ -13,8 +13,6 @@ import {
     applyEntitySetDiffs,
 } from '../../src/builder/processor/file';
 import { process as buildDeps } from '../../src/builder/processor/build_deps';
-import { process as markMdx } from '../../src/builder/processor/mdx/mark';
-
 
 import { Entity } from 'odgn-entity/src/entity';
 import { EntitySet, EntitySetMem } from 'odgn-entity/src/entity_set';
@@ -163,11 +161,6 @@ test('reading a site entity', async ({ es, site }) => {
     // await es.add(com);
 
     await buildDeps(site);
-
-    await markMdx(site, {loadData:true});
-    // await applyUpdatesToDependencies(site);
-
-    // await mdxResolveMeta(site, { e: 1014 });
 
     // printAll(es);
 });

@@ -1,16 +1,6 @@
 import { suite } from 'uvu';
 import Path from 'path';
-import Beautify from 'js-beautify';
 import { Site } from '../../src/builder/site';
-import { process as assignMime } from '../../src/builder/processor/assign_mime';
-import { process as renderScss } from '../../src/builder/processor/scss';
-import { process as renderMdx } from '../../src/builder/processor/mdx';
-import { process as assignTitle } from '../../src/builder/processor/assign_title';
-import { process as mdxPreprocess } from '../../src/builder/processor/mdx/parse';
-import { process as mdxResolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
-import { process as applyTags } from '../../src/builder/processor/mdx/apply_tags';
-import { process as mdxRender } from '../../src/builder/processor/mdx/render';
-import { process as buildDeps } from '../../src/builder/processor/build_deps';
 import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 import { process as mark } from '../../src/builder/processor/mark';
 
@@ -21,7 +11,6 @@ import { process as renderJs } from '../../src/builder/processor/mdx/render_js';
 
 import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { buildSrcIndex, FindEntityOptions } from '../../src/builder/query';
 import { EntityId } from 'odgn-entity/src/entity';
 
