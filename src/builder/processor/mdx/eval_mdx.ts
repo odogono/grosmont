@@ -120,6 +120,10 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
     // log('->', e.id, props);
 
+    if( data === undefined ){
+        return [];
+    }
+
     const result = mdxToJs(data, props, { resolveLink, resolveImport: resolveImportLocal, require, context });
 
     const { js } = result;

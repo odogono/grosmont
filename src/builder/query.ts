@@ -128,17 +128,15 @@ export async function selectMeta(es: EntitySet, options: FindEntityOptions = {})
 export async function selectTitleAndMeta(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
-    // select components which have /title AND /meta but also optionally
-    // /dst
     const query = `
         [
             /component/site_ref#ref !ca $ref ==
-            [ /component/title /component/meta ] !bf 
-            @c
+            [ /component/title /component/dst  ] !bf 
+            @e
         ] select
         
-        /@e pluck
-        rot [ *^$1 /component/dst !bf @c ] select rot +
+        // /@e pluck
+        // rot [ *^$1 /component/dst !bf @c ] select rot +
     `;
 
     return await es.prepare(query).getEntities({ ref });

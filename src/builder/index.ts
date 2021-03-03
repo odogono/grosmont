@@ -1,18 +1,13 @@
-import Path from 'path';
-import Fs, { pathExists } from 'fs-extra';
 
-import { pathToFileURL } from 'url';
 import { Site, SiteOptions } from './site';
 import { process as scanSrc } from './processor/file';
-import { process as markMdx } from './processor/mdx/mark';
+import { process as evalJsx } from './processor/jsx/eval_jsx';
+import { process as evalJs } from './processor/mdx/eval_js';
+import { process as renderJs } from './processor/mdx/render_js';
+import { process as evalMdx } from './processor/mdx/eval_mdx';
+import { process as resolveMeta } from './processor/mdx/resolve_meta';
 import { process as mark } from './processor/mark';
-import { process as markScss } from './processor/scss/mark';
-import { process as markStatic } from './processor/static/mark';
-import { process as assignMime } from './processor/assign_mime';
 import { process as applyTags } from './processor/mdx/apply_tags';
-import { process as mdxPreprocess } from './processor/mdx/parse';
-import { process as mdxResolveMeta } from './processor/mdx/resolve_meta';
-import { process as mdxRender } from './processor/mdx/render';
 import { process as renderScss } from './processor/scss';
 import { process as assignTitle } from './processor/assign_title';
 import { process as write } from './processor/write';
@@ -20,8 +15,6 @@ import { process as copyStatic } from './processor/static/copy';
 import { process as buildDstIndex } from './processor/dst_index';
 import { EntityUpdate, ProcessOptions } from './types';
 import { buildSrcIndex, clearUpdates } from './query';
-import { Reporter } from './reporter';
-import { printAll } from 'odgn-entity/src/util/print';
 
 
 export interface BuildProcessOptions extends ProcessOptions {
@@ -44,46 +37,45 @@ export async function build(site: Site, options: BuildProcessOptions = {}) {
 
     await scanSrc(site, updateOptions); //{...options, reporter, siteRef});
 
-    await buildSrcIndex(site);
+    
 
     // await markStatic(site, updateOptions);
 
-    await mark(site, { exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' });
-    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
-    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' })
-    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+    await mark(site, { ...options, exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' });
+    await mark(site, { ...options, exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
+    await mark(site, { ...options, exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' })
+    await mark(site, { ...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
 
-    // await markMdx(site, updateOptions);
-
-    // await markScss(site, updateOptions);
-
-    // await mark(site, {...updateOptions, exts:['jsx', 'tsx'], comUrl:'/component/jsx', mime: 'text/jsx' });
-
-    // await printAll( site.es );
-    // await assignMime(site, updateOptions);
+    await buildSrcIndex(site);
 
     await renderScss(site, updateOptions);
 
+    await evalJsx(site, options);
 
-    // mdx
-    await mdxPreprocess(site, updateOptions);
+    // creates a /component/js with the data
+    await evalMdx(site, options);
 
     await applyTags(site, updateOptions);
     // if( true ){
 
-    await mdxResolveMeta(site, updateOptions);
+    // evaluates the js, and returns metadata
+    await evalJs(site, options);
 
-    await mdxRender(site, updateOptions);
+    // resolve meta with parents
+    await resolveMeta( site, options );
+
+    await buildDstIndex(site, options);
+
+    // renders the js to /component/output
+    await renderJs(site, options);
 
     await assignTitle(site, updateOptions);
 
-    await buildDstIndex(site, { reporter });
+    await buildDstIndex(site, options);
 
     await write(site, updateOptions);
 
     await copyStatic(site, updateOptions);
-
-    // }
 
     return site;
 }

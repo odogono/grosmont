@@ -2,21 +2,17 @@ import { suite } from 'uvu';
 import Path from 'path';
 import Beautify from 'js-beautify';
 import { Site } from '../../../src/builder/site';
-import { process as assignMime } from '../../../src/builder/processor/assign_mime';
+import { process as buildDirDeps } from '../../../src/builder/processor/build_deps';
 import { process as renderScss } from '../../../src/builder/processor/scss';
-import { process as renderMdx } from '../../../src/builder/processor/mdx';
 import { process as assignTitle } from '../../../src/builder/processor/assign_title';
-import { process as mdxPreprocess } from '../../../src/builder/processor/mdx/parse';
-import { process as mdxResolveMeta } from '../../../src/builder/processor/mdx/resolve_meta';
+
 import { process as applyTags } from '../../../src/builder/processor/mdx/apply_tags';
-import { process as mdxRender } from '../../../src/builder/processor/mdx/render';
-import { process as buildDeps } from '../../../src/builder/processor/build_deps';
 import { process as buildDstIndex } from '../../../src/builder/processor/dst_index';
-import { process as markMdx } from '../../../src/builder/processor/mdx/mark';
 
 import { process as mark } from '../../../src/builder/processor/mark';
 import { process as evalMdx } from '../../../src/builder/processor/mdx/eval_mdx';
 import { process as evalJs } from '../../../src/builder/processor/mdx/eval_js';
+import { process as evalJsx } from '../../../src/builder/processor/jsx/eval_jsx';
 import { process as renderJs } from '../../../src/builder/processor/mdx/render_js';
 import { process as resolveMeta } from '../../../src/builder/processor/mdx/resolve_meta';
 
@@ -30,6 +26,7 @@ import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { ProcessOptions } from '../../../src/builder/types';
 import { EntityId } from 'odgn-entity/src/entity';
+import { Level } from '../../../src/builder/reporter';
 
 
 const log = (...args) => console.log('[TestProcMDX]', ...args);
@@ -58,7 +55,7 @@ test.before.each(async (tcx) => {
     const testDB = { uuid: 'TEST-1', isMemory: true, idgen };
     const es = new EntitySetSQL({ ...testDB });
 
-    tcx.site = await Site.create({ idgen, name: 'test', es, dst });
+    tcx.site = await Site.create({ idgen, name: 'test', es, dst, level: Level.ERROR });
     // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
     tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
@@ -142,7 +139,7 @@ isEnabled: false
     await site.update(e);
 
 
-    await renderMdx(site, options);
+    await process(site, options);
 
     e = await site.getEntityBySrc('file:///pages/main.mdx');
 
@@ -152,10 +149,8 @@ isEnabled: false
     // printAll( es );
 });
 
-test('meta disabled page will not render', async (tcx) => {
-    const { es, site } = tcx;
-
-
+test('meta disabled page will not render', async ({es, site, options}) => {
+    
     await addMdx(site, 'file:///pages/main.mdx', `
 ## Main page
     `, { isEnabled: false });
@@ -164,7 +159,7 @@ test('meta disabled page will not render', async (tcx) => {
     // await site.update(e);
 
 
-    await renderMdx(site);
+    await process(site, options);
 
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
 
@@ -328,13 +323,11 @@ test('extract target slug from title', async ({ es, site, options }) => {
 
     await process(site, options);
 
+    // await printAll(es);
 
     e = await site.getEntityBySrc('file:///pages/main.mdx');
 
     assert.equal(e.Dst.url, '/html/extracting-the-page-title.html');
-
-    // log( es );
-    // printES(es);
 });
 
 test('extract target slug from title with dst', async ({ es, site, options }) => {
@@ -382,7 +375,7 @@ dst: index.html
 
 
 
-test('mark will only consider updated', async ({ es, site }) => {
+test('mark will only consider updated', async ({ es, site, options }) => {
     await parse(site, `
     id: 2000
     src: alpha.mdx
@@ -394,10 +387,9 @@ test('mark will only consider updated', async ({ es, site }) => {
         op: 2
     `);
 
-    await process(site, {onlyUpdated:true});
+    await process(site, {...options, onlyUpdated:true});
 
-    // await printES( site.es );
-
+    // await printAll( site.es );
 
     let e = await site.es.getEntity(2000);
     assert.equal(e.Mdx, undefined);
@@ -419,13 +411,7 @@ test('preprocess will only consider updated', async ({ es, site, options }) => {
         op: 2
     `);
 
-    await process(site, {onlyUpdated:true});
-
-    // await markMdx(site, { onlyUpdated: true });
-
-    // await mdxPreprocess(site, { onlyUpdated: true });
-
-    // await printES( site.es );
+    await process(site, {...options, onlyUpdated:true});
 
 
     let e = await site.es.getEntity(2000);
@@ -448,11 +434,7 @@ test('render will only consider updated', async ({ es, site, options }) => {
         op: 1
     `);
 
-    // await markMdx( site, {onlyUpdated:true} );
-
-    await process(site, {onlyUpdated:true});
-    // await mdxRender(site, { onlyUpdated: true });
-
+    await process(site, {...options, onlyUpdated:true});
     // await printES( site.es );
 
 
@@ -467,7 +449,7 @@ test('process directly from file', async () => {
     const idgen = () => ++id;
 
     const configPath = `file://${rootPath}/test/fixtures/rootD.yaml`;
-    const site = await Site.create({ idgen, configPath });
+    const site = await Site.create({ idgen, configPath, level: Level.FATAL });
     let options: FindEntityOptions = { siteRef: site.getRef() as EntityId };
 
 
@@ -492,25 +474,35 @@ test.run();
 
 
 async function process( site:Site, options?:ProcessOptions ){
-    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
+    await mark(site, { ...options, exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' } );
+    await mark(site, { ...options, exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
+    await mark(site, { ...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+
+    await buildDirDeps(site, options);
+
     await buildSrcIndex(site);
-    await buildDeps(site, options);
+
+    await renderScss(site, options);
+
+    await evalJsx(site, options);
 
     // creates a /component/js with the data
     await evalMdx(site, options);
+
+    await applyTags(site, options);
 
     // evaluates the js, and returns metadata
     await evalJs(site, options);
 
     // resolve meta with parents
     await resolveMeta( site, options );
-
-    await assignTitle(site, options);
-
+    
     await buildDstIndex(site, options);
     
     // renders the js to /component/output
     await renderJs(site, options);
+
+    await assignTitle(site, options);
 }
 
 

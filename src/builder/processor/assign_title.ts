@@ -11,26 +11,28 @@ import { toComponentId } from 'odgn-entity/src/component';
 
 
 
-
-const log = (...args) => console.log('[ProcAssignTitle]', ...args);
+const Label = '/processor/assign_title';
+const log = (...args) => console.log(`[${Label}]`, ...args);
 
 
 
 /**
- * Takes title from /component/meta slugifies it and places
- * it in /dst, taking care of existing target paths
+ * Takes entities with a title and no existing dst filename and
+ * applies to the dst
  * 
  * @param es 
  */
 export async function process(site: Site, options:ProcessOptions = {}) {
     const es = options.es ?? site.es;
     const {reporter} = options;
-    setLocation(reporter, '/processor/assign_title');
+    setLocation(reporter, Label);
 
     // select /meta and /title
     const ents = await selectTitleAndMeta(site.es, options);
 
     let output:Entity[] = [];
+
+    // log( 'ents', ents );
 
     // await printAll(site.es);
 
@@ -38,8 +40,9 @@ export async function process(site: Site, options:ProcessOptions = {}) {
         // printEntity( site.es, e );
 
         let {title} = e.Title;
-        let meta = e.Meta?.meta ?? {};
+        // let meta = e.Meta?.meta ?? {};
         let dst = e.Dst?.url;
+        let outputMime = e.Output?.mime;
 
         if( isString(dst) && dst.length > 0 && !dst.endsWith(Path.sep) ){
             continue;
@@ -53,20 +56,22 @@ export async function process(site: Site, options:ProcessOptions = {}) {
         let ext = Path.extname(url);
 
         
-        if( meta.mime ){
-            ext = extensionFromMime( meta.mime );
-        } else {
-            // attempt to lookup from /component/mime
-            const did = es.resolveComponentDefId('/component/mime');
-            const com = await es.getComponent( toComponentId(e.id, did) );
-            if( com !== undefined ){
-                ext = extensionFromMime( com['type'] );
-            }
-            // log(url, 'has ext', ext);
-            // const ee = await es.getEntity(e.id);
-            // printEntity(es, ee);
+        // log( url, {title, dst, outputMime} );
+        if( outputMime ){
+            ext = extensionFromMime( outputMime );
+        } 
+        // else {
+        //     // attempt to lookup from /component/mime
+        //     const did = es.resolveComponentDefId('/component/mime');
+        //     const com = await es.getComponent( toComponentId(e.id, did) );
+        //     if( com !== undefined ){
+        //         ext = extensionFromMime( com['type'] );
+        //     }
+        //     // log(url, 'has ext', ext);
+        //     // const ee = await es.getEntity(e.id);
+        //     // printEntity(es, ee);
             
-        }
+        // }
 
         if( ext !== undefined && ext !== '' ){
             url = `${url}.${ext}`;
