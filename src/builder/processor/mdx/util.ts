@@ -3,7 +3,7 @@ import { toComponentId } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet } from "odgn-entity/src/entity_set";
 import { buildUrl, resolveUrlPath, uriToPath } from "../../util";
-import { PageLink, PageImg, PageImgs, PageLinks, SiteIndex, TranspileProps, ProcessOptions } from "../../types";
+import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions } from "../../types";
 import { getDependencyEntities, getDepenendencyDst, getDstUrl } from "../../query";
 import { Site } from "../../site";
 import { toInteger } from '@odgn/utils';
@@ -38,21 +38,21 @@ export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> 
 }
 
 
-export async function buildPageImgs( es:EntitySet, imgIndex:SiteIndex ){
-    let result: PageImgs = new Map<string, PageImg>();
+// export async function buildPageImgs( es:EntitySet, imgIndex:SiteIndex ){
+//     let result: PageImgs = new Map<string, PageImg>();
 
-    for( const [url, [eid,type]] of imgIndex.index ){
-        if( type === 'external' ){
-            result.set( url, {url});
-        } else {
-            let path = await getDstUrl(es, eid);
-            path = uriToPath(path);
-            result.set(url, {url:path});
-        }
-    }
+//     for( const [url, [eid,type]] of imgIndex.index ){
+//         if( type === 'external' ){
+//             result.set( url, {url});
+//         } else {
+//             let path = await getDstUrl(es, eid);
+//             path = uriToPath(path);
+//             result.set(url, {url:path});
+//         }
+//     }
 
-    return result;
-}
+//     return result;
+// }
 
 
 export async function buildPageLinks( es:EntitySet, linkIndex:SiteIndex ){

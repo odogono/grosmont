@@ -19,7 +19,6 @@ export interface TranspileProps {
     css?: string;
     cssLinks?: string[];
     applyLinks?: PageLinks;
-    imgs?: PageImgs;
 }
 
 export interface TranspileResult {
@@ -36,7 +35,6 @@ export interface TranspileResult {
     requires?: string[];
     css?: string;
     cssLinks?: string[];
-    imgs?: PageImgs;
     pageProps?: any;
 }
 
@@ -151,14 +149,6 @@ export interface PageLink {
 
 export type PageLinks = Map<string, PageLink>;
 
-
-export interface PageImg {
-    url?: string;
-    alt?: string;
-    attrs?: Map<string, any>;
-}
-
-export type PageImgs = Map<string, PageImg>;
 
 
 export interface PageMeta {

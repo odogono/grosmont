@@ -97,13 +97,13 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     };
 
     const resolveLink = (url: string, text: string) => {
+        // log('[resolveLink]', url);
         if (!isUrlInternal(url)) {
             links.push(['ext', undefined, url, text]);
             return url;
         }
 
         let entry = resolveImport(site, url, base);
-        // log('[resolveLink]', entry);
         if (entry !== undefined) {
             links.push(['int', entry[0], url, text]);
             return entry[1];

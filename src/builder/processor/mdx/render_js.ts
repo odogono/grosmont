@@ -123,7 +123,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
  */
 function replaceEntityUrls( site:Site, data:string ){
     const idx = site.getIndex('/index/dstUrl');
-    // log('[replaceEntityUrls]', idx);
+    // log('[replaceEntityUrls]', data);
 
     const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "gi");
     return data.replace( re, (val, eid, path) => {

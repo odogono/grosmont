@@ -50,28 +50,6 @@ test.before.each(async (tcx) => {
 });
 
 
-async function process(site: Site, options: ProcessOptions) {
-    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
-    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
-    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
-    
-    await buildSrcIndex(site);
-    
-    await renderScss(site, options);
-
-    await evalJsx(site, options);
-
-    await evalMdx(site, options);
-
-    // evaluates the js, and returns metadata
-    await evalJs(site, options);
-
-    // renders the js to /component/output
-    await renderJs(site, options);
-}
-
-
-
 test('inlined css', async ({ es, site, options }) => {
 
     /*
@@ -183,6 +161,28 @@ Hello _world_
 
 
 test.run();
+
+
+
+async function process(site: Site, options: ProcessOptions) {
+    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
+    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
+    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
+    
+    await buildSrcIndex(site);
+    
+    await renderScss(site, options);
+
+    await evalJsx(site, options);
+
+    await evalMdx(site, options);
+
+    // evaluates the js, and returns metadata
+    await evalJs(site, options);
+
+    // renders the js to /component/output
+    await renderJs(site, options);
+}
 
 
 

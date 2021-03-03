@@ -157,7 +157,6 @@ async function process(site: Site, options: ProcessOptions) {
 
     // renders the js to /component/output
     await renderJs(site, options);
-
 }
 
 async function addScss(site: Site, url: string, data: string) {

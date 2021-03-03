@@ -38,8 +38,6 @@ import {
     TranspileOptions,
     TranspileResult,
     PageLinks,
-    PageImgs,
-    PageImg
 } from '../../types';
 import { Site } from '../../site';
 
@@ -60,21 +58,21 @@ export const PageContext = React.createContext({})
  */
 export function mdxToJs(mdxData: string, props: TranspileProps, options: TranspileOptions): TranspileResult {
     let meta = props.meta ?? {};
-    let { css, cssLinks: inputCssLinks, children, applyLinks, imgs } = props;
+    let { css, cssLinks: inputCssLinks, children, applyLinks } = props;
     const { resolveImport, resolveLink, require, context } = options;
 
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
-    let processOpts = { pageProps: inPageProps, applyLinks, imgs, resolveLink, resolveImport, require, context };
+    let processOpts = { pageProps: inPageProps, applyLinks, resolveLink, resolveImport, require, context };
 
     // convert the mdx to jsx
-    let { jsx, links, ast, imgs: outImgs } = processMdx(mdxData, processOpts);
+    let { jsx, links, ast } = processMdx(mdxData, processOpts);
     // log('[parseMdx]', jsx );
 
     // convert from jsx to js
     let js = transformJSX(jsx);
 
 
-    return { js, jsx, ast, links, imgs: outImgs };
+    return { js, jsx, ast, links };
 }
 
 
@@ -112,7 +110,7 @@ export function jsToComponent(jsCode: string, props: TranspileProps, options: Tr
  * @param options 
  */
 export function componentToString(component: any, props: TranspileProps, options: TranspileOptions) {
-    let { css, cssLinks: inputCssLinks, children, applyLinks, imgs } = props;
+    let { css, cssLinks: inputCssLinks, children, applyLinks } = props;
 
     const components = {
         Head,
@@ -177,7 +175,7 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
 
     let meta = props.meta ?? {};
 
-    let { css, cssLinks: inputCssLinks, children, applyLinks, imgs } = props;
+    let { css, cssLinks: inputCssLinks, children, applyLinks } = props;
 
     let { data, path } = props;
     const { resolveImport, require, context } = options;
@@ -215,20 +213,19 @@ export async function transpile(props: TranspileProps, options: TranspileOptions
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
 
     const mdxResult = await parseMdx(data, path,
-        { pageProps: inPageProps, applyLinks, imgs, resolveImport, require, context });
+        { pageProps: inPageProps, applyLinks, resolveImport, require, context });
 
     const { component, frontMatter,
         code, jsx, ast, page, default: d,
         requires, links, cssLinks,
         pageProps, ...rest } = mdxResult;
-    imgs = mdxResult.imgs;
 
     meta = { ...meta, ...pageProps };
 
     // log('[transpile]', 'imgs', imgs );
 
     let result: TranspileResult = {
-        path, jsx, code, ast, /* code, ast,*/ component, links, imgs, meta, cssLinks, additional: rest
+        path, jsx, code, ast, /* code, ast,*/ component, links, meta, cssLinks, additional: rest
     };
 
 
@@ -291,7 +288,7 @@ async function parseMdx(data: string, path: string, options: ProcessMDXOptions) 
 
     try {
         // convert the mdx to jsx
-        let { jsx, links, ast, imgs } = await processMdx(data, options);
+        let { jsx, links, ast } = await processMdx(data, options);
 
         // convert from jsx to js
         let code = transformJSX(jsx);
@@ -301,7 +298,7 @@ async function parseMdx(data: string, path: string, options: ProcessMDXOptions) 
         // evaluate the js into a component
         let el = evalCode(code, path, options);
 
-        return { ...el, code, jsx, ast, links, imgs };
+        return { ...el, code, jsx, ast, links };
 
     } catch (err) {
         log('[parseMdx]', `failed to process mdx ${path}`, err.stack);
@@ -315,7 +312,6 @@ async function parseMdx(data: string, path: string, options: ProcessMDXOptions) 
 export type ProcessMDXOptions = {
     pageProps?: any;
     applyLinks?: PageLinks;
-    imgs?: PageImgs;
     resolveImport?: (path) => string | undefined;
     resolveLink?: (url: string, text?: string) => any;
     require?: (path: string, fullPath: string) => any;
@@ -327,18 +323,13 @@ export interface ProcessMDXResult {
     jsx: string;
     links: PageLinks,
     ast: any;
-    imgs: PageImgs
 }
 
 export function processMdx(content: string, options: ProcessMDXOptions): ProcessMDXResult {
 
-    let { pageProps, applyLinks, resolveImport, resolveLink, imgs } = options;
+    let { pageProps, applyLinks, resolveImport, resolveLink } = options;
     let links = new Map<string, any>();
     let ast;
-
-    if (imgs === undefined) {
-        imgs = new Map<string, PageImg>();
-    }
 
     // remark-mdx has a really bad time with html comments even
     // if they are removed with the removeCommentPlugin, so a brute
@@ -353,7 +344,7 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
         .use(configPlugin, { page: pageProps })
         .use(removeCommentPlugin)
         // .use(() => console.dir)
-        .use(imgProc, { imgs })
+        .use(imgProc, { resolveLink })
         .use(linkProc, { links, applyLinks, resolveLink })
         // take a snap of the AST
         .use(() => tree => { ast = JSON.stringify(tree, null, '\t') })
@@ -377,8 +368,7 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
     return {
         jsx: '/* @jsx mdx */\n' + output.toString(),
         links,
-        ast,
-        imgs
+        ast
     };
 }
 
