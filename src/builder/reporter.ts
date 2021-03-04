@@ -52,37 +52,39 @@ export class Reporter {
     }
 
     info(message: string, options: ReportOptions = {}) {
-        if( this.level < Level.INFO ){ return; }
+        if (this.level < Level.INFO) { return; }
         this.write('Info', message, options);
     }
 
     debug(message: string, options: ReportOptions = {}) {
         // console.log('[debug]', 'level', this.level );
-        if( this.level < Level.DEBUG ){ return; }
+        if (this.level < Level.DEBUG) { return; }
         this.write('Debug', message, options);
     }
 
     warn(message: string, options: ReportOptions = {}) {
-        if( this.level < Level.WARN ){ return; }
+        if (this.level < Level.WARN) { return; }
         this.write('Warn', message, options);
     }
     error(message: string, error?: Error, options: ReportOptions = {}) {
-        if( this.level < Level.ERROR ){ return; }
-        this.write('Error', message, options);
-        if (error) console.log(error);
+        if (this.level < Level.ERROR) { return; }
+        console.error(compose('Error', this.prefix, '', options), error);
     }
-
 
     write(level: string, message: string, options: ReportOptions = {}) {
-        const { eid } = options;
-        let entry = [`[${level}]`, this.prefix];
-        // entry.push(`[${level}]`);
-        if (eid !== undefined) {
-            entry.push(`[${yellow(eid)}]`);
-        }
-        entry.push((message.startsWith('[') ? '' : ' ') + message);
-        console.log(entry.join(''));
+        console.log( compose(level, this.prefix, message, options) );
     }
+}
+
+function compose(level: string, prefix:string, message: string, options: ReportOptions = {}) {
+    const { eid } = options;
+    let entry = [`[${level}]`, prefix];
+    // entry.push(`[${level}]`);
+    if (eid !== undefined) {
+        entry.push(`[${yellow(eid)}]`);
+    }
+    entry.push((message.startsWith('[') ? '' : ' ') + message);
+    return entry.join('');
 }
 
 function yellow(str: any) {
@@ -92,9 +94,9 @@ function cyan(str: any) {
     return `${FgCyan}${str}${Reset}`;
 }
 
-export function setLevel( reporter: Reporter, level:Level ){
+export function setLevel(reporter: Reporter, level: Level) {
     // console.log('[setLevel]', level);
-    if( reporter ){
+    if (reporter) {
         reporter.level = level;
     }
 }
