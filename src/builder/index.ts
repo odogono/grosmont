@@ -30,13 +30,16 @@ export async function build(site: Site, options: BuildProcessOptions = {}) {
 
     let reporter = site.reporter;
     const siteRef = site.getRef();
-    const updateOptions = { onlyUpdated: true, reporter, siteRef };
+    const updateOptions = { reporter, onlyUpdated: true, ...options, siteRef };
 
+    
     // clear /component/update from site
     await clearUpdates(site.es, { siteRef });
-
+    
     await scanSrc(site, updateOptions); //{...options, reporter, siteRef});
-
+    
+    
+    
     
 
     // await markStatic(site, updateOptions);

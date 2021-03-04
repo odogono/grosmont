@@ -70,6 +70,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // read the fs into the incoming es
     await readFileSystem(site, { ...options, es: incoming });
 
+
     // await printAll(incoming);
     // await printAll(site.es);
 
@@ -88,10 +89,10 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
 
 
     // read all files marked as being entities
-    await readEntityFiles(site, { ...options, onlyUpdated: true });
+    await readEntityFiles(site, options);
 
     // merge dir.e.* files into their parents
-    await applyDirMeta(site, { ...options, onlyUpdated: true });
+    await applyDirMeta(site, options);
 
 
     // await printAll(site.es);
@@ -99,7 +100,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // if (true) {
 
     // build dependencies
-    await buildDirDeps(site, { ...options, onlyUpdated: true, debug: diffs.length > 0 });
+    await buildDirDeps(site, { ...options, debug: diffs.length > 0 });
 
     // any dependencies of entities marked as updated should also
     // be marked as updated
@@ -284,112 +285,6 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: Pr
 
 
 
-// export interface ReadDirMetaOptions extends ProcessOptions {
-//     applyFromE?: boolean;
-// }
-
-
-/**
- * 
- * @param site 
- * @param options 
- */
-// export async function readDirMeta(site: Site, options: ReadDirMetaOptions = {}) {
-//     const { es } = site;
-//     const siteRef = site.getRef();
-//     const { reporter } = options;
-//     setLocation(reporter, '/processor/file/read_dir_meta');
-
-//     // find /src with meta.(yaml|toml) files
-//     // const ents = await selectMetaSrc(es, options);
-//     const coms = await selectSrcByFilename(es, ['meta.toml', 'meta.yaml'], options);
-
-//     if (coms.length > 0) {
-//         // info(reporter,`${coms.map(e => e.id)}`);
-//         // ents.map( e => printEntity(es, e) );
-//     }
-
-//     let outComs = [];
-//     let remComs = [];
-
-//     info(reporter, `selected ${coms.length} yaml/toml config`);
-//     // log( options );
-
-//     for (const com of coms) {
-//         const eid = getComponentEntityId(com);
-//         // log('[readDirMeta]', eid, com);
-//         // let path = site.getSrcUrl( com.url );
-//         let ext = Path.extname(com.url).substring(1);
-
-//         // find the parent dir
-//         const parentUrl = Path.dirname(com.url) + Path.sep;
-//         let parentE = await selectSrcByUrl(es, parentUrl) as Entity;
-
-//         log('[readDirMeta]', 'dir parent', parentUrl, parentE.id);
-
-//         if (parentE === undefined) {
-//             parentE = es.createEntity();
-//             parentE.Src = { url: parentUrl };
-//         }
-
-//         let content = await site.readUrl(com.url);// await Fs.readFile(path, 'utf8');
-//         // log('[readDirMeta]', 'read from', com.url, content);
-//         if (content !== undefined) {
-//             // parse the meta into an entity
-//             let metaE = await parse(es, content, ext as ParseType, { add: false, siteRef });
-//             // fold this entity into the parent
-
-//             log('[readDirMeta] read'); printEntity(es, metaE);
-//             for (let [, com] of metaE.components) {
-//                 log('[readDirMeta]', 'adding', com, 'to', parentE.id);
-//                 com = setEntityId(com, parentE.id);
-//                 outComs.push(com);
-//             }
-//         }
-
-//         let e = await es.getEntity(eid, true);
-
-//         // fold this entity into the parent
-//         // for (let [, com] of e.components) {
-//         // com = setEntityId(com, parentE.id);
-//         // outComs.push(com);
-//         // }
-
-//         // printEntity( es, e );
-
-//         if (e.Dst) {
-//             outComs.push(setEntityId(e.Dst, parentE.id));
-//             remComs.push(e.Dst);
-//         }
-
-//         // add the update flag if present
-//         if (e.Upd) {
-//             outComs.push(setEntityId(e.Upd, parentE.id));
-//         }
-
-//         // copy over the stat times
-//         if (e.Stat) {
-//             outComs.push(setEntityId(e.Stat, parentE.id));
-//         }
-
-//         info(reporter, `read from ${com.url}`, { eid: e.id });
-//     }
-
-//     await es.add(outComs);
-//     await es.removeComponents(remComs, { retain: true });
-
-//     // if( metaEnts.length > 0 ) {
-//     //     log('[readDirMeta]', coms);
-//     // }
-
-//     // dont remove the meta files - we will need them to compare
-//     // for updates
-//     // await site.es.removeEntity( metaEnts.map( e => e.id) );
-
-//     return es;
-// }
-
-
 
 
 
@@ -403,8 +298,14 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: Pr
  */
 async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
     const es = options.es ?? site.es;
+    const {reporter} = options;
     let rootPath = site.getSrcUrl();
     const siteEntity = site.getEntity();
+
+    if( rootPath === undefined ){
+        warn(reporter, `[readFileSystem] no root path`);
+        return es;
+    }
 
     if (options.readFSResult) {
         let ents = Array.from(options.readFSResult.components.values());
@@ -414,7 +315,6 @@ async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
 
     const [include, exclude] = gatherPatterns(site);
 
-    // log('root', rootPath);
 
     // log('patterns', { include, exclude });
 
@@ -461,16 +361,25 @@ async function getMatches(rootPath: string, include, exclude) {
 
     const globFilter = buildGlobFilter(rootPath, include, exclude);
 
+    // console.log('ok', rootPath);
+
     // gather the files/dirs
     let matches: any[] = await new Promise((res, rej) => {
         let items = [];
         Klaw(rootPath)
+            .on('error', (err, item) => {
+                console.log(err.message)
+                console.log(item.path) // the file the error occurred on
+                rej( err );
+            })
             .pipe(globFilter)
             .on('data', item => items.push(item))
             .on('end', () => {
                 res(items);
             })
     });
+
+    // console.log('ok', matches);
 
     // ensure all matches have a directory - this may be missed
     // if a glob include was used

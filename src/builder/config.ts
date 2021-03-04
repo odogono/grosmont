@@ -50,8 +50,8 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
         parseConfigString(input as string,type)
         : input;
 
+    
     if( data === undefined || data === null ){
-        log('no input', input);
         return undefined;
     }
 
@@ -71,6 +71,7 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
         }
     }
 
+
     let e = options.e ?? es.createEntity(eid);
     
     for (const [def, com] of coms) {
@@ -80,35 +81,43 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
     if (metaKeys.length > 0) {
         let meta = {};
         for (const key of metaKeys) {
+            const value = other[key];
+            
+            if( value === undefined ){
+                continue;
+            }
 
             if( key === 'title' ){
-                applyToCom( e, 'Title', {title: other[key] } );
+                applyToCom( e, 'Title', {title: value } );
             }
             else if( key === 'summary'){
-                applyToCom( e, 'Title', {summary: other[key] }, false );
+                applyToCom( e, 'Title', {summary: value }, false );
             }
             else if( key === 'src'){
-                applyUrlToCom( e, 'Src', other[key] );
-                // e.Src = {url: other[key] };
+                applyUrlToCom( e, 'Src', value );
+                // e.Src = {url: value };
             }
             else if( key === 'dst'){
-                // applyUrlToCom( e, 'Dst', other[key] );
-                e.Dst = {url: other[key] };
+                // applyUrlToCom( e, 'Dst', value );
+                e.Dst = {url: value };
+            }
+            else if( key === 'data'){    
+                e.Data = {data: value };
             }
             else if( key === 'output'){
-                e.Output = {data: other[key] };
+                e.Output = {data: value };
             }
             else if( key === 'mime'){
-                // e.Mime = {type: other[key] };
+                // e.Mime = {type: value };
             }
             else if( key === 'tags' ){
-                await applyTags( es, e, other[key], selectOptions );
+                await applyTags( es, e, value, selectOptions );
             }
             else if( key === 'layout' ){
-                await applyLayout( es, e, other[key], selectOptions );
+                await applyLayout( es, e, value, selectOptions );
             }
             else {
-                meta[key] = other[key];
+                meta[key] = value;
             }
         }
         if( Object.keys(meta).length > 0 ){

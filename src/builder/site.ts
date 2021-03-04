@@ -144,7 +144,8 @@ export class Site {
             }
             res = Path.join(res, uriToPath(path));
         }
-        return res;
+        // log('[getSrcUrl]', res, this.e.Src?.url, appendPath );
+        return isEmpty(res) ? undefined : res;
     }
 
     /**

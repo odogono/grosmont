@@ -842,16 +842,7 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
  * Returns an absolute path for the given entity by looking at /component/src, 
  * and /component/dst.
  * 
- * loop
-        select /dst
-            if exists
-                if is absolute path, return and finish
-                add to result
-        select /dir
-            if exists, add to result
-        select parent using /dep
-            if no parent exists, finish
- *  
+ * wont return anything if the entity does not have a filename dst
  */
 export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | undefined> {
 
@@ -1016,7 +1007,6 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
         true // loop only continues while true
     ] loop
 
-    
     // if no filename is found, then quit
     [ undefined @! ] $filename size! 0 == if
 
@@ -1031,8 +1021,6 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
     
     @>
     `);
-
-
 
     const dirCom = await stmt.getResult({ eid });
     return dirCom && dirCom.length > 0 ? dirCom : undefined;

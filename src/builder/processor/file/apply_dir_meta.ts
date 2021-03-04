@@ -1,7 +1,7 @@
 import Path from 'path';
 import { getComponentEntityId, setEntityId } from "odgn-entity/src/component";
 import { getDepdendencyComponentBySrc, selectSrcByFilename, selectSrcByUrl } from "../../query";
-import { setLocation, info, debug } from "../../reporter";
+import { setLocation, info, debug, warn } from "../../reporter";
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
 import { toValues as bfToValues } from '@odgn/utils/bitfield';
@@ -37,10 +37,20 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         // get the parent dir
         const parentUrl = Path.dirname(com.url) + Path.sep;
-        const parentCom = await selectSrcByUrl(es, parentUrl);
-        const parentEid = getComponentEntityId(parentCom);
+        let parentCom = await selectSrcByUrl(es, parentUrl);
+        let parentEid = getComponentEntityId(parentCom);
+
+        if( parentCom === undefined ){
+            warn(reporter, `missing parent dir entity for ${com.url}: ${parentUrl}`, {eid});
+            parentCom = es.createComponent('/component/src', {url:parentUrl});
+            await es.add( parentCom );
+            parentEid = es.getUpdatedEntities()[0];
+        }
+
+        // log('parents', eid, {parentUrl, parentEid});
 
         for( const [did,com] of e.components ){
+            // log('moving', com, 'to', parentEid, blackList.indexOf(did) );
             if( blackList.indexOf(did) === -1 ){
                 addComs.push( setEntityId(com, parentEid) );
             }
@@ -59,7 +69,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     await es.add( addComs );
 
-    debug(reporter, `added ${addComs.length} coms to ${es.getUrl()}`);
+    // debug(reporter, `added ${addComs.length} coms to ${es.getUrl()}`);
 
     return site;
 }

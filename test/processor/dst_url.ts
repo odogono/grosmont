@@ -3,9 +3,11 @@ import Path from 'path';
 import { Site } from '../../src/builder/site';
 import { parse } from '../../src/builder/config';
 import assert from 'uvu/assert';
-import { printAll } from 'odgn-entity/src/util/print';
-import { getDstUrl } from '../../src/builder/query';
+import { printAll, printEntity } from 'odgn-entity/src/util/print';
+import { FindEntityOptions, getDstUrl } from '../../src/builder/query';
 import { Level } from '../../src/builder/reporter';
+import { build } from '../../src/builder';
+import { EntityId } from 'odgn-entity/src/entity';
 
 const log = (...args) => console.log('[TestProcTargetPath]', ...args);
 
@@ -26,6 +28,7 @@ test.before.each( async (tcx) => {
     tcx.site = await Site.create({idgen, name:'test', dst, level: Level.FATAL});
     tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
+    tcx.options = { siteRef: tcx.site.getRef() as EntityId, reporter:tcx.site.reporter } as FindEntityOptions;
 });
 
 
@@ -169,7 +172,38 @@ test('parent has filename', async ({ es, site }) => {
     assert.equal( path, "/pages/output.txt" );
 });
 
+test('dir meta dst', async ({es, site,options}) => {
+    await parse( site, `
+    src: file:///dir.e.yaml
+    dst: pages/
+    `);
 
+    await parse( site, `
+    src: file:///index.mdx
+    data: "# Welcome"
+    dst: index.html
+    `);
+
+    await parse( site, `
+    src: file:///about.mdx
+    data: "# About"
+    `);
+
+    await build( site, {...options, onlyUpdated:false} );
+
+    // await printAll( es );
+
+    let e = await site.getEntityBySrc('file:///index.mdx');
+
+    // printEntity(es, e);
+
+    let path = await getDstUrl(es, e.id);
+
+    assert.equal( path, "/pages/index.html" );
+
+    // log( site.getIndex('/index/dstUrl') );
+
+});
 
 
 

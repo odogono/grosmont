@@ -3,6 +3,9 @@ import React, { useContext } from "react";
 
 const log = (...args) => console.log(`[ServerEffect]`, ...args);
 
+
+
+
 export const ServerEffect = React.createContext({ 
     requests: new Map<string,any>(), 
     isActive: true, 
@@ -10,6 +13,9 @@ export const ServerEffect = React.createContext({
     count:0 
 });
 
+/**
+ * 
+ */
 export const serverEffectValue = { 
     requests: new Map<string,any>(), 
     isActive: true, 
@@ -17,6 +23,10 @@ export const serverEffectValue = {
     count:0 
 };
 
+/**
+ * 
+ * @param key 
+ */
 export function beginServerEffects(key:string){
     serverEffectValue.isActive = true;
     serverEffectValue.requests = new Map<string,any>();
@@ -24,6 +34,11 @@ export function beginServerEffects(key:string){
     serverEffectValue.count = 0;
 }
 
+
+/**
+ * 
+ * @param key 
+ */
 export async function endServerEffects(key:string){
     if( serverEffectValue.isActive === false ){
         return;
@@ -42,13 +57,22 @@ export async function endServerEffects(key:string){
     // log('[endServerEffects]', key, serverEffectValue.requests );
 }
 
+/**
+ * 
+ * @param param0 
+ */
 export function ServerEffectProvider({ children }) {
     return <ServerEffect.Provider value={serverEffectValue}>
         {children}
     </ServerEffect.Provider>
 }
 
-
+/**
+ * 
+ * https://medium.com/swlh/how-to-use-useeffect-on-server-side-654932c51b13
+ * @param effect 
+ * @param initial 
+ */
 export function useServerEffect(effect, initial = undefined){
     const context = useContext(ServerEffect);
     const key = `${context.key}-${(++context.count)}`;
