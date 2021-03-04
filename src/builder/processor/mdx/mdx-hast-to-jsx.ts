@@ -9,7 +9,13 @@ const { toTemplateLiteral } = require('@mdx-js/util')
 const BabelPluginApplyMdxProp = require('babel-plugin-apply-mdx-type-prop')
 const BabelPluginExtractImportNames = require('babel-plugin-extract-import-names')
 
-export function toJSX(node, parentNode = {}, options = {}) {
+export interface ToJSXOptions {
+    raw?: boolean;
+    odgnMode?: boolean;
+}
+
+export function toJSX(node, parentNode = {}, options:ToJSXOptions = {}) {
+
     if (node.type === 'root') {
         return serializeRoot(node, options)
     }
@@ -21,6 +27,11 @@ export function toJSX(node, parentNode = {}, options = {}) {
     // Wraps text nodes inside template string, so that we don't run into escaping issues.
     if (node.type === 'text') {
         return serializeText(node, options, parentNode)
+    }
+
+    // addition to output text without template literals
+    if( options.odgnMode && node.type === 'paragraph' ){
+        return serializeChildren(node, {...options, raw:true} );
     }
 
     if (node.type === 'mdxBlockExpression' || node.type === 'mdxSpanExpression') {
@@ -37,7 +48,7 @@ export function toJSX(node, parentNode = {}, options = {}) {
     }
 }
 
-export default function compile(options = {}) {
+export default function compile(options:ToJSXOptions = {}) {
     this.Compiler = function (tree) {
         return toJSX(tree, {}, options)
     }
@@ -239,12 +250,13 @@ function serializeComponent(node, options) {
 }
 
 function serializeText(node, options, parentNode) {
+    const raw = options.raw;
     const preserveNewlines = options.preserveNewlines
     // Don't wrap newlines unless specifically instructed to by the flag,
     // to avoid issues like React warnings caused by text nodes in tables.
     const shouldPreserveNewlines = preserveNewlines || parentNode.tagName === 'p'
 
-    if (node.value === '\n' && !shouldPreserveNewlines) {
+    if (raw || (node.value === '\n' && !shouldPreserveNewlines)) {
         return node.value
     }
 
@@ -256,6 +268,7 @@ function serializeEsSyntax(node) {
 }
 
 function serializeChildren(node, options) {
+    const raw = options.raw;
     const children = node.children || []
     const childOptions = Object.assign({}, options, {
         // Tell all children inside <pre> tags to preserve newlines as text nodes
@@ -266,7 +279,7 @@ function serializeChildren(node, options) {
         .map(childNode => {
             return toJSX(childNode, node, childOptions)
         })
-        .join('\n')
+        .join( raw ? '' : '\n')
 }
 
 // We only do this for the props, so we’re ignoring children.

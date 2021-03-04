@@ -36,21 +36,6 @@ export function linkProc({ resolveLink }: LinkProcProps) {
                     ctx.url = resultUrl;
                 }
             }
-
-            // // incoming links can overwrite the link url
-            // if (applyLinks !== undefined) {
-            //     let applyLink = applyLinks.get(ctx.url);
-            //     // console.log('[linkProc]', 'applyLink', ctx.url, applyLink);
-            //     if (applyLink !== undefined) {
-            //         ctx.url = applyLink.url;
-            //     }
-            // }
-
-            // console.log('[linkProc]', text?.value, url );
-            // console.log('[linkProc]', args, ctx);
-            // let child = ctx.children[0];
-            // let link: PageLink = { url: url, child: text?.value ?? url };
-            // links.set(url, link);
         }
     }
 }
