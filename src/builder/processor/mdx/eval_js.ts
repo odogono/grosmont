@@ -122,7 +122,6 @@ export async function buildImports(site: Site, e: Entity, options:ProcessOptions
             else if( did === '/component/jsx' || did === '/component/js' ){
                 const ie = await es.getEntity(impEid, true);
                 let out = await processEntity(site, ie, options);
-                // log('[buildImports]', e.id, ie.id, out);
                 importComs.set(ie.id, out.component);
             }
             else {
@@ -138,6 +137,7 @@ export async function buildImports(site: Site, e: Entity, options:ProcessOptions
     function require(path: string, fullPath:string){
         const match = parseEntityUrl(path);
         let result = importComs.get(match?.eid);
+        // log('[require]', path);
         return result !== undefined ? result : undefined;
     };
 

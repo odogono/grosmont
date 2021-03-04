@@ -22,7 +22,7 @@ import { parseUri, toInteger } from '@odgn/utils';
 import { process as resolveImports } from './resolve_imports';
 import { buildProps, resolveImport } from '../mdx/util';
 import { Component, setEntityId, } from 'odgn-entity/src/component';
-import { setLocation, info, error, debug } from '../../reporter';
+import { setLocation, info, error, debug, warn } from '../../reporter';
 
 const Label = '/processor/jsx/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -72,8 +72,12 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         let entry = resolveImport(site, path, base);
         // log('[resolveImportLocal]', path, entry);
         if (entry !== undefined) {
+            const [eid, url, mime] = entry;
+            let remove = (mime === 'text/css' || mime === 'text/scss');
             imports.push(entry);
-            return entry[1];
+            return [url, remove];
+        } else {
+            warn(reporter, `import ${path} not resolved`, {eid:e.id});
         }
     }
 
@@ -152,9 +156,10 @@ function transformJSX(jsx: string, resolveImport: Function) {
     
     traverse(ast, {
         ImportDeclaration(path) {
-            let resolvedPath = resolveImport(path.node.source.value);
-            if (resolvedPath !== undefined) {
-                path.node.source.value = resolvedPath;
+            let resolved = resolveImport(path.node.source.value);
+            if (resolved !== undefined) {
+                const [url, remove] = resolved;
+                path.node.source.value = url;
             }
         }
     });

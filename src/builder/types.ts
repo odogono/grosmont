@@ -131,7 +131,7 @@ export interface TranspileMeta {
 export interface TranspileOptions {
     render?: boolean;
     forceRender?: boolean;
-    resolveImport: (path: string) => string | undefined;
+    resolveImport?: (path: string) => [string,boolean] | undefined;
     resolveLink?: (url:string, text?:string) => any;
     require: (path:string, fullPath:string) => any;
     context?: any;

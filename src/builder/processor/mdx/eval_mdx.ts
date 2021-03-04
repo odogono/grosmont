@@ -51,7 +51,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         } catch (err) {
             let ee = es.createComponent('/component/error', { message: err.message, from: Label });
-            output.push( setEntityId(ee, e.id) );
+            output.push(setEntityId(ee, e.id));
             error(reporter, `error ${srcUrl}`, err, { eid: e.id });
             log(`error: ${srcUrl}`, err);
         }
@@ -72,21 +72,24 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const siteRef = site.getRef();
     const { srcIndex } = options;
     const { url: base } = e.Src;
-    const {reporter} = options;
+    const { reporter } = options;
 
     let imports = [];
     let links = [];
 
     // function passed into the mdx parser and called whenever
     // an import is found
-    function resolveImportLocal(path: string, mimes?: string[]){
+    function resolveImportLocal(path: string, mimes?: string[]): [string,boolean]|undefined {
         // log('[resolveImportLocal]', path);
         let entry = resolveImport(site, path, base);
         if (entry !== undefined) {
+            const [eid, url, mime] = entry;
+            let remove = (mime === 'text/css' || mime === 'text/scss');
             imports.push(entry);
-            return entry[1];
+            // log('[resolveImportLocal]', entry);
+            return [url, remove];
         } else {
-            warn(reporter, `import ${path} not resolved`, {eid:e.id});
+            warn(reporter, `import ${path} not resolved`, { eid: e.id });
         }
     }
 
@@ -125,11 +128,11 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
     // log('->', e.id, props);
 
-    if( data === undefined ){
+    if (data === undefined) {
         return [];
     }
 
-    const {js} = mdxToJs(data, props, { resolveLink, resolveImport: resolveImportLocal, require, context });
+    const { js } = mdxToJs(data, props, { resolveLink, resolveImport: resolveImportLocal, require, context });
 
     const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
 
@@ -158,21 +161,21 @@ async function applyImports(site: Site, e: Entity, imports, options: EvalMdxOpti
     // log('[applyImports]', 'existing', existingIds );
 
     for (let [importEid, url] of imports) {
-        let type:DependencyType = 'import';
+        let type: DependencyType = 'import';
         // let additionalComs = [];
         const match = parseEntityUrl(url);
         // log('[applyImports]', match);
-        if( match !== undefined ){
-            const {eid, did} = match;
-            if( did === '/component/scss' ){
+        if (match !== undefined) {
+            const { eid, did } = match;
+            if (did === '/component/scss') {
                 type = 'css';
             }
         }
 
         // log('[applyImports]', type, url );
-        
+
         let urlCom = es.createComponent('/component/url', { url });
-        let depId = await insertDependency(es, e.id, importEid, type, [urlCom] );
+        let depId = await insertDependency(es, e.id, importEid, type, [urlCom]);
 
         if (existingIds.has(depId)) {
             existingIds.delete(depId);

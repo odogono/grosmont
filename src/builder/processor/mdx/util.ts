@@ -177,16 +177,16 @@ export function resolveImport( site:Site, url:string, base:string ){
     if (entry !== undefined) {
         const [eid, mime, bf] = entry;
         if (mime === 'text/jsx') {
-            return [eid, `e://${eid}/component/jsx`];
+            return [eid, `e://${eid}/component/jsx`, mime];
         }
         if (mime === 'text/mdx') {
-            return [eid, `e://${eid}/component/mdx`];
+            return [eid, `e://${eid}/component/mdx`, mime];
         }
         if (mime === 'text/scss') {
-            return [eid, `e://${eid}/component/scss`];
+            return [eid, `e://${eid}/component/scss`, 'text/css'];
         }
         else {
-            return [eid, `e://${eid}/`];
+            return [eid, `e://${eid}/`, 'application/x.entity'];
         }
     }
     return undefined;

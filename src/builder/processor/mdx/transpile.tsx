@@ -99,7 +99,7 @@ export function jsToComponent(jsCode: string, props: TranspileProps, options: Tr
 
         return evaled;
     } catch (err) {
-        log('[jsToComponent]', 'error', err);
+        // log('[jsToComponent]', err);
         throw err;
     }
 
@@ -176,7 +176,7 @@ export async function componentToString(component: any, props: TranspileProps, o
 
 export type ProcessMDXOptions = {
     pageProps?: any;
-    resolveImport?: (path) => string | undefined;
+    resolveImport?: (path: string) => [string,boolean] | undefined;
     resolveLink?: (url: string, text?: string) => any;
     require?: (path: string, fullPath: string) => any;
     context?: any;
@@ -214,7 +214,7 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
         .use(mdx)
         .use(mdxjs)
         .use(titlePlugin)
-        .use(importPlugin, { resolve: resolveImport })
+        .use(importPlugin, { resolveImport })
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)

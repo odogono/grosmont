@@ -4,7 +4,7 @@ import parse from 'remark-parse';
 import unistVisit from 'unist-util-visit';
 import { select } from 'unist-util-select';
 import unistRemove from 'unist-util-remove';
-import { toJSX, setDebug } from '../../processor/mdx/mdx-hast-to-jsx';
+import { toJSX } from '../../processor/mdx/mdx-hast-to-jsx';
 import { parse as babelParser } from '@babel/parser';
 import babelGenerate from '@babel/generator';
 import traverse from "@babel/traverse";

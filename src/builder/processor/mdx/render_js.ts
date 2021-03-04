@@ -64,8 +64,6 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     let path = site.getSrcUrl(e);
     let meta = e.Meta?.meta ?? {};
 
-    const resolveImportLocal = (path: string, mimes?: string[]) => undefined;
-
     const require = await buildImports( site, e, options );
 
 
@@ -98,7 +96,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // reset requests
     beginServerEffects(base);
     
-    let result:any = jsToComponent(data, props, { context, resolveImport: resolveImportLocal, require });
+    let result:any = jsToComponent(data, props, { context, require });
 
     result.css = props.css;
     result.cssLinks = props.cssLinks;
@@ -113,14 +111,14 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     const {component} = result;
 
-    let output = await componentToString( component, props, { resolveImport: resolveImportLocal, require });
+    let output = await componentToString( component, props, { require });
 
     // resolve all the server effects
     await endServerEffects(base);
 
     // render again to reconcile any server effects
     // let {component:com2} = jsToComponent(data, props, { context, resolveImport: resolveImportLocal, require });
-    output = await componentToString( component, props, { resolveImport: resolveImportLocal, require });
+    output = await componentToString( component, props, { require });
 
     // replace any e:// urls with dst url links
     output = replaceEntityUrls(site, output);
@@ -148,28 +146,6 @@ function replaceEntityUrls( site:Site, data:string ){
     });
 }
 
-
-
-// async function renderLayoutEntity(site: Site, src: Entity, child: TranspileResult, options: ProcessOptions) {
-//     const { es } = site;
-
-//     if (child === undefined || child.meta.layout === undefined) {
-//         return child;
-//     }
-
-//     const layoutE = await getLayoutFromDependency(es, src.id);
-
-//     // log('[renderLayoutEntity]', 'returned', layoutE.id, 'for', src.id );
-
-//     // log('[renderLayoutEntity]', layoutE );
-//     // printEntity(es, layoutE);
-
-//     if (layoutE === undefined) {
-//         return child;
-//     }
-
-//     return await processEntity(site, layoutE, child, options);
-// }
 
 
 
