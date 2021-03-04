@@ -11,7 +11,7 @@
   url: file:///rootA/
 
 /component/dst:
-  url: file:///dist/siteB/
+  url: file:///dist/siteA/
 
 /component/meta:
   meta:

@@ -45,7 +45,6 @@ pk: /component/url#/url
 /component/title:
   title: BBC News
     `;
-    log('err')
 
     let e = await parse( site, text );
 
@@ -88,8 +87,7 @@ pk: /component/url#/url
   title: BBC News
 
     `;
-    log('err')
-
+    
     let e = await parse( site, text, 'yaml' );
 
     assert.equal( e.Title.title, 'BBC News');

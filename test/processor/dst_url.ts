@@ -10,7 +10,7 @@ import { Level } from '../../src/builder/reporter';
 const log = (...args) => console.log('[TestProcTargetPath]', ...args);
 
 const rootPath = Path.resolve(__dirname, "../../");
-const test = suite('processor/target_path');
+const test = suite('processor/dst_url');
 
 const printES = async (es) => {
     console.log('\n\n---\n');
@@ -167,35 +167,10 @@ test('parent has filename', async ({ es, site }) => {
 
 
     assert.equal( path, "/pages/output.txt" );
-
 });
 
 
-// test.only('scss sitation', async ({es,site}) => {
 
-//     await parse( site, `
-//     /component/dep:
-//         src: 2000
-//         dst: 1999
-//         type: dir
-//     `);
-
-//     await parse( site, `
-//     id: 1999
-//     src: file:///styles/
-//     dst: /styles/
-//     `);
-
-//     let e = await parse( site, `
-//     id: 2000
-//     /component/src:
-//         url: file:///styles/main.scss
-//     `);
-
-//     let path = await getDstUrl( es, e.id );
-
-//     log( 'path', path);
-// })
 
 
 test.run();
