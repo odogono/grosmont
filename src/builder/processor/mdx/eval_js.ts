@@ -83,7 +83,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const resolveImportLocal = (path: string, mimes?: string[]) => undefined;
 
 
-    let result = jsToComponent(data, { path }, { context, resolveImport: resolveImportLocal, require });
+    let result = jsToComponent(data, { path, url:base }, { context, resolveImport: resolveImportLocal, require });
 
     const { pageProps, component } = result;
 

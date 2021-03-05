@@ -14,7 +14,10 @@ import { toComponentId } from 'odgn-entity/src/component';
 const Label = '/processor/assign_title';
 const log = (...args) => console.log(`[${Label}]`, ...args);
 
-
+export interface AssignDstOptions extends ProcessOptions {
+    tags?: string[];
+    bf?: string[];
+}
 
 /**
  * Takes entities with a title and no existing dst filename and
@@ -22,17 +25,27 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
  * 
  * @param es 
  */
-export async function process(site: Site, options:ProcessOptions = {}) {
+export async function process(site: Site, options:AssignDstOptions = {}) {
     const es = options.es ?? site.es;
-    const {reporter} = options;
+    const {reporter, tags:filterTags, bf:filterBf, siteRef:ref } = options;
     setLocation(reporter, Label);
 
     // select /meta and /title
-    const ents = await selectTitleAndMeta(site.es, options);
+    let ents:Entity[];// = await selectTitleAndMeta(site.es, options);
 
     let output:Entity[] = [];
 
-    // log( 'ents', ents );
+    if( filterTags ){
+        const eids = await site.findByTags(filterTags);
+        const q = `[
+            $eids
+            [ ${filterBf.join(' ')} ] !bf
+            @e
+        ] select`;
+        ents = await es.prepare(q).getEntities({eids,ref})
+    } else {
+        ents = await selectTitleAndMeta(site.es, options);
+    }
 
     // await printAll(site.es);
 

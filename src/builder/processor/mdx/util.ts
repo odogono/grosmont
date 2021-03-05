@@ -15,24 +15,10 @@ export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> 
 
     let data = await site.getEntityData(e);
 
-    // let data = e.Mdx?.data;
-
-    // if( data === undefined ){
-    //     // attempt to load from src
-    //     const src = e.Src?.url;
-
-    //     if( src === undefined ){
-    //         throw new Error(`mdx data not found for ${e.id}`);
-    //     }
-
-    //     data = await site.readUrl( src );
-
-    //     // e.Mdx.data = data;
-    // }
-
     let eMeta = e.Meta?.meta ?? {};
     let path = site.getSrcUrl(e);// e.Src.url; // e.Dst?.url ?? '';
-    let props: TranspileProps = { path, data, meta: eMeta };
+    const url = e.Src?.url;
+    let props: TranspileProps = { path, data, url, meta: eMeta };
 
     return props;
 }

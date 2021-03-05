@@ -75,7 +75,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
         return undefined;
     }
 
-    let props:TranspileProps = {path};
+    let props:TranspileProps = {path, url:base};
 
     if (child !== undefined) {
         props.children = child.component;
@@ -113,8 +113,13 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     let output = await componentToString( component, props, { require });
 
+    
     // resolve all the server effects
     await endServerEffects(base);
+    
+    if( output === undefined ){
+        return undefined;
+    }
 
     // render again to reconcile any server effects
     // let {component:com2} = jsToComponent(data, props, { context, resolveImport: resolveImportLocal, require });

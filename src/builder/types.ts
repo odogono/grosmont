@@ -10,6 +10,7 @@ import { Reporter } from './reporter';
 export interface TranspileProps {
     data?: string;
     path: string;
+    url: string;
     render?: boolean;
     forceRender?: boolean;
     wrapper?: JSX.Element;

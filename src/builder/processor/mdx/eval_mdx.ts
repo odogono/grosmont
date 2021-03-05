@@ -1,5 +1,5 @@
 import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { findEntityByUrl, getDependencies, getEntityByUrl, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
+import { findEntityByUrl, getDependencies, getDependencyEntityIds, getEntityByUrl, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
 import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
@@ -154,8 +154,8 @@ function isUrlInternal(url: string) {
 
 async function applyImports(site: Site, e: Entity, imports, options: EvalMdxOptions) {
     const { es } = site;
-    const existingIds = new Set(await getDependencies(es, e.id, 'import'));
-    const cssIds = await getDependencies(es, e.id, 'css');
+    const existingIds = new Set(await getDependencyEntityIds(es, e.id, 'import'));
+    const cssIds = await getDependencyEntityIds(es, e.id, 'css');
     cssIds.forEach(existingIds.add, existingIds);
 
     // log('[applyImports]', 'existing', existingIds );
@@ -192,7 +192,7 @@ async function applyImports(site: Site, e: Entity, imports, options: EvalMdxOpti
 
 async function applyLinks(site: Site, e: Entity, links, options: EvalMdxOptions) {
     const { es } = site;
-    const existingIds = new Set(await getDependencies(es, e.id, 'link'));
+    const existingIds = new Set(await getDependencyEntityIds(es, e.id, 'link'));
 
     for (let [type, linkEid, url, text] of links) {
         if (type === 'ext') {

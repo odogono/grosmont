@@ -10,7 +10,7 @@ import traverse from "@babel/traverse";
 import { parse as babelParser } from '@babel/parser';
 
 import { Entity } from 'odgn-entity/src/entity';
-import { getDependencies, getDependencyEntities, insertDependency, selectJsx } from '../../query';
+import { getDependencies, getDependencyEntities, getDependencyEntityIds, insertDependency, selectJsx } from '../../query';
 import { Site } from '../../site';
 import { parse as parseConfig } from '../../config';
 import { ProcessOptions } from '../../types';
@@ -113,7 +113,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
 async function applyImports(site: Site, e: Entity, imports, options: ProcessOptions) {
     const { es } = site;
-    const existingIds = new Set(await getDependencies(es, e.id, 'import'));
+    const existingIds = new Set(await getDependencyEntityIds(es, e.id, 'import'));
 
     // log('[applyImports]', imports);
 

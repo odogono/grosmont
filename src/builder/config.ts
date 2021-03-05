@@ -13,9 +13,10 @@ import { ComponentDef, getDefId } from 'odgn-entity/src/component_def';
 import { slugify, stringify } from '@odgn/utils';
 import { Site } from './site';
 import { findEntityBySrcUrl, FindEntityOptions, insertDependency, selectTagBySlug } from './query';
-import { createTag, createTimes } from './util';
+import { applyMeta, createTag, createTimes, resolveUrlPath } from './util';
 import { isString } from '@odgn/utils';
 import { BitField, toValues as bfToValues } from '@odgn/utils/bitfield';
+import { printEntity } from 'odgn-entity/src/util/print';
 
 
 const log = (...args) => console.log('[Config]', ...args);
@@ -24,8 +25,10 @@ export interface ParseOptions {
     add?: boolean;
     e?: Entity;
     es?: EntitySet;
-    blackList?: BitField;
+    excludeList?: BitField;
     siteRef?: EntityId;
+    // the url of the src
+    srcUrl?: string;
 }
 
 
@@ -40,11 +43,11 @@ export interface ParseOptions {
 export async function parse(from: EntitySet|Site, input: string|object, type:ParseType = 'yaml', options:ParseOptions = {}): Promise<Entity> {
     const es:EntitySet = isEntitySet(from) ? from as EntitySet : (from as Site).es;
     const addToES = options.add ?? true;
-    let {blackList,siteRef} = options;
+    let {excludeList,siteRef,srcUrl} = options;
     if( !isEntitySet(from) ){
         siteRef = (from as Site).getRef();
     }
-    const selectOptions = {siteRef};
+    const selectOptions = {siteRef, srcUrl};
     
     let data:any = isString(input) ?
         parseConfigString(input as string,type)
@@ -122,7 +125,8 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
         }
         if( Object.keys(meta).length > 0 ){
             // e.Meta = { meta };
-            applyToCom( e, 'Meta', {meta}, false );
+            applyMeta( e, meta );
+            // applyToCom( e, 'Meta', {meta}, false );
         }
     }
 
@@ -145,10 +149,10 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
         }
     }
 
-    // remove any blacklisted coms from the entity
-    if( blackList !== undefined ){
-        const dids = bfToValues(blackList);
-        // console.log('blacklist dids', dids);
+    // remove any excludeListed coms from the entity
+    if( excludeList !== undefined ){
+        const dids = bfToValues(excludeList);
+        // console.log('excludeList dids', dids);
         let ce = es.createEntity(e.id);
         for( const [did,com] of e.components ){
             if( dids.indexOf(did) === -1 ){
@@ -203,6 +207,10 @@ function applyToCom( e:Entity, name:string, attrs:any, overwrite:boolean = true 
 
 
 async function applyLayout( es:EntitySet, e:Entity, url:string, options:FindEntityOptions = {} ) {
+    const { srcUrl } = options;
+
+    url = resolveUrlPath( url, srcUrl );
+
     // find the entity matching the layout
     const layoutEid = await findEntityBySrcUrl(es, url, options);
     
@@ -210,6 +218,11 @@ async function applyLayout( es:EntitySet, e:Entity, url:string, options:FindEnti
         await insertDependency(es, e.id, layoutEid, 'layout');
     } else {
         log('[applyLayout]', 'could not find layout for', url);
+        log('[applyLayout]', 'reading from', srcUrl );
+        // console.log( e );
+        // printEntity(es, e);
+        throw new Error('layout path not found');
+
     }
 }
 

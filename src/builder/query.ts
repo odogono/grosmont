@@ -18,6 +18,7 @@ export interface FindEntityOptions {
     onlyUpdated?: boolean;
     returnEid?: boolean;
     createIfNotFound?: boolean;
+    srcUrl?: string;
 }
 
 export interface ParseOptionsOptions extends FindEntityOptions {
@@ -1123,7 +1124,7 @@ export async function removeDependency(es: EntitySet, eid: EntityId, type: Depen
  *  
  */
 export async function getDependency(es: EntitySet, eid: EntityId, type: DependencyType): Promise<EntityId> {
-    const depId = await getDependencies(es, eid, type);
+    const depId = await getDependencies(es, eid, type, true) as EntityId[];
     return depId.length > 0 ? depId[0] : undefined;
 }
 
@@ -1255,7 +1256,8 @@ export async function selectUpdated(es: EntitySet, options: FindEntityOptions = 
  * 
  * @param es 
  */
-export async function clearUpdates(es: EntitySet, options: FindEntityOptions = {}) {
+export async function clearUpdates(site: Site, options: FindEntityOptions = {}) {
+    const {es} = site;
     const { ref } = parseOptions(options);
 
     // TODO - select only within the site
@@ -1559,30 +1561,31 @@ export async function getDepenendencyDst(es: EntitySet, src: EntityId, type: Dep
  * @param eid 
  * @param type 
  */
-export async function getDependencies(es: EntitySet, eid: EntityId, type: DependencyType): Promise<EntityId[]> {
-    const stmt = es.prepare(`
+export async function getDependencies(es: EntitySet, eid: EntityId, type?: DependencyType, returnEid:boolean = true): Promise<Entity[]|EntityId[]> {
+    const ret = returnEid ? '@eid' : '@e';    
+    const q = type !== undefined ? `
     [
-        /component/dep#type !ca ${type} ==
-        /component/dep#src !ca ${eid} ==
+        /component/dep#type !ca $type ==
+        /component/dep#src !ca $eid ==
         and
         /component/dep !bf
-        @eid
+        ${ret}
     ] select
-    `);
-    return await stmt.getResult({ eid, type });
+    ` : `
+    [
+        /component/dep#src !ca $eid ==
+        /component/dep !bf
+        ${ret}
+    ] select`;
+
+    return await es.prepare(q).getResult({ eid, type });
 }
 
-export async function getDependencyEntities(es: EntitySet, eid: EntityId, type: DependencyType): Promise<Entity[]> {
-    const stmt = es.prepare(`
-    [
-        /component/dep#type !ca ${type} ==
-        /component/dep#src !ca ${eid} ==
-        and
-        /component/dep !bf
-        @e
-    ] select
-    `);
-    return await stmt.getResult({ eid, type });
+export async function getDependencyEntityIds(es: EntitySet, eid: EntityId, type?: DependencyType): Promise<EntityId[]> {
+    return getDependencies(es, eid, type, true) as Promise<EntityId[]>;
+}
+export async function getDependencyEntities(es: EntitySet, eid: EntityId, type?: DependencyType): Promise<Entity[]> {
+    return getDependencies(es, eid, type, false) as Promise<Entity[]>;
 }
 
 export async function getDependencyComponent(es: EntitySet, src: EntityId, dst: EntityId, type: DependencyType): Promise<Component> {

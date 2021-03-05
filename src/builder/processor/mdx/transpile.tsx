@@ -112,7 +112,7 @@ export function jsToComponent(jsCode: string, props: TranspileProps, options: Tr
  * @param options 
  */
 export async function componentToString(component: any, props: TranspileProps, options: TranspileOptions) {
-    let { css, cssLinks: inputCssLinks, children } = props;
+    let { css, cssLinks: inputCssLinks, children, url } = props;
 
     const components = {
         Head,
@@ -166,10 +166,11 @@ export async function componentToString(component: any, props: TranspileProps, o
         return output;
 
     } catch (err) {
-        log('[componentToString]', err.message);
+        log('[componentToString]', url, err.message);
         
         // log('WTFFFFF', child );
-        throw err;
+        // throw err;
+        return undefined;
     }
 }
 

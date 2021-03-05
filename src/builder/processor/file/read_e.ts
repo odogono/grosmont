@@ -24,8 +24,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     let { reporter } = options;
     setLocation(reporter, '/processor/read_e');
 
-    // build a blacklist of defs that will be ignored in the loaded entity
-    const blackList = es.resolveComponentDefIds([ '/component/src', '/component/site_ref', '/component/upd', '/component/times'] );
+    // build a excludeList of defs that will be ignored in the loaded entity
+    const excludeList = es.resolveComponentDefIds([ '/component/src', '/component/site_ref', '/component/upd', '/component/times'] );
 
     // await printAll(es);
 
@@ -39,7 +39,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         const ext = Path.extname(com.url).substring(1);
         let content = await site.readUrl( com.url );
 
-        await parse(es, content, ext as ParseType, { add: true, e, blackList, es, siteRef });
+        log('read from', com.url);
+        await parse(es, content, ext as ParseType, { add: true, e, excludeList, es, siteRef, srcUrl:com.url });
 
         info(reporter, `read e from ${com.url} into ${e.id}`, {eid});
     }

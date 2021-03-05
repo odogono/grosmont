@@ -29,9 +29,9 @@ export async function process(site: Site, options:ProcessOptions = {}) {
 
     // we ignore directory meta, as they have already been processed
     let coms = await site.getDirectoryMetaComponents(options);
-    let blacklistEids = coms.map( c => getComponentEntityId(c) );
+    let excludeEids = coms.map( c => getComponentEntityId(c) );
     
-    debug(reporter, `leafs ${eids} bl ${blacklistEids}`);
+    debug(reporter, `leafs ${eids} bl ${excludeEids}`);
 
     for( const eid of eids ){
         // get the parents of this e
@@ -42,7 +42,7 @@ export async function process(site: Site, options:ProcessOptions = {}) {
         let tagIds = [];
 
         for( const peid of peids ){
-            if( blacklistEids.indexOf(peid) !== -1 ){
+            if( excludeEids.indexOf(peid) !== -1 ){
                 continue;
             }
             // apply tags that we have gatherered

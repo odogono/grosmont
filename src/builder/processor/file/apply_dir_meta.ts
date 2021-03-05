@@ -25,8 +25,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     let coms = await site.getDirectoryMetaComponents(options);
     
 
-    // build a blacklist of defs that will be ignored in the loaded entity
-    const blackList:ComponentDefId[] = bfToValues(es.resolveComponentDefIds(
+    // build a excludeList of defs that will be ignored in the loaded entity
+    const excludeList:ComponentDefId[] = bfToValues(es.resolveComponentDefIds(
         [ '/component/src', '/component/site_ref', '/component/times'] ));
     
     let addComs = [];
@@ -50,8 +50,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         // log('parents', eid, {parentUrl, parentEid});
 
         for( const [did,com] of e.components ){
-            // log('moving', com, 'to', parentEid, blackList.indexOf(did) );
-            if( blackList.indexOf(did) === -1 ){
+            // log('moving', com, 'to', parentEid, excludeList.indexOf(did) );
+            if( excludeList.indexOf(did) === -1 ){
                 addComs.push( setEntityId(com, parentEid) );
             }
         }
