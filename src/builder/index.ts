@@ -15,6 +15,8 @@ import { process as copyStatic } from './processor/static/copy';
 import { process as buildDstIndex } from './processor/dst_index';
 import { EntityUpdate, ProcessOptions } from './types';
 import { buildSrcIndex, clearUpdates } from './query';
+import { warn } from './reporter';
+import { isFunction, isObject, isString, parseUri } from '@odgn/utils';
 
 const Label = '/build';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -24,7 +26,8 @@ export interface BuildProcessOptions extends ProcessOptions {
 }
 
 
-type ProcessorEntry = [ Function, number, any? ];
+export type ProcessorEntry = [ Function, number, any? ];
+export type RawProcessorEntry = [ string|Function, number?, any? ];
 
 /**
  * 
@@ -127,7 +130,96 @@ export async function build(site: Site, options: BuildProcessOptions = {}) {
 }
 
 
+/**
+ * 
+ * @param site 
+ * @param spec 
+ * @param options 
+ */
+export async function buildProcessors( site:Site, spec:RawProcessorEntry[], options:BuildProcessOptions = {} ){
+    let reporter = site.reporter;
+    const siteRef = site.getRef();
+    const updateOptions = { reporter, onlyUpdated: false, ...options, siteRef };
 
+    let result:ProcessorEntry[] = [];
+    for( let [url, priority, options] of spec ){
+        let p = await resolveProcessor(url);
+        
+        if( p === undefined ){
+            warn(reporter, `processor ${url} not found`);
+            continue;
+        }
+        
+        result.push( [ p, priority ?? 0, options ?? {} ] );
+    }
+
+    // sort according to priority descending
+    result.sort( ([a,ap],[b,bp]) => {
+        if( ap < bp ){ return 1; }
+        if( ap > bp ){ return -1; }
+        return 0;
+    });
+
+    // log('[buildProcessors]', result);
+
+    return async (site:Site, options:BuildProcessOptions = {}) => {
+        for( let [ prc, priority, options ] of result ){
+            // log('[buildProcessors]', 'run', prc);
+            await prc( site, {...updateOptions, ...options} );
+        }
+    }
+}
+
+
+async function resolveProcessor( url:any ):Promise<Function>{
+    if( isFunction(url) ){
+        return url;
+    }
+
+    if( !isString(url) ){
+        return undefined;
+    }
+
+    let processFn = 'process';
+    let process:Function = undefined;
+
+    let [path,anchor] = readUrlAnchor( url );
+    if( anchor ){
+        processFn = anchor;
+        url = path;
+    }
+
+    // go for straight import first
+    let res = await safeImport(url);
+
+    if( res === undefined ){
+        res = await safeImport( './' + url );
+    }
+
+    if( isObject(res) && res[processFn] ){
+        return res[processFn];
+    }
+    
+    return undefined;
+}
+
+async function safeImport(url:string){
+    try {
+        return await import(url);
+    } catch(err){
+        return undefined;
+    }
+}
+
+function readUrlAnchor( url:string ){
+    let parts = parseUri(url);
+    if (parts === undefined) {
+        return [];
+    }
+    const { protocol, host, path, anchor } = parts;
+    return [path, anchor];
+
+}
 
 async function parseProcessorConfig( config:any[] ){
     let result:ProcessorEntry[] = [];

@@ -207,7 +207,8 @@ function applyToCom( e:Entity, name:string, attrs:any, overwrite:boolean = true 
 
 
 async function applyLayout( es:EntitySet, e:Entity, url:string, options:FindEntityOptions = {} ) {
-    const { srcUrl } = options;
+    let { srcUrl } = options;
+    srcUrl = srcUrl ?? e.Src?.url ?? '';
 
     url = resolveUrlPath( url, srcUrl );
 

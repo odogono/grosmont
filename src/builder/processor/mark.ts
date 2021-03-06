@@ -12,7 +12,8 @@ import { ProcessOptions } from "../types";
 import { info, setLocation } from '../reporter';
 import { applyMimeToEntityId } from '../util';
 
-const log = (...args) => console.log('[ProcMark]', ...args);
+const Label = '/processor/mark';
+const log = (...args) => console.log(`[${Label}]`, ...args);
 
 
 export interface MarkOptions extends ProcessOptions {
@@ -40,14 +41,14 @@ export interface ProcessMarkJSXOptions extends ProcessOptions {
 export async function process(site: Site, options: MarkOptions) {
     const es = site.es;
     const { reporter, exts, comUrl } = options;
-    let { mime } = options;
+    let { mime, onlyUpdated } = options;
     const loadData = options.loadData ?? false;
-    setLocation(reporter, '/processor/mark');
+    setLocation(reporter, Label);
 
     // select /component/src with a .scss extension
     const coms = await selectSrcByExt(site.es, exts, { ...options, siteRef: site.getRef() });
 
-    // log('coms', coms);
+    // log( {exts, onlyUpdated}, 'coms', coms);
     const def = es.getByUri(comUrl);
     const did = getDefId(def);
 
@@ -94,4 +95,17 @@ export async function process(site: Site, options: MarkOptions) {
 }
 
 
+
+export async function mdx(site: Site, options:MarkOptions ){
+    return process(site, {...options, exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
+}
+export async function statics(site: Site, options:MarkOptions ){
+    return process(site, {...options, exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' });
+}
+export async function jsx(site: Site, options:MarkOptions ){
+    return process(site, {...options, exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' });
+}
+export async function scss(site: Site, options:MarkOptions ){
+    return process(site, {...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' });
+}
 

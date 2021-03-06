@@ -17,7 +17,7 @@ import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 
 import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
 import { isTimeSame } from '../../util';
-import { process as buildDirDeps } from '../build_deps';
+import { process as buildDirDeps } from '../build_dir_deps';
 import { process as readEntityFiles } from './read_e';
 import { process as applyDirMeta } from './apply_dir_meta';
 import { selectSite, Site } from '../../site';

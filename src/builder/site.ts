@@ -448,6 +448,9 @@ export class Site {
     async buildIndexes(runName?: string) {
 
         for (const [name, idx] of this.indexes) {
+            if( runName !== undefined && runName !== name ){
+                continue;
+            }
             const { query, args } = idx;
 
             if (query !== undefined) {
