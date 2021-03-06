@@ -162,21 +162,38 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
         e = ce;
     }
 
-    // printEntity(es, e);
-    // log( e );
-
     if( addToES ){
         if( siteRef !== undefined ){
             e.SiteRef = { ref:siteRef};
         }
+
+        // if we couldn't insert the layout earlier because the e had not
+        // yet been created, then read it from meta
+        const {layout, ...meta} = e.Meta?.meta ?? {};
+        if( layout ){
+            e.Meta = Object.keys(meta).length > 0 ? {meta} : undefined;
+        }
+
         // log('adding', Array.from(e.components.values()));
         // apply, dont replace, to existing e
         await es.add( Array.from(e.components.values()) );
-
         
         // printEntity(es, e);
         // await es.add( e );
         eid = es.getUpdatedEntities()[0];
+
+        // if we couldn't insert the layout earlier because the e had not
+        // yet been created, then insert it now
+        if( layout ){
+            const layoutEid = await findEntityBySrcUrl(es, layout, selectOptions);
+            if( layoutEid !== undefined ){
+                // log('add layout', eid, layoutEid );
+                await insertDependency(es, eid, layoutEid, 'layout');
+            } else {
+                // log('could not find layout', layout);
+            }
+        }
+
         // log('added', eid, await es.getEntity(eid));
         return es.getEntity(eid);
     }
@@ -215,17 +232,23 @@ async function applyLayout( es:EntitySet, e:Entity, url:string, options:FindEnti
     // find the entity matching the layout
     const layoutEid = await findEntityBySrcUrl(es, url, options);
     
+    if( e.id === 0 ){
+        // log('[applyLayout]', url, 'e not yet present', layoutEid);
+        applyMeta( e, {layout:url});
+        return e;
+    }
+
     if (layoutEid !== undefined) {
         await insertDependency(es, e.id, layoutEid, 'layout');
     } else {
         log('[applyLayout]', 'could not find layout for', url);
         log('[applyLayout]', 'reading from', srcUrl );
-        // console.log( e );
-        // printEntity(es, e);
+        
         throw new Error('layout path not found');
-
     }
+    return e;
 }
+
 
 async function applyTags( es:EntitySet, e:Entity, tags:string|string[], options:FindEntityOptions = {}){
     let names:string[] = isString(tags) ? [ tags as string ] : tags as string[];

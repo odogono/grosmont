@@ -95,10 +95,6 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     await applyDirMeta(site, options);
 
 
-    // await printAll(site.es);
-
-    // if (true) {
-
     // build dependencies
     await buildDirDeps(site, { ...options, debug: diffs.length > 0 });
 

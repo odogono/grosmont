@@ -7,7 +7,7 @@ import { process as renderJs } from './processor/mdx/render_js';
 import { process as evalMdx } from './processor/mdx/eval_mdx';
 import { process as resolveMeta } from './processor/mdx/resolve_meta';
 import { process as mark } from './processor/mark';
-import { process as applyTags } from './processor/mdx/apply_tags';
+import { process as applyTags } from './processor/apply_tags';
 import { process as renderScss } from './processor/scss';
 import { process as assignTitle } from './processor/assign_title';
 import { process as write } from './processor/write';
