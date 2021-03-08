@@ -52,6 +52,7 @@ export interface ProcessFileOptions extends ProcessOptions {
  * @param options 
  */
 export async function process(site: Site, options: ProcessFileOptions = {}) {
+    const es = options.es ?? site.es;
     let { reporter, updates } = options;
     setLocation(reporter, '/processor/file');
     options.siteRef = site.getRef();
@@ -65,7 +66,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // } else {
 
     // create an es to put the scan into
-    let incoming = await cloneEntitySet(site.es);
+    let incoming = await cloneEntitySet(es);
 
     // read the fs into the incoming es
     await readFileSystem(site, { ...options, es: incoming });
@@ -75,7 +76,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // await printAll(site.es);
 
     // compare the two es
-    let diffs = await diffEntitySets(site.es, incoming, options);
+    let diffs = await diffEntitySets(es, incoming, options);
 
     if (diffs.length > 0) {
         info(reporter, `${diffs.length} diffs`);
@@ -84,7 +85,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
         // await printAll(site.es);
     }
     // apply the diffs
-    await applyEntitySetDiffs(site.es, incoming, diffs, true, options);
+    await applyEntitySetDiffs(es, incoming, diffs, true, options);
     // }
 
 
@@ -102,7 +103,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // be marked as updated
     // if( options.debug ){
     // printAll(site.es as EntitySetMem);
-    await applyUpdatesToDependencies(site);
+    await applyUpdatesToDependencies(site, options);
     // }
 }
 

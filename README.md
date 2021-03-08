@@ -35,6 +35,9 @@ TODO
 
 [Frog is a static web site generator written in Racket.](https://github.com/greghendershott/frog)
 
+[Zola](https://www.getzola.org)
+
+
 
 ### Build Parent Dependencies
 /processor/build_deps

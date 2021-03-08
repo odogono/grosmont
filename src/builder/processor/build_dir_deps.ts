@@ -100,6 +100,9 @@ async function addMissingSrcDirs(site: Site) {
  */
 function getMissingPaths(site: Site) {
     const srcIdx = site.getIndex('/index/srcUrl');
+    if( srcIdx === undefined ){
+        return [];
+    }
     const srcs = Array.from(srcIdx.index.keys());
 
     let paths = new Set<string>(srcs);

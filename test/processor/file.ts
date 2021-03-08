@@ -12,7 +12,7 @@ import {
     diffEntitySets,
     applyEntitySetDiffs,
 } from '../../src/builder/processor/file';
-import { process as buildDeps } from '../../src/builder/processor/build_deps';
+import { process as buildDeps } from '../../src/builder/processor/build_dir_deps';
 
 import { Entity } from 'odgn-entity/src/entity';
 import { EntitySet, EntitySetMem } from 'odgn-entity/src/entity_set';
@@ -25,7 +25,8 @@ import { sqlClear } from 'odgn-entity/src/entity_set_sql/sqlite';
 import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { 
     clearUpdates,
-    applyUpdatesToDependencies 
+    applyUpdatesToDependencies, 
+    getDependencyEntities
 } from '../../src/builder/query';
 import { isDate } from '@odgn/utils';
 import { buildUrl } from '../../src/builder/util';
@@ -75,7 +76,7 @@ test.only('using sql es', async () => {
     // sqlClear( liveDB.path );
     // const es = new EntitySetSQL({...testDB});
     // const es = new EntitySetMem(undefined, {idgen});
-    const site = await Site.create({configPath, level:Level.ERROR});
+    const site = await Site.create({configPath, level:Level.DEBUG});
 
     await build(site);
     // await printAll(site.es, undefined, ['/component/src', '/component/dst', '/component/meta', '/component/times']);
@@ -95,18 +96,26 @@ test.only('using sql es', async () => {
     ] select`;
 
     log('>>---');
-    let mdxEids = await site.es.prepare(q).getResult({eids});
+    // let mdxEids = await site.es.prepare(q).getResult({eids});
 
-    let page = await site.getEntityByDst('/index.html');
+    // let page = await site.getEntityBySrc('file:///weeknotes/2021-01-01.mdx');
+    let page = await site.getEntityBySrc('file:///index.mdx');
     printEntity( site.es, page );
 
-    page = await site.getEntityBySrc('file:///components/contents.tsx');
-    printEntity( site.es, page );
-    // await printAll(site.es);
+    // let deps = await getDependencyEntities(site.es, page.id);
+    // await printAll( site.es, deps);
+
+    // printEntity( site.es, site.getEntity() );
+
+    // await printAll(site.es, null, [
+    //     '/component/src', 
+    //     '/component/dst', 
+    //     '/component/js', 
+    //     '/component/title', '/component/meta']);
     
     // mdxEids.forEach( e => { log( e.id, e.Title.title )});
     // mdxEids.forEach( e => printEntity(site.es,e));
-    // log('weeknotes', eids );
+    // log('dst index', site.getIndex('/index/dstUrl').index );
 
 });
 
@@ -124,7 +133,7 @@ test('using sql es', async () => {
 
     await build(site);
 
-    await clearUpdates(site.es, {siteRef:site.getRef()});
+    await clearUpdates(site, {siteRef:site.getRef()});
 
     let eid = await site.getEntityIdByDst('/blah');
     await site.markUpdate( eid, ChangeSetOp.Update );

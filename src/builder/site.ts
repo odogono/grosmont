@@ -38,6 +38,7 @@ import { printEntity } from 'odgn-entity/src/util/print';
 import { createUUID } from '@odgn/utils';
 import { info, Level, Reporter, setLevel, setLocation } from './reporter';
 import { uriToPath } from './util';
+import { buildProcessors, RawProcessorEntry } from '.';
 
 
 
@@ -291,6 +292,17 @@ export class Site {
         return this.e?.id ?? 0;
     }
 
+    /**
+     * Returns the active EntitySet
+     * 
+     * @param options 
+     * @returns 
+     */
+    getEntitySet(options?: ProcessOptions): EntitySet {
+        return options?.es ?? this.es;
+    }
+
+
     // /**
     //  * Returns the EntityId for the site
     //  */
@@ -448,7 +460,7 @@ export class Site {
     async buildIndexes(runName?: string) {
 
         for (const [name, idx] of this.indexes) {
-            if( runName !== undefined && runName !== name ){
+            if (runName !== undefined && runName !== name) {
                 continue;
             }
             const { query, args } = idx;
@@ -478,7 +490,23 @@ export class Site {
 
         }
     }
+
+
+    // async prepareProcess(key: string, spec: RawProcessorEntry[], options) {
+
+    //     const process = await buildProcessors(this, spec);
+    //     let es = new EntitySetMem();
+
+    //     const defs = await this.es.getComponentDefs();
+    //     for (const def of defs) {
+    //         await es.register(def);
+    //     }
+
+    //     this.processorIdx.set( key, [es, process ]);
+    // }
 }
+
+
 
 
 export async function selectSite(es: EntitySet) {

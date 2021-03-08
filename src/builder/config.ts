@@ -156,7 +156,7 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
         let ce = es.createEntity(e.id);
         for( const [did,com] of e.components ){
             if( dids.indexOf(did) === -1 ){
-                ce.addComponentUnsafe(did, com);
+                ce.addComponentUnsafe(com);
             }
         }
         e = ce;
@@ -328,7 +328,7 @@ function copyEntity(es: EntitySet, src: Entity, dst?: Entity, id?: EntityId) {
     let e = es.createEntity(id ?? src.id);
     for (const [did, com] of src.components) {
         // log('adding', getEntityId(e) );
-        e.addComponentUnsafe(did, com);
+        e.addComponentUnsafe(com);
     }
     return e;
 }

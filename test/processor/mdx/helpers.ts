@@ -2,11 +2,11 @@ import { suite } from 'uvu';
 import Path from 'path';
 import Beautify from 'js-beautify';
 import { Site, SiteOptions } from '../../../src/builder/site';
-import { process as buildDirDeps } from '../../../src/builder/processor/build_deps';
+import { process as buildDirDeps } from '../../../src/builder/processor/build_dir_deps';
 import { process as renderScss } from '../../../src/builder/processor/scss';
 import { process as assignTitle } from '../../../src/builder/processor/assign_title';
 
-import { process as applyTags } from '../../../src/builder/processor/mdx/apply_tags';
+import { process as applyTags } from '../../../src/builder/processor/apply_tags';
 import { process as buildDstIndex } from '../../../src/builder/processor/dst_index';
 
 import { process as mark } from '../../../src/builder/processor/mark';

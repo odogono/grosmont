@@ -1,13 +1,14 @@
 import Path from 'path';
-import { toComponentId } from "odgn-entity/src/component";
+import { getComponentDefId, getComponentEntityId, toComponentId } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
-import { EntitySet } from "odgn-entity/src/entity_set";
+import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { buildUrl, resolveUrlPath, uriToPath } from "../../util";
 import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions } from "../../types";
 import { getDependencyEntities, getDepenendencyDst, getDstUrl } from "../../query";
 import { Site } from "../../site";
 import { toInteger } from '@odgn/utils';
-
+import { useServerEffect } from '../jsx/server_effect';
+import { buildProcessors, OutputES } from '../..';
 
 const log = (...args) => console.log('[Util]', ...args);
 
@@ -24,21 +25,47 @@ export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> 
 }
 
 
-// export async function buildPageImgs( es:EntitySet, imgIndex:SiteIndex ){
-//     let result: PageImgs = new Map<string, PageImg>();
+export function createRenderContext( site:Site, e:Entity, options:ProcessOptions = {} ){
+    const { url: base } = e.Src;
 
-//     for( const [url, [eid,type]] of imgIndex.index ){
-//         if( type === 'external' ){
-//             result.set( url, {url});
-//         } else {
-//             let path = await getDstUrl(es, eid);
-//             path = uriToPath(path);
-//             result.set(url, {url:path});
-//         }
-//     }
+    const context = { 
+        e,
+        site, 
+        log: (...args) => console.log(`[${base}]`, ...args),
+        useServerEffect,
+        processEntity: processEntityOutput(site, options)
+    };
 
-//     return result;
-// }
+    return context;
+}
+
+
+function processEntityOutput( site:Site, options:ProcessOptions ){
+
+    return async (url:string, renderOptions:ProcessOptions = {} ) => {
+        const {es} = site;
+        
+        let e = await site.getEntityBySrc(url);
+        const bf = es.resolveComponentDefIds('/component/output');
+        let pes = new OutputES(es, bf);
+
+        const process = await buildProcessors( site, [
+            [ '/processor/mdx/render_js', 0, {applyLayout:false}]
+        ]);
+        const eids = [ e.id ];
+        
+        await process( site, {es:pes, eids} );
+
+        for( const com of pes.components ){
+            if( getComponentEntityId(com) === e.id ){
+                e.addComponentUnsafe( com );
+            }
+        }
+
+        return e;
+    }
+}
+
 
 
 export async function buildPageLinks( es:EntitySet, linkIndex:SiteIndex ){

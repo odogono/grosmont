@@ -17,9 +17,18 @@
   meta:
     es:
       url: es://sqlite/siteA.sqlite?isMemory=true
+    
+
 
 /component/patterns:
   include: 
     - '**/*'
   exclude:
     - .DS_Store
+
+
+processors:
+  - /processor/assign_title:
+      priority: -10
+      tags: [ weeknotes ]
+      bf: [ /component/mdx ]

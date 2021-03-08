@@ -89,10 +89,9 @@ export interface JsToComponentResult {
 export function jsToComponent(jsCode: string, props: TranspileProps, options: TranspileOptions): TranspileResult {
 
     const { path } = props;
-    let { context } = options;
+    // let { context } = options;
 
-
-
+    // log('[jsToComponent]', options);
     try {
         // evaluate the js into a component
         let evaled = evalCode(jsCode, path, options);
@@ -278,11 +277,13 @@ function evalCode(code: string, path: string, options: EvalOptions = {}) {
         ...context
     }
 
+    
     // log('[evalCode]', path, context.useServerEffect.toString() );
 
     const requireManual = (requirePath) => {
 
         if (requirePath === '@odgn/grosmont' || requirePath === '@site') {
+            // log('[evalCode]', context.renderEntity );
             return context;
         }
 

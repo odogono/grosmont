@@ -19,6 +19,7 @@ export interface FindEntityOptions {
     returnEid?: boolean;
     createIfNotFound?: boolean;
     srcUrl?: string;
+    eids?: EntityId[];
 }
 
 export interface ParseOptionsOptions extends FindEntityOptions {
@@ -28,11 +29,12 @@ export interface ParseOptionsOptions extends FindEntityOptions {
 function parseOptions(options: FindEntityOptions = {}) {
     const ref = options.siteRef ?? 0;
     const onlyUpdated = options.onlyUpdated ?? false;
+    const eids = options.eids;
     if (ref === 0) {
         // console.warn('[parseOptions]', 'empty siteRef passed');
         throw new Error('[parseOptions] empty siteRef passed');
     }
-    return { ref, onlyUpdated };
+    return { ref, onlyUpdated, eids };
 }
 
 export async function selectTagBySlug(es: EntitySet, name: string, options: FindEntityOptions = {}) {
@@ -300,9 +302,18 @@ export async function selectMdx(es: EntitySet, options: FindEntityOptions = {}):
 }
 
 export async function selectJs(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
-    const { ref, onlyUpdated } = parseOptions(options);
+    const { ref, onlyUpdated, eids } = parseOptions(options);
 
-    let q = onlyUpdated ? `
+    let q:string;
+
+    if( eids !== undefined ){
+        q = `[
+            $eids
+            /component/js !bf
+            @e
+        ] select`
+    } else if( onlyUpdated ){
+        q = `
         [
                     /component/js !bf
                         /component/upd#op !ca 1 ==
@@ -312,15 +323,17 @@ export async function selectJs(es: EntitySet, options: FindEntityOptions = {}): 
                 and
             and
             @e 
-        ] select` :
-        `[
-                /component/js !bf
-                /component/site_ref#ref !ca $ref ==
-            and
-            @e
         ] select`;
+    } else {
+        q = `[
+            /component/js !bf
+            /component/site_ref#ref !ca $ref ==
+        and
+        @e
+    ] select`
+    }
 
-    return await es.prepare(q).getEntities({ ref });
+    return await es.prepare(q).getEntities({ ref, eids });
 }
 
 
@@ -1162,7 +1175,8 @@ export async function getLayoutFromDependency(es: EntitySet, eid: EntityId): Pro
  * 
  * @param site 
  */
-export async function applyUpdatesToDependencies(site: Site) {
+export async function applyUpdatesToDependencies(site: Site, options: ProcessOptions = {}) {
+    const es = options.es ?? site.es;
     const stmt = site.es.prepare(`
 
         [

@@ -36,7 +36,7 @@ export async function process(site: Site, options:ApplyDepsToChildrenOptions = {
     let excludeEids = coms.map( c => getComponentEntityId(c) );
     
     debug(reporter, `leafs ${eids} bl ${excludeEids}`);
-    log( `leafs ${eids} bl ${excludeEids}` );
+    // log( `leafs ${eids} bl ${excludeEids}` );
 
     for( const eid of eids ){
         // get the parents of this e

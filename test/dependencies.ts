@@ -4,7 +4,7 @@ import Fs from 'fs-extra';
 import assert from 'uvu/assert';
 
 import { Site } from '../src/builder/site';
-import { process as buildDeps } from '../src/builder/processor/build_deps';
+import { process as buildDeps } from '../src/builder/processor/build_dir_deps';
 
 import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { getDependencyParents, getDependencyChildren, FindEntityOptions } from '../src/builder/query';

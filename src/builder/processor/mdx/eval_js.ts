@@ -6,10 +6,12 @@ import { Site } from '../../site';
 
 import { ProcessOptions } from '../../types';
 import { jsToComponent } from './transpile';
-import { parseEntityUrl, resolveImport } from './util';
+import { createRenderContext, parseEntityUrl, resolveImport } from './util';
 import { parse as parseConfig } from '../../config';
 import { Component, setEntityId } from 'odgn-entity/src/component';
 import { useServerEffect } from '../jsx/server_effect';
+import { EntitySetMem } from 'odgn-entity/src/entity_set';
+import { buildProcessors } from '../..';
 
 const Label = '/processor/mdx/eval_js';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -22,10 +24,6 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     const es = site.es;
     const { reporter } = options;
     setLocation(reporter, Label);
-
-    // let fileIndex = site.getIndex('/index/srcUrl');
-    // let linkIndex = site.getIndex('/index/links', true);
-    // let imgIndex = site.getIndex('/index/imgs', true);
 
     let ents = await selectJs(es, options);
 
@@ -66,12 +64,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const { data } = e.Js;
     let path = site.getSrcUrl(e);
     let meta = e.Meta?.meta ?? {};
-    const context = { 
-        e,
-        site, 
-        log: (...args) => console.log(`[${base}]`, ...args),
-        useServerEffect,
-    };
+    const context = createRenderContext(site, e, options);
+    
 
     debug(reporter, `process ${base}`, {eid:e.id});
     // log(`process ${base} (${e.id})`);

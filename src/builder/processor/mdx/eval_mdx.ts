@@ -28,10 +28,10 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     const { reporter } = options;
     setLocation(reporter, Label);
 
-    options.fileIndex = site.getIndex('/index/srcUrl');
-    options.srcIndex = site.getIndex('/index/srcUrl');
-    options.linkIndex = site.getIndex('/index/links', true);
-    options.imgIndex = site.getIndex('/index/imgs', true);
+    // options.fileIndex = site.getIndex('/index/srcUrl');
+    // options.srcIndex = site.getIndex('/index/srcUrl');
+    // options.linkIndex = site.getIndex('/index/links', true);
+    // options.imgIndex = site.getIndex('/index/imgs', true);
 
     // select mdx entities
     // let ents = await selectMdx(es, options);
@@ -94,13 +94,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     }
 
     const require = (path: string, fullPath) => {
-        log('[processEntity]', path);
-
-        // const fullPath = Path.resolve(Path.dirname(path), path);
-        // let url = getEntityImportUrlFromPath(fileIndex, path)
-        // log('[require]', url);
-
-        // log('[preProcessMdx]', fileIndex.index);
+        // log('[processEntity]', path);
         return false;
     };
 

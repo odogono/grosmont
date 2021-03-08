@@ -7,7 +7,7 @@ import { Site } from '../../site';
 
 import { ProcessOptions, TranspileProps, TranspileResult } from '../../types';
 import { componentToString, jsToComponent, mdxToJs } from './transpile';
-import { buildProps, getEntityCSSDependencies, resolveImport } from './util';
+import { buildProps, createRenderContext, getEntityCSSDependencies, resolveImport } from './util';
 import { parse as parseConfig } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
@@ -19,17 +19,21 @@ const Label = '/processor/mdx/render_js';
 const log = (...args) => console.log(`[${Label}]`, ...args);
 
 
+export interface RenderJsOptions extends ProcessOptions {
+    applyLayout?: boolean;
+    renderToIndex?: boolean;
+    renderToE?: boolean;
+}
+
+
 /**
  * Compiles Mdx
  */
-export async function process(site: Site, options: ProcessOptions = {}) {
-    const es = site.es;
+export async function process(site: Site, options: RenderJsOptions = {}) {
+    const es = site.getEntitySet(options);
     const { reporter } = options;
     setLocation(reporter, Label);
 
-    // let fileIndex = site.getIndex('/index/srcUrl');
-    // let linkIndex = site.getIndex('/index/links', true);
-    // let imgIndex = site.getIndex('/index/imgs', true);
 
     let ents = await selectJs(es, options);
 
@@ -55,10 +59,11 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 }
 
 
-async function processEntity(site: Site, e: Entity, child: TranspileResult, options: ProcessOptions):Promise<Component> {
+async function processEntity(site: Site, e: Entity, child: TranspileResult, options: RenderJsOptions):Promise<Component> {
 
     const { es } = site;
     const { url: base } = e.Src;
+    const applyLayout = options.applyLayout ?? true;
 
     const {data} = e.Js;
     let path = site.getSrcUrl(e);
@@ -84,13 +89,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     props = await applyCSSDependencies(es, e, child, props);
 
     
-
-    const context = { 
-        site, 
-        e,
-        log: (...args) => console.log(`[${base}]`, ...args),
-        useServerEffect,
-    };
+    const context = createRenderContext(site, e, options);
     
 
     // reset requests
@@ -101,8 +100,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     result.css = props.css;
     result.cssLinks = props.cssLinks;
 
-
-    const layoutE = await getLayoutFromDependency(es, e.id);
+    const layoutE = applyLayout ? await getLayoutFromDependency(es, e.id) : undefined;
 
     if( layoutE !== undefined ){
         let com = await processEntity( site, layoutE, result, options );
@@ -165,8 +163,6 @@ async function applyCSSDependencies(es: EntitySet, e: Entity, child: TranspileRe
         return props;
     }
 
-
-    // log('[renderEntity]', src.id, child );
     let css = cssEntries.map(ent => ent.text).join('\n');
     let cssLinks = cssEntries.map(ent => ent.path);
     if (child !== undefined) {

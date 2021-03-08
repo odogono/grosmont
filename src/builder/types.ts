@@ -71,10 +71,16 @@ export class SiteIndex {
             full ? entry : entry[0]
             : undefined;
     }
-    set( key, eid:EntityId, ...args){
+    set( key:any, eid:EntityId, ...args){
         this.index.set( key, [eid,...args]);
         this.eIndex.set( eid, [key,...args]);
     }
+
+    setByEid( eid:EntityId, key:any, ...args ){
+        this.eIndex.set(eid, [key, ...args] );
+        this.index.set(key, [eid,...args]);
+    }
+    
     clear(){
         this.index.clear();
         this.eIndex.clear();
@@ -87,11 +93,12 @@ export interface ProcessOptions {
     es?: EntitySet;
     dryRun?: boolean;
     onlyUpdated?: boolean;
-    fileIndex?: SiteIndex;
+    // fileIndex?: SiteIndex;
     srcIndex?: SiteIndex;
-    imgIndex?: SiteIndex;
-    linkIndex?: SiteIndex;
+    // imgIndex?: SiteIndex;
+    // linkIndex?: SiteIndex;
     reporter?: Reporter;
+    eids?: EntityId[];
 }
 
 export type EntityUpdate = [EntityId, ChangeSetOp];
