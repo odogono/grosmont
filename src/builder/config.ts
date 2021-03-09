@@ -107,6 +107,9 @@ export async function parse(from: EntitySet|Site, input: string|object, type:Par
             else if( key === 'data'){    
                 e.Data = {data: value };
             }
+            else if( key === 'date' ){
+                e.Date = {date: new Date(value) };
+            }
             else if( key === 'output'){
                 e.Output = {data: value };
             }

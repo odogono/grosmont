@@ -267,6 +267,12 @@ export const defs = [
         properties: [
             {name: 'op', type:'integer'} // ChangeSetOp
         ]
+    },
+    {
+        uri: '/component/date',
+        properties: [
+            {name: 'date', type: 'datetime'}
+        ]
     }
 ];
 
