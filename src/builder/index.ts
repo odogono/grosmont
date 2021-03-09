@@ -1,7 +1,7 @@
 import Jsonpointer from 'jsonpointer';
 
 import { BitField, get as bfGet } from '@odgn/utils/bitfield';
-import { Component, ComponentId, getComponentDefId, isComponent } from 'odgn-entity/src/component';
+import { Component, ComponentId, getComponentDefId, getComponentEntityId, isComponent } from 'odgn-entity/src/component';
 import { getDefId } from 'odgn-entity/src/component_def';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { AddOptions, AddType, EntitySet, EntitySetOptions } from 'odgn-entity/src/entity_set';
@@ -89,51 +89,6 @@ export async function build(site: Site, options: BuildProcessOptions = {}) {
         options = options ?? {};
         await prc(site, { ...updateOptions, ...options });
     }
-
-
-    // // clear /component/update from site
-    // await clearUpdates(site, { siteRef });
-
-    // await scanSrc(site, updateOptions); //{...options, reporter, siteRef});
-
-
-    // // await markStatic(site, updateOptions);
-
-    // await mark(site, { ...options, exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' });
-    // await mark(site, { ...options, exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
-    // await mark(site, { ...options, exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' })
-    // await mark(site, { ...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
-
-    // await buildSrcIndex(site);
-
-    // await renderScss(site, updateOptions);
-
-    // await evalJsx(site, updateOptions);
-
-    // // creates a /component/js with the data
-    // await evalMdx(site, updateOptions);
-
-    // await applyTags(site, updateOptions);
-    // // if( true ){
-
-    // // evaluates the js, and returns metadata
-    // await evalJs(site, updateOptions);
-
-    // // resolve meta with parents
-    // await resolveMeta( site, updateOptions );
-
-    // await buildDstIndex(site, updateOptions);
-
-    // // renders the js to /component/output
-    // await renderJs(site, updateOptions);
-
-    // await assignTitle(site, updateOptions);
-
-    // await buildDstIndex(site, updateOptions);
-
-    // await write(site, updateOptions);
-
-    // await copyStatic(site, updateOptions);
 
     return site;
 }
@@ -263,9 +218,12 @@ async function parseProcessorConfig(config: any[]) {
 export class OutputES extends ProxyEntitySet {
     components: Component[] = [];
     filterBf: BitField;
+    // ecoms: Map<EntityId, Component>;
+
     constructor(es: EntitySet, filterBf: BitField, options: EntitySetOptions = {}) {
         super(es, options);
         this.filterBf = filterBf;
+        // this.ecoms = new Map<EntityId, Component>();
     }
 
     async addComponents(incoming: Component[], options?: AddOptions): Promise<EntitySet> {
@@ -274,8 +232,9 @@ export class OutputES extends ProxyEntitySet {
         for (let ii = 0; ii < incoming.length; ii++) {
             let com = incoming[ii];
 
-            if (bfGet(this.filterBf, getComponentDefId(com as Component))) {
-                this.components.push(com as Component);
+            if (bfGet(this.filterBf, getComponentDefId(com))) {
+                this.components.push(com);
+                // this.ecoms.set( getComponentEntityId(com), com );
                 continue;
             }
 

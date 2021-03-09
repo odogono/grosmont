@@ -19,7 +19,7 @@ import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { StatementArgs } from 'odgn-entity/src/query';
 import { getPtr, parse, parseConfigString } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
-import { setEntityId } from 'odgn-entity/src/component';
+import { Component, setEntityId } from 'odgn-entity/src/component';
 import {
     findEntitiesByTags,
     findLeafDependenciesByType,
@@ -190,9 +190,8 @@ export class Site {
      * @param eid 
      * @param appendRoot 
      */
-    async getEntityOutput(eid: EntityId | Entity) {
+    async getEntityOutput(eid: EntityId | Entity):Promise<[string,string]> {
         return selectOutputByEntity(this.es, eid);
-        // return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id  : eid as EntityId );
     }
 
 

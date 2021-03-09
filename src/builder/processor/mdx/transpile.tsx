@@ -283,7 +283,7 @@ function evalCode(code: string, path: string, options: EvalOptions = {}) {
     const requireManual = (requirePath) => {
 
         if (requirePath === '@odgn/grosmont' || requirePath === '@site') {
-            // log('[evalCode]', context.renderEntity );
+            // log('[evalCode]', context);
             return context;
         }
 

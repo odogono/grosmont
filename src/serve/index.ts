@@ -19,6 +19,7 @@ import Day from 'dayjs';
 import { EntityId } from 'odgn-entity/src/entity';
 import { debounce, parseUri, toInteger } from "@odgn/utils";
 import { Reporter, setLocation, info, error } from '../builder/reporter';
+import { printEntity } from 'odgn-entity/src/util/print';
 const log = (...args) => console.log('[server]', ...args);
 
 const app = express();
@@ -185,21 +186,22 @@ app.use(async (req, res, next) => {
     
     log('[ok]', originalUrl.href, path);
 
-    let e = site.getEntityIdByDst(path);
+    let eid = site.getEntityIdByDst(path);
 
-    if( e === undefined && path.endsWith('/') ){
+    if( eid === undefined && path.endsWith('/') ){
         path = path + 'index.html';
-        e = site.getEntityIdByDst(path);
+        eid = site.getEntityIdByDst(path);
     }
 
-    if( e !== undefined ){
-        log('found', e);
-        let text = await site.getEntityOutput( e );
-        if( text !== undefined ){
-            let [data,mime] = text;
+    if( eid !== undefined ){
+        let output = await site.getEntityOutput( eid );
+        log('found', eid, output);
+        printEntity(site.es, await site.es.getEntity(eid,true));
+        if( output !== undefined ){
+            let [data,mime] = output;
 
             if( mime === 'text/html' ){
-                res.send( data + debugHTML + clientIdHeader(e,path) + clientHandler );
+                res.send( data + debugHTML + clientIdHeader(eid,path) + clientHandler );
             } else {
                 res.send( data );
             }
