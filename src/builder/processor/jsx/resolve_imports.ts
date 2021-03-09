@@ -14,13 +14,14 @@ import { removeCommentPlugin } from '../../unified/plugin/remove_comment';
 import { titlePlugin } from '../../unified/plugin/title';
 import { ProcessOptions } from '../../types';
 import { Site } from '../../site';
-import { getDependencies, insertDependency, selectJsx, selectSrcByMime } from '../../query';
+import { getDependencies, getDependencyEntityIds, insertDependency, selectJsx, selectSrcByMime } from '../../query';
 import { buildProps } from '.';
 import { getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
 import { EntityId } from 'odgn-entity/src/entity';
-import { resolveUrlPath } from '../../util';
+import { createErrorComponent, resolveUrlPath } from '../../util';
 
-const log = (...args) => console.log('[parseJSX]', ...args);
+const Label = '/processor/jsx';
+const log = (...args) => console.log(`[${Label}]`, ...args);
 
 export interface ParseJSOptions {
     resolveImport?: (path) => string | undefined;
@@ -78,7 +79,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             let imports = [];
 
             // get a list of existing css dependencies
-            const depIds = await getDependencies(es, eid, 'import');
+            const depIds = await getDependencyEntityIds(es, eid, 'import');
 
             removeEids = new Set([...removeEids, ...depIds]);
 
@@ -119,10 +120,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             }
 
         } catch (err) {
-            // e.Error = { message: err.message, stack: err.stack, from: '/processor/jsx' };
-            let ee = es.createComponent('/component/error', {message: err.message, from: '/processor/jsx'});
-            ee = setEntityId(ee, eid);
-            await es.add( ee );
+            await es.add( createErrorComponent(es, eid, err, {from:Label}) );
             throw err;
         }
     }

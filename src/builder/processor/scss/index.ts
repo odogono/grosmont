@@ -13,10 +13,11 @@ import { ProcessOptions } from '../../types';
 import { selectScss, FindEntityOptions, getDstUrl, selectSrcByMime } from '../../query';
 import { info, error, setLocation } from '../../reporter';
 import { printEntity } from 'odgn-entity/src/util/print';
-import { joinPaths } from '../../util';
+import { createErrorComponent, joinPaths } from '../../util';
 import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
 
 
+const Label = '/processor/scss';
 
 /**
  * Takes Entities with Scss components and processes them, 
@@ -26,7 +27,7 @@ import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/co
 export async function process(site: Site, options: ProcessOptions = {}) {
     const es = options.es ?? site.es;
     const { reporter } = options;
-    setLocation(reporter, '/processor/scss');
+    setLocation(reporter, Label);
 
     // select scss entities
     // const ents = await selectScss(es, options);
@@ -62,10 +63,9 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             info(reporter, url, { eid: eid });
 
         } catch (err) {
-            let com = es.createComponent('/component/error', { message: err.message, stack: err.stack });
-            addComs.push( setEntityId(com, eid) );
+            addComs.push( createErrorComponent(es, eid, err, {from:Label}) );
             error( reporter, err.message, err);
-            throw err;
+            // throw err;
         }
     }
 

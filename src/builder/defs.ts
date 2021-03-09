@@ -35,8 +35,10 @@ export const defs = [
     {
         uri: '/component/status',
         properties: [
-            { name: 'status', type: 'string', 
-                enum:[ 'active', 'inactive', 'pending', 'deleted'] },
+            {
+                name: 'status', type: 'string',
+                enum: ['active', 'inactive', 'pending', 'deleted']
+            },
         ]
     },
     {
@@ -56,9 +58,9 @@ export const defs = [
     },
     {
         uri: '/component/title',
-        properties: [ 
+        properties: [
             { name: 'title', type: 'string' },
-            { name: 'summary', type: 'string' } 
+            { name: 'summary', type: 'string' }
         ]
     },
     {
@@ -90,14 +92,14 @@ export const defs = [
     {
         uri: '/component/enabled',
         properties: [
-            { name: 'is', type: 'boolean'}
+            { name: 'is', type: 'boolean' }
         ]
     },
     // {
     //     uri: '/component/renderable',
     //     properties: []
     // },
-    
+
     // DEPRECATED - use dependencies
     // {
     //     uri: '/component/css_links',
@@ -138,11 +140,11 @@ export const defs = [
     //         {name:'links', type:'json'}
     //     ]
     // },
-    
+
     {
         uri: '/component/tag',
         properties: [
-            {name:'slug', type:'string'},
+            { name: 'slug', type: 'string' },
         ]
     },
     // {
@@ -175,13 +177,13 @@ export const defs = [
         uri: '/component/dep',
         properties: [
             // src/dependent entity
-            {name: 'src', type:'entity'},
+            { name: 'src', type: 'entity' },
             // dst/dependency entity 
-            {name: 'dst', type:'entity'},
+            { name: 'dst', type: 'entity' },
 
             // the type of dependency - page/link/image/etc
             // a dir dependency means that the src belongs to the parent dir
-            {name: 'type', type:'string', enum:[ 'link', 'css', 'dir' ]}
+            { name: 'type', type: 'string', enum: ['link', 'css', 'dir'] }
         ]
     },
 
@@ -190,20 +192,20 @@ export const defs = [
         // 
         uri: '/component/site',
         properties: [
-            {name: 'name', type:'string' }
+            { name: 'name', type: 'string' }
         ]
     },
     {
         uri: '/component/site_ref',
         properties: [
-            {name: 'ref', type:'entity'}
+            { name: 'ref', type: 'entity' }
         ]
     },
     {
         uri: '/component/patterns',
         properties: [
-            {name: 'include', type:'json'},
-            {name: 'exclude', type:'json'}
+            { name: 'include', type: 'json' },
+            { name: 'exclude', type: 'json' }
         ]
     },
 
@@ -211,31 +213,33 @@ export const defs = [
         // 
         uri: '/component/scss',
         properties: [
-            {name: 'data', type:'string' }
+            { name: 'data', type: 'string' }
         ]
     },
     {
         uri: '/component/mdx',
         properties: [
-            {name:'data', type:'string'}
+            { name: 'data', type: 'string' }
         ]
     },
     {
         uri: '/component/jsx',
         properties: [
-            {name:'data', type:'string'}
+            { name: 'data', type: 'string' }
         ]
     },
     {
         uri: '/component/js',
         properties: [
-            {name:'data', type:'string'}
+            { name: 'data', type: 'string' }
         ]
     },
     {
         uri: '/component/error',
         properties: [
-            {name:'message'}
+            { name: 'message' },
+            { name: 'from' },
+            { name: 'stack' },
         ]
     },
     // {
@@ -257,21 +261,21 @@ export const defs = [
     {
         uri: '/component/output',
         properties: [
-            {name: 'data', type:'string'},
-            {name: 'mime', type:'string'}
+            { name: 'data', type: 'string' },
+            { name: 'mime', type: 'string' }
         ]
     },
 
     {
         uri: '/component/upd',
         properties: [
-            {name: 'op', type:'integer'} // ChangeSetOp
+            { name: 'op', type: 'integer' } // ChangeSetOp
         ]
     },
     {
         uri: '/component/date',
         properties: [
-            {name: 'date', type: 'datetime'}
+            { name: 'date', type: 'datetime' }
         ]
     }
 ];

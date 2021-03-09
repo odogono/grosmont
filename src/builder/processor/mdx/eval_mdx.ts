@@ -10,7 +10,7 @@ import { buildProps, parseEntityUrl, resolveImport } from './util';
 import { parse as parseConfig } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
-import { resolveUrlPath } from '../../util';
+import { createErrorComponent, resolveUrlPath } from '../../util';
 
 const Label = '/processor/mdx/eval_mdx';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -50,10 +50,9 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             info(reporter, ``, { eid: e.id });
 
         } catch (err) {
-            let ee = es.createComponent('/component/error', { message: err.message, from: Label });
-            output.push(setEntityId(ee, e.id));
+            output.push( createErrorComponent(es, e, err, {from:Label}) );
             error(reporter, `error ${srcUrl}`, err, { eid: e.id });
-            log(`error: ${srcUrl}`, err);
+            // log(`error: ${srcUrl}`, err);
         }
 
     }

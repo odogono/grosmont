@@ -36,6 +36,7 @@ export function createRenderContext( site:Site, e:Entity, options:ProcessOptions
 
     const context = { 
         e,
+        es: site.es,
         site, 
         log,
         useServerEffect,

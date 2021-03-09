@@ -15,7 +15,7 @@ import { Site } from '../../site';
 import { parse as parseConfig } from '../../config';
 import { ProcessOptions } from '../../types';
 import { parseJS } from './resolve_imports';
-import { parseEntityUri } from '../../util';
+import { createErrorComponent, parseEntityUri } from '../../util';
 import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { parseUri, toInteger } from '@odgn/utils';
 
@@ -102,10 +102,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         // await parseConfig(site, meta, undefined, {add:false, e} );
 
     } catch (err) {
-        let ee = es.createComponent('/component/error', { message: err.message, from: Label });
-        log('error', err);
         error(reporter, 'error', err, { eid: e.id });
-        return [setEntityId(ee, e.id)];
+        return [ createErrorComponent(es, e, err, {from:Label}) ];
     }
 
 

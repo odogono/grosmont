@@ -1,6 +1,6 @@
 import Path from 'path';
 import { Component, getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
-import { Entity, EntityId } from "odgn-entity/src/entity";
+import { Entity, EntityId, isEntity } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import Day from 'dayjs';
 import { Site } from './site';
@@ -247,4 +247,15 @@ export function parseEntityUri(uri: string): ParseEntityUriResult {
 
     // let url = new URL(requirePath);
 
+}
+
+
+export interface ErrorOptions {
+    from?: string;
+}
+
+export function createErrorComponent( es:EntitySet, e:Entity|EntityId, err:Error, options:ErrorOptions = {} ){
+    const eid:EntityId = isEntity(e) ? (e as Entity).id : e as EntityId;
+    let com = es.createComponent('/component/error', { ...options, message: err.message, stack: err.stack });
+    return setEntityId(com, eid);
 }

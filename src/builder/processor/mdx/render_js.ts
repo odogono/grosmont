@@ -14,6 +14,7 @@ import { Component, setEntityId } from 'odgn-entity/src/component';
 import { hash, toInteger } from '@odgn/utils';
 import { buildImports } from './eval_js';
 import { useServerEffect, serverEffectValue, beginServerEffects, endServerEffects } from '../jsx/server_effect';
+import { createErrorComponent } from '../../util';
 
 const Label = '/processor/mdx/render_js';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -47,8 +48,7 @@ export async function process(site: Site, options: RenderJsOptions = {}) {
             updates.push( await processEntity(site, e, undefined, options) );
 
         } catch (err) {
-            let ee = es.createComponent('/component/error', { message: err.message, from: Label });
-            ee = setEntityId(ee, e.id);
+            updates.push( createErrorComponent(es, e, err, {from:Label}) );
             error(reporter, `error ${srcUrl}`, err, { eid: e.id });
         }
     }

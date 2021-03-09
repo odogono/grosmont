@@ -20,6 +20,7 @@ import { EntityId } from 'odgn-entity/src/entity';
 import { debounce, parseUri, toInteger } from "@odgn/utils";
 import { Reporter, setLocation, info, error } from '../builder/reporter';
 import { printEntity } from 'odgn-entity/src/util/print';
+import { buildEntityHTML } from './util';
 const log = (...args) => console.log('[server]', ...args);
 
 const app = express();
@@ -33,15 +34,6 @@ const [config] = process.argv.slice(2);
 const configPath = Path.resolve(config);
 
 
-// Chokidar.watch('.').on('all', (event, path) => {
-//     if (event === 'change') {
-//         console.log(event, path);
-
-//         emitter.emit('sse', { event: event, path });
-//     }
-// });
-
-// __dirname, '../../dist'
 
 const clientHandlerPath = Path.join(__dirname, 'client.js');
 const debugHTMLPath = Path.join(__dirname, 'debug.html');
@@ -179,20 +171,21 @@ function heartbeat( res ){
     setTimeout( () => heartbeat(res), 10000);
 }
 
+
+
 app.use(async (req, res, next) => {
     let originalUrl = parseUrl.original(req)
     let path = parseUrl(req).pathname
 
-    
-    log('[ok]', originalUrl.href, path);
-
     let eid = site.getEntityIdByDst(path);
-
+    
     if( eid === undefined && path.endsWith('/') ){
         path = path + 'index.html';
         eid = site.getEntityIdByDst(path);
     }
 
+    log('[ok]', originalUrl.href, eid, path);
+    
     if( eid !== undefined ){
         let output = await site.getEntityOutput( eid );
         log('found', eid, output);
@@ -201,34 +194,25 @@ app.use(async (req, res, next) => {
             let [data,mime] = output;
 
             if( mime === 'text/html' ){
-                res.send( data + debugHTML + clientIdHeader(eid,path) + clientHandler );
+                res.send( 
+                    data 
+                    + debugHTML 
+                    // + await buildEntityHTML(eid)
+                    + clientIdHeader(eid,path) 
+                    + clientHandler );
             } else {
                 res.send( data );
             }
 
             return;
         }
+        else {
+            return res.send(`${eid} /component/output not found`);
+        }
     }
 
     return next();
 
-    // const [exists, filePath] = await resolveRequestPath(path);
-
-    // if (!exists) {
-    //     // console.log('[serveStatic] not found', path);
-    //     return next();
-    // }
-
-    // console.log('[serveStatic]', path, filePath);
-
-    // if (filePath.endsWith('.html')) {
-    //     const data = await Fs.readFile(filePath, 'utf8');
-
-    //     res.send(data + debugHTML + clientHandler);
-    // }
-    // else {
-    //     res.sendFile(filePath);
-    // }
 })
 
 function clientIdHeader(eid:EntityId, path:string){

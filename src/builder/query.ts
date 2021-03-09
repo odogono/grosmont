@@ -304,15 +304,15 @@ export async function selectMdx(es: EntitySet, options: FindEntityOptions = {}):
 export async function selectJs(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated, eids } = parseOptions(options);
 
-    let q:string;
+    let q: string;
 
-    if( eids !== undefined ){
+    if (eids !== undefined) {
         q = `[
             $eids
             /component/js !bf
             @e
         ] select`
-    } else if( onlyUpdated ){
+    } else if (onlyUpdated) {
         q = `
         [
                     /component/js !bf
@@ -390,6 +390,18 @@ export async function selectScss(es: EntitySet, options: FindEntityOptions = {})
     return await es.prepare(q).getEntities({ ref });
 }
 
+
+export async function selectErrors(es: EntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
+    const { ref } = parseOptions(options);
+
+    let q = `[
+        /component/site_ref#ref !ca $ref ==
+        /component/error !bf
+        @c
+        ] select`;
+
+    return await es.prepare(q).getResult({ ref });
+}
 
 
 /**
@@ -647,7 +659,7 @@ export async function findEntityByUrl(es: EntitySet, url: string, options: FindE
 }
 
 
-export async function getUrlComponent(es: EntitySet, url: string, options:FindEntityOptions = {}) {
+export async function getUrlComponent(es: EntitySet, url: string, options: FindEntityOptions = {}) {
     const { ref, onlyUpdated } = parseOptions(options);
     const stmt = es.prepare(`
     [
@@ -1066,7 +1078,7 @@ export async function insertDependency(es: EntitySet, src: EntityId, dst: Entity
     // let e = es.createEntity();
     let com = es.createComponent('/component/dep', { src, dst, type });
 
-    await es.add( extra ? [com, ...extra] : com );
+    await es.add(extra ? [com, ...extra] : com);
 
     let reid = es.getUpdatedEntities()[0];
     return reid;
@@ -1271,7 +1283,7 @@ export async function selectUpdated(es: EntitySet, options: FindEntityOptions = 
  * @param es 
  */
 export async function clearUpdates(site: Site, options: FindEntityOptions = {}) {
-    const {es} = site;
+    const { es } = site;
     const { ref } = parseOptions(options);
 
     // TODO - select only within the site
@@ -1575,8 +1587,8 @@ export async function getDepenendencyDst(es: EntitySet, src: EntityId, type: Dep
  * @param eid 
  * @param type 
  */
-export async function getDependencies(es: EntitySet, eid: EntityId, type?: DependencyType, returnEid:boolean = true): Promise<Entity[]|EntityId[]> {
-    const ret = returnEid ? '@eid' : '@e';    
+export async function getDependencies(es: EntitySet, eid: EntityId, type?: DependencyType, returnEid: boolean = true): Promise<Entity[] | EntityId[]> {
+    const ret = returnEid ? '@eid' : '@e';
     const q = type !== undefined ? `
     [
         /component/dep#type !ca $type ==

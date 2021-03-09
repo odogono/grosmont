@@ -168,8 +168,8 @@ export async function componentToString(component: any, props: TranspileProps, o
         log('[componentToString]', url, err.message);
         
         // log('WTFFFFF', child );
-        // throw err;
-        return undefined;
+        throw err;
+        // return undefined;
     }
 }
 

@@ -12,6 +12,7 @@ import { Component, setEntityId } from 'odgn-entity/src/component';
 import { useServerEffect } from '../jsx/server_effect';
 import { EntitySetMem } from 'odgn-entity/src/entity_set';
 import { buildProcessors } from '../..';
+import { createErrorComponent } from '../../util';
 
 const Label = '/processor/mdx/eval_js';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -36,8 +37,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             updates.push(upd);
 
         } catch (err) {
-            let ee = es.createComponent('/component/error', { message: err.message, from: Label });
-            ee = setEntityId(ee, e.id);
+            updates.push( createErrorComponent(es, e, err, {from:Label}) );
             error(reporter, 'error', err, { eid: e.id });
         }
     }
