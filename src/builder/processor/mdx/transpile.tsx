@@ -110,7 +110,7 @@ export function jsToComponent(jsCode: string, props: TranspileProps, options: Tr
  * @param options 
  */
 export async function componentToString(component: any, props: TranspileProps, options: TranspileOptions) {
-    let { css, cssLinks: inputCssLinks, children, url } = props;
+    let { css, cssLinks: inputCssLinks, children, url, comProps } = props;
 
     const components = {
         Head,
@@ -141,17 +141,11 @@ export async function componentToString(component: any, props: TranspileProps, o
         components
     };
 
-    let comProps = {
-        e: {Title: { title:'poop'}}
-    }
-
     let child = children !== undefined ?
         React.createElement(children, { components, ...comProps })
         : undefined;
 
     const Component = await component;
-
-    // log('[componentToString]', 'huh', props );
 
     try {
 
@@ -170,9 +164,7 @@ export async function componentToString(component: any, props: TranspileProps, o
     } catch (err) {
         log('[componentToString]', url, err.message);
         
-        // log('WTFFFFF', child );
         throw err;
-        // return undefined;
     }
 }
 

@@ -21,7 +21,7 @@ import { process as assignTitle } from './processor/assign_title';
 import { process as write } from './processor/write';
 import { process as copyStatic } from './processor/static/copy';
 import { process as buildDstIndex } from './processor/dst_index';
-import { EntityUpdate, ProcessOptions } from './types';
+import { EntityUpdate, ProcessOptions, SiteProcessor } from './types';
 import { buildSrcIndex, clearUpdates } from './query';
 import { warn } from './reporter';
 import { isFunction, isObject, isString, parseUri } from '@odgn/utils';
@@ -100,7 +100,7 @@ export async function build(site: Site, options: BuildProcessOptions = {}) {
  * @param spec 
  * @param options 
  */
-export async function buildProcessors(site: Site, spec: RawProcessorEntry[], options: BuildProcessOptions = {}) {
+export async function buildProcessors(site: Site, spec: RawProcessorEntry[], options: BuildProcessOptions = {}): Promise<SiteProcessor> {
     let reporter = site.reporter;
     const siteRef = site.getRef();
     const updateOptions = { reporter, onlyUpdated: false, ...options, siteRef };
@@ -131,8 +131,11 @@ export async function buildProcessors(site: Site, spec: RawProcessorEntry[], opt
             // log('[buildProcessors]', 'run', prc);
             await prc(site, { ...pOptions, ...updateOptions, ...options });
         }
+        return site;
     }
 }
+
+
 
 
 async function resolveProcessor(url: any): Promise<Function> {
@@ -246,3 +249,21 @@ export class OutputES extends ProxyEntitySet {
 }
 
 
+/**
+ * Renders a single entity using given props and returns its output component
+ * 
+ * @param site 
+ * @param process 
+ * @param eid 
+ * @param props 
+ * @returns 
+ */
+export async function renderToOutput( site:Site, process:SiteProcessor, eid:EntityId, props:any = {} ){
+    const {es} = site;
+    const bf = es.resolveComponentDefIds('/component/output');
+    const pes = new OutputES( es, bf );
+
+    await process(site, {es:pes, eids:[eid], props});
+
+    return pes.components.find( com => getComponentEntityId(com) === eid );
+}

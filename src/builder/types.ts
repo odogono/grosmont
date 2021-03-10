@@ -3,6 +3,7 @@ import { EntitySet } from 'odgn-entity/src/entity_set';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { StatementArgs } from 'odgn-entity/src/query';
 import { Reporter } from './reporter';
+import { Site } from './site';
 
 
 
@@ -18,6 +19,7 @@ export interface TranspileProps {
     children?: any;
     css?: string;
     cssLinks?: string[];
+    comProps?: any;
 }
 
 export interface TranspileResult {
@@ -89,18 +91,18 @@ export class SiteIndex {
     }
 }
 
+export type SiteProcessor = (site:Site, options: ProcessOptions) => Promise<Site>;
+
 
 export interface ProcessOptions {
     siteRef?: EntityId;
     es?: EntitySet;
     dryRun?: boolean;
     onlyUpdated?: boolean;
-    // fileIndex?: SiteIndex;
     srcIndex?: SiteIndex;
-    // imgIndex?: SiteIndex;
-    // linkIndex?: SiteIndex;
     reporter?: Reporter;
     eids?: EntityId[];
+    props?: any;
 }
 
 export type EntityUpdate = [EntityId, ChangeSetOp];

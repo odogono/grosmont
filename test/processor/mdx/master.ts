@@ -8,7 +8,6 @@ import { EntityId } from 'odgn-entity/src/entity';
 import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
 
 const test = suite('processor/mdx/master');
-
 const log = (...args) => console.log(`[${test.name}]`, ...args);
 
 

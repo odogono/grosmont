@@ -91,6 +91,9 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // props.imgs = options.imgs;
     props = await applyCSSDependencies(es, e, child, props);
 
+    props.comProps = { ...options.props };
+
+    // log('[processEntity]', base, options );
     
     const context = createRenderContext(site, e, options);
     

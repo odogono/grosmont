@@ -82,7 +82,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     }
 
 
-    let result = jsToComponent(data, { path, url:base }, { onConfig, context, resolveImport: resolveImportLocal, require });
+    let result = jsToComponent(data, { path, url:base }, 
+        { onConfig, context, resolveImport: resolveImportLocal, require });
 
     const { component, ...jsProps } = result;
 
