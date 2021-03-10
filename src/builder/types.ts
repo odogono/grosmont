@@ -36,7 +36,9 @@ export interface TranspileResult {
     pageProps?: any;
 }
 
-
+export interface EvalScope {
+    [key: string]: any;
+}
 
 // export interface SiteIndex {
 //     query?: string;
@@ -141,8 +143,10 @@ export interface TranspileOptions {
     forceRender?: boolean;
     resolveImport?: (path: string) => [string,boolean] | undefined;
     resolveLink?: (url:string, text?:string) => any;
+    onConfig: (config:any) => void;
     require: (path:string, fullPath:string) => any;
     context?: any;
+    scope?: EvalScope; // vars which will present in the evaluated code
 }
 
 

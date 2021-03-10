@@ -58,10 +58,10 @@ export const PageContext = React.createContext({})
 export function mdxToJs(mdxData: string, props: TranspileProps, options: TranspileOptions): TranspileResult {
     let meta = props.meta ?? {};
     let { css, cssLinks: inputCssLinks, children } = props;
-    const { resolveImport, resolveLink, require, context } = options;
+    const { resolveImport, resolveLink, onConfig, require, context } = options;
 
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
-    let processOpts = { pageProps: inPageProps, resolveLink, resolveImport, require, context };
+    let processOpts = { pageProps: inPageProps, resolveLink, resolveImport, onConfig, require, context };
 
     // convert the mdx to jsx
     let { jsx, ast } = processMdx(mdxData, processOpts);
@@ -69,7 +69,6 @@ export function mdxToJs(mdxData: string, props: TranspileProps, options: Transpi
 
     // convert from jsx to js
     let js = transformJSX(jsx);
-
 
     return { js, jsx, ast };
 }
@@ -142,13 +141,17 @@ export async function componentToString(component: any, props: TranspileProps, o
         components
     };
 
+    let comProps = {
+        e: {Title: { title:'poop'}}
+    }
 
     let child = children !== undefined ?
-        React.createElement(children, { components })
+        React.createElement(children, { components, ...comProps })
         : undefined;
 
     const Component = await component;
 
+    // log('[componentToString]', 'huh', props );
 
     try {
 
@@ -156,7 +159,7 @@ export async function componentToString(component: any, props: TranspileProps, o
             <ServerEffectProvider>
                 <PageContext.Provider value={ctxValue}>
                     <MDXProvider components={components}>
-                        <Component>{child}</Component>
+                        <Component {...comProps}>{child}</Component>
                     </MDXProvider>
                 </PageContext.Provider>
             </ServerEffectProvider>
@@ -175,9 +178,10 @@ export async function componentToString(component: any, props: TranspileProps, o
 
 
 export type ProcessMDXOptions = {
-    pageProps?: any;
+    
     resolveImport?: (path: string) => [string,boolean] | undefined;
     resolveLink?: (url: string, text?: string) => any;
+    onConfig: (config:any) => void;
     require?: (path: string, fullPath: string) => any;
     context?: any;
 }
@@ -189,7 +193,7 @@ export interface ProcessMDXResult {
 
 export function processMdx(content: string, options: ProcessMDXOptions): ProcessMDXResult {
 
-    let { pageProps, resolveImport, resolveLink } = options;
+    let { resolveImport, resolveLink, onConfig } = options;
     let ast;
 
     // remark-mdx has a really bad time with html comments even
@@ -202,7 +206,7 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
         .use(stringify)
         .use(frontmatter)
         .use(emoji)
-        .use(configPlugin, { page: pageProps })
+        .use(configPlugin, { onConfig })
         .use(removeCommentPlugin)
         // .use(() => console.dir)
         .use(clientProc, { })
@@ -213,7 +217,7 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
         .use(() => tree => { ast = tree })
         .use(mdx)
         .use(mdxjs)
-        .use(titlePlugin)
+        .use(titlePlugin, {onConfig} )
         .use(importPlugin, { resolveImport })
         .use(squeeze)
         .use(mdxAstToMdxHast)
@@ -259,6 +263,7 @@ export function transformJSX(jsx: string) {
 interface EvalOptions {
     require?: (path, fullPath) => any;
     context?: any;
+    scope?: any;
 }
 
 /**
@@ -267,8 +272,7 @@ interface EvalOptions {
  * @param path 
  */
 function evalCode(code: string, path: string, options: EvalOptions = {}) {
-    let requires = [];
-    let { context } = options;
+    let { context, scope:inScope } = options;
 
     // log('[evalCode]', path, code );
 
@@ -302,7 +306,7 @@ function evalCode(code: string, path: string, options: EvalOptions = {}) {
         return result;
     }
 
-    let out = _eval(code, path, {
+    const scope = {
         mdx: mdxReact,
         createElement: mdxReact,
         MDXProvider,
@@ -310,10 +314,13 @@ function evalCode(code: string, path: string, options: EvalOptions = {}) {
         require: requireManual,
         console: console,
         setTimeout,
-        log: (...args) => log('[evalCode]', ...args)
-    });
+        log: (...args) => log('[evalCode]', ...args),
+        ...inScope
+    }
 
-    const { default: component, page: pageProps, ...rest } = out;
+    let out = _eval(code, path, scope);
 
-    return { ...rest, pageProps, requires, component };
+    const { default: component, ...rest } = out;
+
+    return { ...rest, component };
 }

@@ -5,8 +5,6 @@ import { addMdx, beforeEach, process } from './helpers';
 
 const log = (...args) => console.log('[TestProcMDX]', ...args);
 
-
-
 const test = suite('processor/mdx/frontmatter');
 
 test.before.each(beforeEach);
@@ -19,7 +17,7 @@ test('frontmatter', async ({ es, site, options }) => {
 title: Test Page
 ---
 
-# {page.title}
+# {page.Title.title}
 
 I really like using Markdown.
     `);

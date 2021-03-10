@@ -4,18 +4,12 @@ const _eval = require('eval');
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import * as Babel from "@babel/core";
-import babelGenerate from '@babel/generator';
-import traverse from "@babel/traverse";
-
-import { parse as babelParser } from '@babel/parser';
 
 import { Entity } from 'odgn-entity/src/entity';
 import { getDependencies, getDependencyEntities, selectJsx } from '../../query';
 import { Site } from '../../site';
 import { parse as parseConfig } from '../../config';
 import { ProcessOptions } from '../../types';
-import { parseJS } from './resolve_imports';
-import { parseEntityUri } from '../../util';
 import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { parseUri, toInteger } from '@odgn/utils';
 
@@ -100,7 +94,6 @@ export async function preprocess(site: Site, options:ProcessOptions = {}){
         }
         
         output.push(e);
-
     }
 
     await es.add(output);

@@ -64,6 +64,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const { data } = e.Js;
     let path = site.getSrcUrl(e);
     let meta = e.Meta?.meta ?? {};
+    let config = {};
+
     const context = createRenderContext(site, e, options);
     
 
@@ -75,13 +77,19 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const require = await buildImports( site, e, options );
 
     const resolveImportLocal = (path: string, mimes?: string[]) => undefined;
+    function onConfig( incoming: any ){
+        config = {...config, ...incoming };
+    }
 
 
-    let result = jsToComponent(data, { path, url:base }, { context, resolveImport: resolveImportLocal, require });
+    let result = jsToComponent(data, { path, url:base }, { onConfig, context, resolveImport: resolveImportLocal, require });
 
-    const { pageProps, component } = result;
+    const { component, ...jsProps } = result;
 
-    meta = { ...meta, ...pageProps };
+    // apply any exports other than the component as meta
+    meta = { ...meta, ...jsProps };
+
+    // log(`process ${base} (${e.id})`, result);
 
     await parseConfig(es, meta, undefined, { add: false, e, siteRef });
 

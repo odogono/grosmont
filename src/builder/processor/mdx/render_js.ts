@@ -5,7 +5,7 @@ import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { ProcessOptions, TranspileProps, TranspileResult } from '../../types';
+import { ProcessOptions, TranspileProps, TranspileResult, EvalScope } from '../../types';
 import { componentToString, jsToComponent, mdxToJs } from './transpile';
 import { buildProps, createRenderContext, getEntityCSSDependencies, resolveImport } from './util';
 import { parse as parseConfig } from '../../config';
@@ -24,6 +24,7 @@ export interface RenderJsOptions extends ProcessOptions {
     applyLayout?: boolean;
     renderToIndex?: boolean;
     renderToE?: boolean;
+    scope?: EvalScope;
 }
 
 
@@ -71,6 +72,8 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     const require = await buildImports( site, e, options );
 
+    function onConfig(config:any){}
+
 
     if( meta.isEnabled === false ){
         return undefined;
@@ -91,11 +94,18 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     
     const context = createRenderContext(site, e, options);
     
+    const scope = {
+        site,
+        e,
+        page: e,
+        layout: undefined,
+        ...options.scope
+    }
 
     // reset requests
     beginServerEffects(base);
     
-    let result:any = jsToComponent(data, props, { context, require });
+    let result:any = jsToComponent(data, props, { context, onConfig, require, scope });
 
     result.css = props.css;
     result.cssLinks = props.cssLinks;
@@ -103,13 +113,19 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     const layoutE = applyLayout ? await getLayoutFromDependency(es, e.id) : undefined;
 
     if( layoutE !== undefined ){
-        let com = await processEntity( site, layoutE, result, options );
+        let layoutScope = {
+            ...options.scope,
+            e,
+            page: e,
+            layout: layoutE
+        }
+        let com = await processEntity( site, layoutE, result, {...options, scope:layoutScope} );
         return setEntityId( com, e.id );
     }
 
     const {component} = result;
 
-    let output = await componentToString( component, props, { require });
+    let output = await componentToString( component, props, { onConfig, require });
 
     
     // resolve all the server effects
@@ -120,8 +136,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     }
 
     // render again to reconcile any server effects
-    // let {component:com2} = jsToComponent(data, props, { context, resolveImport: resolveImportLocal, require });
-    output = await componentToString( component, props, { require });
+    output = await componentToString( component, props, { require, onConfig });
 
     // replace any e:// urls with dst url links
     output = replaceEntityUrls(site, output);

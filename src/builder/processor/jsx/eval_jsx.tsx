@@ -94,6 +94,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
         const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
 
+        // log('out js', js);
 
         await applyImports(site, e, imports, options);
 

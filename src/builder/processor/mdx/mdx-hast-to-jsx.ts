@@ -107,15 +107,15 @@ function serializeRoot(node, options) {
         .map(childNode => toJSX(childNode, node))
         .join('\n')
 
-    let layoutProps = 'const layoutProps = {'
+    // let layoutProps = 'const layoutProps = {'
 
-    if (exportNames.length !== 0) {
-        layoutProps += '\n  ' + exportNames.join(',\n  ') + '\n'
-    }
+    // if (exportNames.length !== 0) {
+    //     layoutProps += '\n  ' + exportNames.join(',\n  ') + '\n'
+    // }
 
-    layoutProps += '};'
+    // layoutProps += '};'
 
-    const mdxLayout = `const MDXLayout = ${layout ? layout : '"wrapper"'}`
+    // const mdxLayout = `const MDXLayout = ${layout ? layout : '"wrapper"'}`
 
     const doc = groups.rest
         .map(childNode => toJSX(childNode, node, options))
@@ -194,8 +194,7 @@ return (
     const moduleBase = `${importStatements}
 ${exportStatementsPostMdxTypeProps}
 ${fakedModulesForGlobalScope}
-${layoutProps}
-${mdxLayout}`;
+`;
 
     if (skipExport) {
         return `${moduleBase}

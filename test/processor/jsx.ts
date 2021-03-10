@@ -15,16 +15,9 @@ import { buildSrcIndex, FindEntityOptions } from '../../src/builder/query';
 import { EntityId } from 'odgn-entity/src/entity';
 
 
-const log = (...args) => console.log('[TestProcMDX]', ...args);
-
-const printES = async (site: Site) => {
-    console.log('\n\n---\n');
-    await printAll(site.es);
-}
-
 const rootPath = Path.resolve(__dirname, "../../");
-const test = suite('processor/jsx');
-
+const test = suite('/processor/jsx');
+const log = (...args) => console.log(`[${test.name}]`, ...args);
 
 // test.before.each(async (tcx) => {
 //     let id = 1000;
@@ -101,7 +94,7 @@ test('resolve imports', async () => {
     
     await addJsx(site, 'file:///main.jsx', `
     import Message from 'file:///message.jsx';
-    export const page = { dst: '/main.html' };
+    export const dst =  '/main.html';
     
     export default () => <div>Message: <Message /></div>;
     `);
@@ -121,7 +114,7 @@ test('resolve imports', async () => {
 
     await buildDstIndex(site);
 
-    // await printES(site);
+    await printAll(site.es);
 
     let e = await site.getEntityByDst('/main.html');
 

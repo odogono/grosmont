@@ -75,6 +75,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
     let imports = [];
     let links = [];
+    let meta = e.Meta?.meta ?? {};
+    let config = {};
 
     // function passed into the mdx parser and called whenever
     // an import is found
@@ -90,6 +92,10 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         } else {
             warn(reporter, `import ${path} not resolved`, { eid: e.id });
         }
+    }
+
+    function onConfig( incoming: any ){
+        config = {...config, ...incoming };
     }
 
     const require = (path: string, fullPath) => {
@@ -110,7 +116,6 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
             return entry[1];
         }
 
-
         return url;
     }
 
@@ -125,10 +130,12 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return [];
     }
 
-    const { js } = mdxToJs(data, props, { resolveLink, resolveImport: resolveImportLocal, require, context });
+    const { js } = mdxToJs(data, props, { onConfig, resolveLink, resolveImport: resolveImportLocal, require, context });
 
     const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
 
+    meta = {...meta, ...config};
+    await parseConfig(es, meta, undefined, { add: true, e, siteRef });
 
     // creates link dependencies and adds to the link
     // index for use at the point of rendering
