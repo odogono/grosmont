@@ -20,7 +20,7 @@ import { process as renderScss } from './processor/scss';
 import { process as assignTitle } from './processor/assign_title';
 import { process as write } from './processor/write';
 import { process as copyStatic } from './processor/static/copy';
-import { process as buildDstIndex } from './processor/dst_index';
+import { process as buildDstIndex } from './processor/build_dst_index';
 import { EntityUpdate, ProcessOptions, SiteProcessor } from './types';
 import { buildSrcIndex, clearUpdates, clearErrors } from './query';
 import { warn } from './reporter';

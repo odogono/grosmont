@@ -3,7 +3,7 @@ import { getDstUrl, selectDstTextIds } from '../query';
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
 
-const log = (...args) => console.log('[ProcDstIndex]', ...args);
+const log = (...args) => console.log('[/processor/build_dst_index]', ...args);
 
 
 export interface DstIndexOptions extends ProcessOptions {

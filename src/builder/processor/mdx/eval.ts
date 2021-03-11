@@ -1,13 +1,13 @@
-import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { findEntityByUrl, getDependencies, getDependencyEntityIds, getEntityByUrl, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
+import { Entity } from 'odgn-entity/src/entity';
+import { getDependencyEntityIds, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
 import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { DependencyType, ProcessOptions, SiteIndex, TranspileResult } from '../../types';
+import { ProcessOptions, SiteIndex } from '../../types';
 import { mdxToJs } from './transpile';
-import { applyImports, buildProps, parseEntityUrl, resolveImport } from '../js/util';
-import { parse as parseConfig } from '../../config';
+import { applyImports, buildProps, resolveImport } from '../js/util';
+import { parseEntity } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
 import { createErrorComponent, resolveUrlPath } from '../../util';
@@ -135,7 +135,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
 
     meta = {...meta, ...config};
-    await parseConfig(es, meta, undefined, { add: true, e, siteRef });
+    await parseEntity(es, meta, { add: true, e, siteRef });
 
     // creates link dependencies and adds to the link
     // index for use at the point of rendering

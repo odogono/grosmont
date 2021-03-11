@@ -4,8 +4,7 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { buildProcessors, OutputES, RawProcessorEntry } from '../src/builder';
 
-import { parse } from '../src/builder/config';
-import { Site } from '../src/builder/site';
+import { parseEntity } from '../src/builder/config';
 import { beforeEach } from './helpers';
 
 const log = (...args) => console.log('[/test/site]', ...args);
@@ -15,7 +14,7 @@ test.before.each(beforeEach);
 
 test('process', async ({ es, site, options }) => {
 
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///pages/index.mdx
     data: "# Hello World"
     `);

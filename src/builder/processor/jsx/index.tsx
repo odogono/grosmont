@@ -1,4 +1,3 @@
-import Path from 'path';
 import Fs from 'fs-extra';
 const _eval = require('eval');
 import React from 'react';
@@ -6,11 +5,10 @@ import ReactDOMServer from 'react-dom/server';
 import * as Babel from "@babel/core";
 
 import { Entity } from 'odgn-entity/src/entity';
-import { getDependencies, getDependencyEntities, selectJsx } from '../../query';
+import { getDependencyEntities, selectJsx } from '../../query';
 import { Site } from '../../site';
-import { parse as parseConfig } from '../../config';
+import { parseEntity } from '../../config';
 import { ProcessOptions } from '../../types';
-import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { parseUri, toInteger } from '@odgn/utils';
 
 import { process as resolveImports } from './resolve_imports';
@@ -87,7 +85,7 @@ export async function preprocess(site: Site, options:ProcessOptions = {}){
             let code = transformJSX(props.data);
             let {Component,requires, ...meta} = evalCode(code, props.path, {site, importData});
 
-            await parseConfig(site, meta, undefined, {add:false, e} );
+            await parseEntity(site, meta, {add:false, e} );
 
         } catch( err ){
             e.Error = {message:err.message, stack:err.stack};

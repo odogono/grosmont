@@ -4,45 +4,29 @@ import Path from 'path';
 import { Site } from '../../src/builder/site';
 import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as mark } from '../../src/builder/processor/mark';
-import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
+import { process as buildDstIndex } from '../../src/builder/processor/build_dst_index';
 
 
-import { parse } from '../../src/builder/config';
+import { parseEntity } from '../../src/builder/config';
 
-
-import { printAll } from 'odgn-entity/src/util/print';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntityId } from 'odgn-entity/src/entity';
 import { FindEntityOptions } from '../../src/builder/query';
+import { beforeEach } from '../helpers';
 import { Level } from '../../src/builder/reporter';
 
 
-const log = (...args) => console.log('[TestProcSCSS]', ...args);
-
-
 const rootPath = Path.resolve(__dirname, "../../");
-const test = suite('processor/scss');
+const test = suite('/processor/scss');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
-
-test.before.each(async (tcx) => {
-    let id = 1000;
-    let idgen = () => ++id;
-
-    const dst = `file://${rootPath}/dist/`;
-    tcx.site = await Site.create({ idgen, name: 'test', dst, level:Level.FATAL });
-    // tcx.siteEntity = tcx.site.getEntity();
-    tcx.es = tcx.site.es;
-    tcx.options = { siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
-});
-
-
+test.before.each( beforeEach );
 
 test('mark will only consider updated', async({es,site,options}) => {
-    await parse( site, `
+    await parseEntity( site, `
     id: 2000
     src: alpha.scss
     `);
-    await parse( site, `
+    await parseEntity( site, `
     id: 2001
     src: beta.scss
     /component/upd:
@@ -59,13 +43,13 @@ test('mark will only consider updated', async({es,site,options}) => {
 });
 
 test('render will only consider updated', async({es,site,options}) => {
-    await parse( site, `
+    await parseEntity( site, `
     id: 2000
     src: alpha.scss
     /component/data:
         data: "$primary-color: #333; body { color: $primary-color; }"
     `);
-    await parse( site, `
+    await parseEntity( site, `
     id: 2001
     src: beta.scss
     /component/data:
@@ -88,10 +72,10 @@ test('process directly from file', async () => {
     const idgen = () => ++id;
 
     const configPath = `file://${rootPath}/test/fixtures/rootD.yaml`;
-    const site = await Site.create({ idgen, configPath });
+    const site = await Site.create({ idgen, configPath, level: Level.FATAL });
     let options: FindEntityOptions = { siteRef: site.getRef() as EntityId };
 
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///styles/main.scss
     dst: /main.css
     `);

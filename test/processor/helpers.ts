@@ -6,7 +6,7 @@ import { process as renderScss } from '../../src/builder/processor/scss';
 import { process as assignTitle } from '../../src/builder/processor/assign_title';
 
 import { process as applyTags } from '../../src/builder/processor/apply_tags';
-import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
+import { process as buildDstIndex } from '../../src/builder/processor/build_dst_index';
 
 import { process as mark } from '../../src/builder/processor/mark';
 import { process as evalMdx } from '../../src/builder/processor/mdx/eval';
@@ -15,12 +15,13 @@ import { process as evalJsx } from '../../src/builder/processor/jsx/eval';
 import { process as renderJs } from '../../src/builder/processor/js/render';
 import { process as resolveMeta } from '../../src/builder/processor/mdx/resolve_meta';
 
-import { buildSrcIndex, FindEntityOptions } from '../../src/builder/query';
+import { buildSrcIndex, FindEntityOptions, selectEntityBySrc } from '../../src/builder/query';
 
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { ProcessOptions } from '../../src/builder/types';
-import { EntityId } from 'odgn-entity/src/entity';
+import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { Level } from '../../src/builder/reporter';
+import { parseEntity } from '../../src/builder/config';
 
 export const rootPath = Path.resolve(__dirname, "../../");
 
@@ -77,12 +78,6 @@ export async function process( site:Site, options?:ProcessOptions ){
 }
 
 
-export async function addScss(site: Site, url: string, data: string) {
-    let e = await site.addSrc(url);
-    e.Data = { data };
-    await site.update(e);
-}
-
 export async function addMdx(site: Site, url: string, data: string, meta?: any) {
     let e = await site.addSrc(url);
     e.Data = { data };
@@ -90,4 +85,30 @@ export async function addMdx(site: Site, url: string, data: string, meta?: any) 
         e.Meta = { meta };
     }
     return await site.update(e);
+}
+
+
+
+export async function addSrc(site: Site, url: string, data: string, additional:any = {}) {
+
+    let e = await selectEntityBySrc(site, url, { createIfNotFound: false, siteRef: site.getRef() }) as Entity;
+    let add = e === undefined;
+
+    e = await parseEntity( site, {
+        src: url,
+        data,
+        ...additional}, { add, e } );
+
+    if( !add ){
+        await site.es.add( e );
+    }
+}
+
+export async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
+    await parseEntity( site, `
+    /component/dep:
+        src: ${src}
+        dst: ${dst}
+        type: dir
+    `);
 }

@@ -1,17 +1,9 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { FindEntityOptions } from '../../../src/builder/query';
-import { parse } from '../../../src/builder/config';
-
-import { printAll } from 'odgn-entity/src/util/print';
-import { EntityId } from 'odgn-entity/src/entity';
 import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
 
-const log = (...args) => console.log('[TestProcMDX]', ...args);
-
-
-const test = suite('processor/mdx/assign_title');
-
+const test = suite('/processor/mdx/assign_title');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 
 test.before.each(beforeEach);

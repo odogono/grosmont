@@ -1,15 +1,10 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
+import { parseEntity } from '../../../src/builder/config';
+import { addMdx, beforeEach, process } from './helpers';
 
-import { parse } from '../../../src/builder/config';
-
-import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
-
-const log = (...args) => console.log('[TestProcMDXTags]', ...args);
-
-
-
-const test = suite('processor/mdx/tags');
+const test = suite('/processor/mdx/tags');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 test.before.each(beforeEach);
 
 
@@ -44,7 +39,7 @@ tags:
 
 
 test('tags inherited from dir', async ({ es, site, options }) => {
-    await parse(site, `
+    await parseEntity(site, `
     id: 1998
     src: /pages/
     tags:
@@ -52,7 +47,7 @@ test('tags inherited from dir', async ({ es, site, options }) => {
         - odgn
     `);
 
-    await parse(site, `
+    await parseEntity(site, `
     id: 1999
     src: /pages/2021/
     tags:

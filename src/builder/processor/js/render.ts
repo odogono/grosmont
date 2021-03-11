@@ -8,7 +8,6 @@ import { Site } from '../../site';
 import { ProcessOptions, TranspileProps, TranspileResult, EvalScope } from '../../types';
 import { componentToString, jsToComponent, mdxToJs } from '../mdx/transpile';
 import { buildProps, createRenderContext, getEntityCSSDependencies, resolveImport } from './util';
-import { parse as parseConfig } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
 import { hash, toInteger } from '@odgn/utils';

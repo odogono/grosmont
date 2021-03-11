@@ -1,13 +1,11 @@
-import { suite } from 'uvu';
 import Path from 'path';
-import Beautify from 'js-beautify';
 import { Site, SiteOptions } from '../../../src/builder/site';
 import { process as buildDirDeps } from '../../../src/builder/processor/build_dir_deps';
 import { process as renderScss } from '../../../src/builder/processor/scss';
 import { process as assignTitle } from '../../../src/builder/processor/assign_title';
 
 import { process as applyTags } from '../../../src/builder/processor/apply_tags';
-import { process as buildDstIndex } from '../../../src/builder/processor/dst_index';
+import { process as buildDstIndex } from '../../../src/builder/processor/build_dst_index';
 
 import { process as mark } from '../../../src/builder/processor/mark';
 import { process as evalMdx } from '../../../src/builder/processor/mdx/eval';
@@ -18,15 +16,13 @@ import { process as resolveMeta } from '../../../src/builder/processor/mdx/resol
 
 import { buildSrcIndex, FindEntityOptions } from '../../../src/builder/query';
 
-import { parse } from '../../../src/builder/config';
-
-import assert from 'uvu/assert';
-import { printAll } from 'odgn-entity/src/util/print';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { ProcessOptions } from '../../../src/builder/types';
 import { EntityId } from 'odgn-entity/src/entity';
 import { Level } from '../../../src/builder/reporter';
+import { buildProcessors, RawProcessorEntry } from '../../../src/builder';
+
+export { addMdx, addSrc } from '../helpers';
 
 export const rootPath = Path.resolve(__dirname, "../../../");
 
@@ -51,6 +47,27 @@ export async function beforeEach(tcx) {
 
 
 export async function process( site:Site, options?:ProcessOptions ){
+
+    // const spec:RawProcessorEntry[] = [
+    //     [ '/processor/mark#jsx' ],
+    //     [ '/processor/mark#mdx' ],
+    //     [ '/processor/mark#scss' ],
+    //     [ '/processor/build_dir_deps' ],
+    //     [ '/processor/build_src_index' ],
+    //     [ '/processor/jsx/eval'],
+    //     [ '/processor/mdx/eval'],
+    //     [ '/processor/apply_tags'],
+    //     [ '/processor/js/eval'],
+    //     [ '/processor/resolve_meta'],
+    //     [ '/processor/build_dst_index'],
+    //     [ '/processor/js/render'],
+    //     [ '/processor/assign_title'],
+    // ];
+
+    // const process = await buildProcessors( site, spec );
+    // await process(site,options);
+
+
     await mark(site, { ...options, exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' } );
     await mark(site, { ...options, exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
     await mark(site, { ...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
@@ -82,18 +99,3 @@ export async function process( site:Site, options?:ProcessOptions ){
     await assignTitle(site, options);
 }
 
-
-export async function addScss(site: Site, url: string, data: string) {
-    let e = await site.addSrc(url);
-    e.Data = { data };
-    await site.update(e);
-}
-
-export async function addMdx(site: Site, url: string, data: string, meta?: any) {
-    let e = await site.addSrc(url);
-    e.Data = { data };
-    if (meta !== undefined) {
-        e.Meta = { meta };
-    }
-    return await site.update(e);
-}

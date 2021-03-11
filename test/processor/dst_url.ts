@@ -1,41 +1,19 @@
 import { suite } from 'uvu';
-import Path from 'path';
-import { Site } from '../../src/builder/site';
-import { parse } from '../../src/builder/config';
 import assert from 'uvu/assert';
-import { printAll, printEntity } from 'odgn-entity/src/util/print';
-import { FindEntityOptions, getDstUrl } from '../../src/builder/query';
-import { Level } from '../../src/builder/reporter';
+
+import { parseEntity } from '../../src/builder/config';
+import { getDstUrl } from '../../src/builder/query';
 import { build } from '../../src/builder';
-import { EntityId } from 'odgn-entity/src/entity';
+import { beforeEach } from '../helpers';
 
-const log = (...args) => console.log('[TestProcTargetPath]', ...args);
-
-const rootPath = Path.resolve(__dirname, "../../");
 const test = suite('processor/dst_url');
-
-const printES = async (es) => {
-    console.log('\n\n---\n');
-    printAll( es );
-}
-
-
-test.before.each( async (tcx) => {
-    let id = 1000;
-    let idgen = () => ++id;
-
-    const dst = `file://${rootPath}/dist/`;
-    tcx.site = await Site.create({idgen, name:'test', dst, level: Level.FATAL});
-    tcx.siteEntity = tcx.site.getEntity();
-    tcx.es = tcx.site.es;
-    tcx.options = { siteRef: tcx.site.getRef() as EntityId, reporter:tcx.site.reporter } as FindEntityOptions;
-});
-
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
+test.before.each( beforeEach );
 
 
 test('no dst without a target', async ({ es, site }) => {
 
-    let e = await parse( site, `
+    let e = await parseEntity( site, `
     /component/src:
         url: file:///pages/main.mdx
     `);
@@ -51,7 +29,7 @@ test('no dst without a target', async ({ es, site }) => {
 
 test('filename dst', async ({ es, site }) => {
 
-    let e = await parse( site, `
+    let e = await parseEntity( site, `
     /component/src:
         url: file:///pages/main.mdx
     /component/dst:
@@ -67,7 +45,7 @@ test('filename dst', async ({ es, site }) => {
 
 test('file:// dst', async ({ es, site }) => {
 
-    let e = await parse( site, `
+    let e = await parseEntity( site, `
     /component/src:
         url: file:///pages/main.mdx
     /component/dst:
@@ -85,33 +63,33 @@ test('file:// dst', async ({ es, site }) => {
 
 test('parent dst', async ({ es, site }) => {
 
-    await parse( site, `
+    await parseEntity( site, `
     /component/dep:
         src: 2001
         dst: 2000
         type: dir
     `);
     
-    await parse( site, `
+    await parseEntity( site, `
     /component/dep:
         src: 2000
         dst: 1999
         type: dir
     `);
 
-    await parse( site, `
+    await parseEntity( site, `
     id: 1999
     /component/dst:
         url: /root/output.htm
     `);
 
-    await parse( site, `
+    await parseEntity( site, `
     id: 2000
     /component/dst:
         url: pages/
     `);
 
-    let e = await parse( site, `
+    let e = await parseEntity( site, `
     id: 2001
     /component/src:
         url: file:///pages/main.mdx
@@ -132,31 +110,31 @@ test('parent dst', async ({ es, site }) => {
 
 test('parent has filename', async ({ es, site }) => {
 
-    await parse( site, `
+    await parseEntity( site, `
     /component/dep:
         src: 2001
         dst: 2000
         type: dir
     `);
     
-    await parse( site, `
+    await parseEntity( site, `
     /component/dep:
         src: 2000
         dst: 1999
         type: dir
     `);
 
-    await parse( site, `
+    await parseEntity( site, `
     id: 1999
     /component/dst:
         url: pages/output.txt
     `);
 
-    await parse( site, `
+    await parseEntity( site, `
     id: 2000
     `);
 
-    let e = await parse( site, `
+    let e = await parseEntity( site, `
     id: 2001
     /component/src:
         url: file:///pages/main.mdx
@@ -173,18 +151,18 @@ test('parent has filename', async ({ es, site }) => {
 });
 
 test('dir meta dst', async ({es, site,options}) => {
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///dir.e.yaml
     dst: pages/
     `);
 
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///index.mdx
     data: "# Welcome"
     dst: index.html
     `);
 
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///about.mdx
     data: "# About"
     `);

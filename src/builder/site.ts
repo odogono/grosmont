@@ -17,7 +17,7 @@ import {
 } from 'odgn-entity/src/entity_set';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
 import { StatementArgs } from 'odgn-entity/src/query';
-import { getPtr, parse, parseConfigString } from './config';
+import { getPtr, parseEntity, parseConfigString } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
 import { Component, setEntityId } from 'odgn-entity/src/component';
 import {
@@ -686,7 +686,7 @@ async function readSiteFromConfig(site: Site, e: Entity, options: SiteOptions = 
         return e;
     }
 
-    e = await parse(site.es, data, 'yaml', { add: false, e, siteRef: site.getRef() });
+    e = await parseEntity(site.es, data, { add: false, e, siteRef: site.getRef() });
 
     // resolve the src and dst paths
     let url = e.Src?.url ?? pathToFileURL(rootPath).href;

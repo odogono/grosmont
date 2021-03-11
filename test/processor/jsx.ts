@@ -1,24 +1,16 @@
 import { suite } from 'uvu';
 import Path from 'path';
 import { Site } from '../../src/builder/site';
-import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
-import { process as mark } from '../../src/builder/processor/mark';
-
-
-import { process as evalJsx } from '../../src/builder/processor/jsx/eval';
-import { process as evalJs } from '../../src/builder/processor/js/eval';
-import { process as renderJs } from '../../src/builder/processor/js/render';
-
 import assert from 'uvu/assert';
 import { printAll } from 'odgn-entity/src/util/print';
-import { buildSrcIndex, FindEntityOptions } from '../../src/builder/query';
+import { FindEntityOptions } from '../../src/builder/query';
 import { EntityId } from 'odgn-entity/src/entity';
+import { addSrc, beforeEach } from './helpers';
+import { buildProcessors, RawProcessorEntry } from '../../src/builder';
 
-
-const rootPath = Path.resolve(__dirname, "../../");
 const test = suite('/processor/jsx');
 const log = (...args) => console.log(`[${test.name}]`, ...args);
-
+test.before.each(beforeEach);
 // test.before.each(async (tcx) => {
 //     let id = 1000;
 //     let idgen = () => ++id;
@@ -82,39 +74,32 @@ const log = (...args) => console.log(`[${test.name}]`, ...args);
 
 // });
 
-function idgen() {
-    let id = 1000;
-    return () => ++id;
-}
-
-
-test('resolve imports', async () => {
-    const site = await Site.create({ idgen: idgen() });
-    let options = { siteRef: site.getRef() as EntityId } as FindEntityOptions;
+test('resolve imports', async ({es, site, options}) => {
+    // const site = await Site.create({ idgen: idgen() });
+    // let options = { siteRef: site.getRef() as EntityId } as FindEntityOptions;
     
-    await addJsx(site, 'file:///main.jsx', `
-    import Message from 'file:///message.jsx';
-    export const dst =  '/main.html';
-    
-    export default () => <div>Message: <Message /></div>;
+    await addSrc(site, 'file:///main.jsx', `
+import Message from 'file:///message.jsx';
+export const dst =  '/main.html';
+
+export default () => <div>Message: <Message /></div>;
     `);
-    await addJsx(site, 'file:///message.jsx', `export default () => "Hello World";`);
 
-    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
-    
-    await buildSrcIndex(site);
+    await addSrc(site, 'file:///message.jsx', `export default () => "Hello World";`);
 
-    await evalJsx(site, options);
+    const spec:RawProcessorEntry[] = [
+        [ '/processor/mark#jsx' ],
+        [ '/processor/build_src_index' ],
+        [ '/processor/jsx/eval'],
+        [ '/processor/js/eval'],
+        [ '/processor/js/render'],
+        [ '/processor/build_dst_index'],
+    ];
 
-    await evalJs(site, options);
+    const process = await buildProcessors( site, spec );
+    await process(site,options);
 
-    await renderJs(site, options);
-    
-    // await processJSX(site);
-
-    await buildDstIndex(site);
-
-    await printAll(site.es);
+    // await printAll(site.es);
 
     let e = await site.getEntityByDst('/main.html');
 
@@ -125,14 +110,3 @@ test('resolve imports', async () => {
 
 
 test.run();
-
-
-async function addJsx(site: Site, url: string, data: string, meta?: any) {
-    let e = await site.addSrc(url);
-    e.Data = { data };
-    // e.Jsx = { data };
-    // if( meta !== undefined ){
-    //     e.Meta = { meta };
-    // }
-    return await site.update(e);
-}

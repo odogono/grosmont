@@ -1,24 +1,18 @@
 import { suite } from 'uvu';
 import Path from 'path';
 import { Site } from '../../src/builder/site';
-import { parse } from '../../src/builder/config';
+import { parseEntity } from '../../src/builder/config';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
+import { process as buildDstIndex } from '../../src/builder/processor/build_dst_index';
 import { process as write } from '../../src/builder/processor/write';
 import { printAll } from 'odgn-entity/src/util/print';
 import { FindEntityOptions } from '../../src/builder/query';
+import { addDirDep } from './helpers';
 
-
-const log = (...args) => console.log('[TestProcMeta]', ...args);
-
-const printES = async (es) => {
-    console.log('\n\n---\n');
-    printAll( es );
-}
 
 const rootPath = Path.resolve(__dirname, "../../");
-const test = suite('processor/dst_index');
-
+const test = suite('/processor/write');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 test.before.each(async (tcx) => {
     let id = 1000;
@@ -36,12 +30,12 @@ test.before.each(async (tcx) => {
 
 test('writes', async ({site,es, options}) => {
 
-    await parse( site, `
+    await parseEntity( site, `
     id: 1999
     dst: /styles/
     `);
 
-    let e = await parse( site, `
+    let e = await parseEntity( site, `
     id: 2001
     data: css-data-here
     dst: main.css
@@ -64,13 +58,3 @@ test('writes', async ({site,es, options}) => {
 
 
 test.run();
-
-
-async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
-    await parse( site, `
-    /component/dep:
-        src: ${src}
-        dst: ${dst}
-        type: dir
-    `);
-}

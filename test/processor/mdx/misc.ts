@@ -1,17 +1,12 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { FindEntityOptions } from '../../../src/builder/query';
-import { parse } from '../../../src/builder/config';
-
-import { printAll } from 'odgn-entity/src/util/print';
+import { parseEntity } from '../../../src/builder/config';
 import { EntityId } from 'odgn-entity/src/entity';
 import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
 
-const log = (...args) => console.log('[TestProcMDX]', ...args);
-
-
-const test = suite('processor/mdx/misc');
-
+const test = suite('/processor/mdx/misc');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 
 test.before.each(beforeEach);
@@ -46,7 +41,7 @@ test('process directly from file', async () => {
     const site = await createSite({configPath});
     const options = { siteRef: site.getRef() as EntityId } as FindEntityOptions;
 
-    await parse(site, `
+    await parseEntity(site, `
     src: file:///weeknotes/2021-01-10.mdx
     dst: weeknotes.html
     `);

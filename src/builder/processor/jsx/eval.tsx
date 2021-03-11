@@ -1,8 +1,3 @@
-import Path from 'path';
-import Fs from 'fs-extra';
-const _eval = require('eval');
-import React from 'react';
-import ReactDOMServer from 'react-dom/server';
 import * as Babel from "@babel/core";
 import babelGenerate from '@babel/generator';
 import traverse from "@babel/traverse";
@@ -10,17 +5,13 @@ import traverse from "@babel/traverse";
 import { parse as babelParser } from '@babel/parser';
 
 import { Entity } from 'odgn-entity/src/entity';
-import { getDependencies, getDependencyEntities, getDependencyEntityIds, insertDependency, selectJsx } from '../../query';
+import { selectJsx } from '../../query';
 import { Site } from '../../site';
-import { parse as parseConfig } from '../../config';
-import { ProcessOptions } from '../../types';
-import { parseJS } from './resolve_imports';
-import { createErrorComponent, parseEntityUri } from '../../util';
-import { printAll, printEntity } from 'odgn-entity/src/util/print';
-import { parseUri, toInteger } from '@odgn/utils';
 
-import { process as resolveImports } from './resolve_imports';
-import { applyImports, buildProps, resolveImport } from '../js/util';
+import { ProcessOptions } from '../../types';
+import { createErrorComponent } from '../../util';
+
+import { applyImports, resolveImport } from '../js/util';
 import { Component, setEntityId, } from 'odgn-entity/src/component';
 import { setLocation, info, error, debug, warn } from '../../reporter';
 
@@ -96,8 +87,6 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         await applyImports(site, e, imports, options);
 
         return [jsCom];
-        // output.push( jsCom );
-        // await parseConfig(site, meta, undefined, {add:false, e} );
 
     } catch (err) {
         error(reporter, 'error', err, { eid: e.id });

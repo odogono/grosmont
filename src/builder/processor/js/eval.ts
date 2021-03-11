@@ -7,11 +7,7 @@ import { Site } from '../../site';
 import { ProcessOptions } from '../../types';
 import { jsToComponent } from '../mdx/transpile';
 import { createRenderContext, parseEntityUrl, resolveImport } from './util';
-import { parse as parseConfig } from '../../config';
-import { Component, setEntityId } from 'odgn-entity/src/component';
-import { useServerEffect } from '../jsx/server_effect';
-import { EntitySetMem } from 'odgn-entity/src/entity_set';
-import { buildProcessors } from '../..';
+import { parseEntity } from '../../config';
 import { createErrorComponent } from '../../util';
 
 const Label = '/processor/js/eval';
@@ -90,7 +86,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
     // log(`process ${base} (${e.id})`, result);
 
-    await parseConfig(es, meta, undefined, { add: false, e, siteRef });
+    await parseEntity(es, meta, { add: false, e, siteRef });
 
     return { ...result, e, component };
 }

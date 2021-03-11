@@ -32,11 +32,9 @@ import { isDate } from '@odgn/utils';
 import { buildUrl } from '../../src/builder/util';
 import { Level, Reporter } from '../../src/builder/reporter';
 
-const log = (...args) => console.log('[TestFile]', ...args);
-
-
 const rootPath = Path.resolve(__dirname, "../../");
-const test = suite('processor/file');
+const test = suite('/processor/file');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 let id = 1000;
 const idgen = () => ++id;

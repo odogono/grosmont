@@ -2,18 +2,14 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import Path from 'path';
 import { Site } from '../../src/builder/site';
-import { parse } from '../../src/builder/config';
+import { parseEntity } from '../../src/builder/config';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { process as markStatic } from '../../src/builder/processor/static/mark';
+import { statics as markStatic } from '../../src/builder/processor/mark';
 import { process as copyStatic } from '../../src/builder/processor/static/copy';
-import { process as buildDstIndex } from '../../src/builder/processor/dst_index';
 import { printAll } from 'odgn-entity/src/util/print';
 import { FindEntityOptions, selectSrcByExt } from '../../src/builder/query';
 import { Level, Reporter } from '../../src/builder/reporter';
 
-
-
-const log = (...args) => console.log('[TestProcStatic]', ...args);
 
 const printES = async (es) => {
     console.log('\n\n---\n');
@@ -21,7 +17,8 @@ const printES = async (es) => {
 }
 
 const rootPath = Path.resolve(__dirname, "../../");
-const test = suite('processor/static');
+const test = suite('/processor/static');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 
 test.before.each(async (tcx) => {
@@ -40,10 +37,10 @@ test.before.each(async (tcx) => {
 
 test('selects src by extension', async ({site,es, options}) => {
 
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///alpha.JPEG
     `);
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///beta.html
     `);
 
@@ -56,13 +53,13 @@ test('selects src by extension', async ({site,es, options}) => {
 
 
 test('marks static files', async ({site,es, options}) => {
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///alpha.JPEG
     `);
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///beta.html
     `);
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///index.mdx
     `);
 
@@ -74,15 +71,15 @@ test('marks static files', async ({site,es, options}) => {
 });
 
 test('copies static files', async ({site,es, options}) => {
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///alpha.JPEG
     dst: 'alpha.jpg'
     `);
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///beta.html
     dst: 'about.html'
     `);
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///index.mdx
     `);
 
@@ -97,8 +94,8 @@ test('copies static files', async ({site,es, options}) => {
 });
 
 
-test.only('ignore non-relevent', async ({site, es, options}) => {
-    await parse(site, `
+test('ignore non-relevent', async ({site, es, options}) => {
+    await parseEntity(site, `
     id: 2000
     src: alpha.mdx
     dst: alpha.html
@@ -114,13 +111,3 @@ test.only('ignore non-relevent', async ({site, es, options}) => {
 
 
 test.run();
-
-
-async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
-    await parse( site, `
-    /component/dep:
-        src: ${src}
-        dst: ${dst}
-        type: dir
-    `);
-}

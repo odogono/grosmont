@@ -1,12 +1,11 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 
-import { parse } from '../../src/builder/config';
+import { parseEntity } from '../../src/builder/config';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { beforeEach } from '../helpers';
 import { Site } from '../../src/builder/site';
 import { RawProcessorEntry, buildProcessors } from '../../src/builder';
-import { printAll } from 'odgn-entity/src/util/print';
 
 const log = (...args) => console.log('[/test/deps/layout]', ...args);
 
@@ -18,18 +17,18 @@ test('layout', async ({ es, site, options }) => {
 
     
 
-    await parse(site, `
+    await parseEntity(site, `
     src: file:///layout/main.mdx
     isRenderable: false
     data: "<html>{children}</html>"
     `)
 
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///pages/
     layout: ../layout/main.mdx
     `);
 
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///pages/weeknotes/first.mdx
     data: "# First Week"
     `);
@@ -41,9 +40,9 @@ test('layout', async ({ es, site, options }) => {
         [ '/processor/build_dir_deps', 0, {createMissingParents:true}],
         // applies parent layout tags to their children
         [ '/processor/apply_tags', 0, {type:'layout'} ],
-        [ '/processor/mdx/eval_mdx'],
-        [ '/processor/mdx/eval_js'],
-        [ '/processor/mdx/render_js', 0, {applyLayout:false}],
+        [ '/processor/mdx/eval'],
+        [ '/processor/js/eval'],
+        [ '/processor/js/render', 0, {applyLayout:false}],
     ];
 
     const process = await buildProcessors( site, spec );
@@ -61,7 +60,7 @@ test.run();
 
 
 async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
-    await parse( site.es, `
+    await parseEntity( site.es, `
     /component/dep:
         src: ${src}
         dst: ${dst}

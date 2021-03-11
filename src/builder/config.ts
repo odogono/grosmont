@@ -29,6 +29,7 @@ export interface ParseOptions {
     siteRef?: EntityId;
     // the url of the src
     srcUrl?: string;
+    type?: ParseType;
 }
 
 
@@ -40,10 +41,11 @@ export interface ParseOptions {
  * @param type 
  * @param options 
  */
-export async function parse(from: EntitySet|Site, input: string|object, type:ParseType = 'yaml', options:ParseOptions = {}): Promise<Entity> {
+export async function parseEntity(from: EntitySet|Site, input: string|object, options:ParseOptions = {}): Promise<Entity> {
     const es:EntitySet = isEntitySet(from) ? from as EntitySet : (from as Site).es;
     const addToES = options.add ?? true;
     let {excludeList,siteRef,srcUrl} = options;
+    const type = options.type ?? 'yaml';
     if( !isEntitySet(from) ){
         siteRef = (from as Site).getRef();
     }

@@ -1,26 +1,18 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { FindEntityOptions } from '../../../src/builder/query';
-import { parse } from '../../../src/builder/config';
+import { parseEntity } from '../../../src/builder/config';
 
-import { printAll } from 'odgn-entity/src/util/print';
-import { EntityId } from 'odgn-entity/src/entity';
 import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
 
-const log = (...args) => console.log('[TestProcMDX]', ...args);
-
-
-const test = suite('processor/mdx/links');
-
-
-
+const test = suite('/processor/mdx/links');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 test.before.each(beforeEach);
 
 
 test('internal page link', async ({ es, site, options }) => {
     // await addMdx( site, 'file:///pages/main.mdx', `# Main Page`);
 
-    let e = await parse(site, `
+    let e = await parseEntity(site, `
     /component/src:
         url: file:///pages/main.mdx
     /component/data:

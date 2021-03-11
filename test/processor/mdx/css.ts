@@ -1,10 +1,10 @@
+import { printAll } from 'odgn-entity/src/util/print';
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addMdx, addScss, beforeEach, createSite, process, rootPath } from './helpers';
+import { addSrc, beforeEach, createSite, process, rootPath } from './helpers';
 
-const log = (...args) => console.log('[TestProcMDX]', ...args);
-
-const test = suite('processor/mdx/css');
+const test = suite('/processor/mdx/css');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 test.before.each(beforeEach);
 
 
@@ -12,7 +12,7 @@ test('inlined css', async ({ es, site, options }) => {
 
 
     // note - important that import has no leading space
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 import 'file:///styles/main.scss';
 
 <InlineCSS />
@@ -20,7 +20,7 @@ import 'file:///styles/main.scss';
 ## Main page
     `);
 
-    await addScss(site, 'file:///styles/main.scss', `h2 { color: blue; }`);
+    await addSrc(site, 'file:///styles/main.scss', `h2 { color: blue; }`);
 
     await process(site, options);
 
@@ -35,22 +35,20 @@ import 'file:///styles/main.scss';
 
 test('old css dependencies are cleared', async ({ es, site, options }) => {
 
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 import 'file:///styles/main.scss';
 
 <InlineCSS />
 
 ## Main page
     `);
-    await addScss(site, 'file:///styles/main.scss', `h2 { color: blue; }`);
+    await addSrc(site, 'file:///styles/main.scss', `h2 { color: blue; }`);
 
     await process(site, options);
 
 
-
-
-    await addScss(site, 'file:///styles/alt.scss', `h2 { color: red; }`);
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///styles/alt.scss', `h2 { color: red; }`);
+    await addSrc(site, 'file:///pages/main.mdx', `
 import 'file:///styles/alt.scss';
 
 <InlineCSS />
@@ -63,6 +61,8 @@ import 'file:///styles/alt.scss';
 
     await process(site, options);
 
+    // await printAll(es);
+
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
 
     assert.equal(e.Output.data,
@@ -73,11 +73,12 @@ import 'file:///styles/alt.scss';
 
 test('inlined css with master page', async ({ es, site, options }) => {
 
-    await addScss(site, 'file:///styles/layout.scss', `body { color: black; }`);
-    await addScss(site, 'file:///styles/main.scss', `h2 { color: blue; }`);
+    await addSrc(site, 'file:///styles/layout.scss', `body { color: black; }`, 
+        {dst:'/styles/layout.css'} );
+    await addSrc(site, 'file:///styles/main.scss', `h2 { color: blue; }`,
+        {dst:'/styles/main.css'} );
 
-
-    await addMdx(site, 'file:///layout/main.mdx', `
+    await addSrc(site, 'file:///layout/main.mdx', `
 ---
 isRenderable: false
 ---
@@ -89,7 +90,7 @@ import 'file:///styles/layout.scss';
     <body>{children}</body>
 </html>` );
 
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 ---
 layout: /layout/main
 ---
@@ -104,7 +105,7 @@ Hello _world_
 
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
     assert.equal(e.Output.data,
-        `<html lang="en"><body><p>Hello <em>world</em></p></body></html>`);
+        `<html lang="en"><link rel="stylesheet" href="/styles/layout.css"/><link rel="stylesheet" href="/styles/main.css"/><body><p>Hello <em>world</em></p></body></html>`);
 
 
     // printAll(es);

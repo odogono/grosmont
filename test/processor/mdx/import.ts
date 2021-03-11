@@ -2,10 +2,10 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
 
-const log = (...args) => console.log('[TestProcMDX]', ...args);
 
+const test = suite('/processor/mdx/import');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
-const test = suite('processor/mdx/import');
 test.before.each(beforeEach);
 
 

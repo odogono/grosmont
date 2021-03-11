@@ -4,12 +4,10 @@ import { selectSrcByExt } from "../../query";
 import { setLocation, info } from "../../reporter";
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
-import { parse, ParseType } from '../../config';
-import { printAll, printEntity } from 'odgn-entity/src/util/print';
-import { EntitySetMem } from 'odgn-entity/src/entity_set';
+import { parseEntity, ParseType } from '../../config';
 
 let logActive = true;
-const log = (...args) => logActive && console.log('[ProcReadE]', ...args);
+const log = (...args) => logActive && console.log('[/processor/file/read_e]', ...args);
 
 
 /**
@@ -39,8 +37,9 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         const ext = Path.extname(com.url).substring(1);
         let content = await site.readUrl( com.url );
 
-        log('read from', com.url);
-        await parse(es, content, ext as ParseType, { add: true, e, excludeList, es, siteRef, srcUrl:com.url });
+        // log('read from', com.url);
+        await parseEntity(es, content, 
+            { add: true, e, type:ext as ParseType, excludeList, es, siteRef, srcUrl:com.url });
 
         info(reporter, `read e from ${com.url} into ${e.id}`, {eid});
     }

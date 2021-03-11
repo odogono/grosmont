@@ -111,21 +111,26 @@ export function jsToComponent(jsCode: string, props: TranspileProps, options: Tr
  */
 export async function componentToString(component: any, props: TranspileProps, options: TranspileOptions) {
     let { css, cssLinks: inputCssLinks, children, url, comProps } = props;
-    inputCssLinks = inputCssLinks.filter(Boolean);
+    
+
+
+    // these two cases are really only used for non-mdx components
+    // undecided whether this is a good idea...
+    
+    comProps.InlineCSS = css !== undefined ? 
+        () => <style dangerouslySetInnerHTML={{ __html: css }} /> 
+        : null;
+    
+    inputCssLinks = inputCssLinks !== undefined ? inputCssLinks.filter(Boolean) : [];
+    comProps.CSSLinks = inputCssLinks.length > 0 ? 
+            () => <>{inputCssLinks.map( c => <link key={c} rel='stylesheet' href={c} />)}</>
+            : null;
+    
 
     const components = {
         Head,
-        InlineCSS: (props) => {
-            return <style dangerouslySetInnerHTML={{ __html: css }} />;
-        },
-        CSSLinks: () => {
-            // if( inputCssLinks ) log('[transpile][CSSLinks]',inputCssLinks);
-
-            // { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)}
-            return inputCssLinks ? <>
-                {inputCssLinks.map(c => <link key={c} rel="stylesheet" href={c} />)}
-            </> : null;
-        }
+        InlineCSS: comProps.InlineCSS,
+        CSSLinks: comProps.CSSLinks,
         // Layout,
         // a: (props) => {
         //     const {href,children} = props;
@@ -136,14 +141,7 @@ export async function componentToString(component: any, props: TranspileProps, o
         // }
     }
 
-    // these two cases are really only used for non-mdx components
-    // undecided whether this is a good idea...
-    if( css !== undefined ){
-        comProps.InlineCSS = () => <style dangerouslySetInnerHTML={{ __html: css }} />;
-    }
-    if( inputCssLinks.length > 0 ){
-        comProps.CSSLinks = () => <>{inputCssLinks.map( c => <link key={c} rel='stylesheet' href='c' />)}</>;
-    }
+    
 
     const ctxValue = {
         children,
@@ -156,6 +154,8 @@ export async function componentToString(component: any, props: TranspileProps, o
 
     const Component = await component;
 
+    // log('[componentToString]', 'CSSLinks', inputCssLinks);
+    // log('[componentToString]', 'CSSLinks', components);
 
     try {
 

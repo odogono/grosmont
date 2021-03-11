@@ -1,16 +1,10 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { FindEntityOptions } from '../../../src/builder/query';
-import { parse } from '../../../src/builder/config';
+import { parseEntity } from '../../../src/builder/config';
+import { beforeEach, process } from './helpers';
 
-import { printAll } from 'odgn-entity/src/util/print';
-import { EntityId } from 'odgn-entity/src/entity';
-import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
-
-const log = (...args) => console.log('[TestProcMDX]', ...args);
-
-
-const test = suite('processor/mdx/updates');
+const test = suite('/processor/mdx/updates');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 
 
@@ -19,11 +13,11 @@ test.before.each(beforeEach);
 
 
 test('mark will only consider updated', async ({ es, site, options }) => {
-    await parse(site, `
+    await parseEntity(site, `
     id: 2000
     src: alpha.mdx
     `);
-    await parse(site, `
+    await parseEntity(site, `
     id: 2001
     src: beta.mdx
     /component/upd:
@@ -39,13 +33,13 @@ test('mark will only consider updated', async ({ es, site, options }) => {
 });
 
 test('preprocess will only consider updated', async ({ es, site, options }) => {
-    await parse(site, `
+    await parseEntity(site, `
     id: 2000
     src: alpha.mdx
     /component/mdx:
         data: "# Alpha"
     `);
-    await parse(site, `
+    await parseEntity(site, `
     id: 2001
     src: beta.mdx
     /component/mdx:
@@ -62,13 +56,13 @@ test('preprocess will only consider updated', async ({ es, site, options }) => {
 });
 
 test('render will only consider updated', async ({ es, site, options }) => {
-    await parse(site, `
+    await parseEntity(site, `
     id: 2000
     src: alpha.mdx
     /component/mdx:
         data: "# Alpha"
     `);
-    await parse(site, `
+    await parseEntity(site, `
     id: 2001
     src: beta.mdx
     /component/mdx:

@@ -1,17 +1,15 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { parse } from '../../../src/builder/config';
+import { parseEntity } from '../../../src/builder/config';
 import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
 
-
-const log = (...args) => console.log('[TestMdxImage]', ...args);
-
-const test = suite('processor/mdx/image');
+const test = suite('/processor/mdx/image');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 test.before.each(beforeEach);
 
 test('renders image', async ({site,es, options}) => {
 
-    await parse( site, `
+    await parseEntity( site, `
     src: file:///static/image.jpg
     dst: image.jpg
     `);

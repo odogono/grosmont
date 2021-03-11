@@ -1,33 +1,15 @@
 import { suite } from 'uvu';
-import Path from 'path';
-import { Site } from '../../src/builder/site';
-import { parse as parse } from '../../src/builder/config';
-
 import assert from 'uvu/assert';
-import { Entity } from 'odgn-entity/src/entity';
-import { printAll } from 'odgn-entity/src/util/print';
+import { parseEntity } from '../../src/builder/config';
 
-const log = (...args) => console.log('[TestProcMeta]', ...args);
-
-const printES = async (es) => {
-    console.log('\n\n---\n');
-    printAll( es );
-}
-
-const rootPath = Path.resolve(__dirname, "../../");
-const test = suite('processor/meta');
+import { beforeEach } from '../helpers';
 
 
-test.before.each(async (tcx) => {
-    let id = 1000;
-    let idgen = () => ++id;
+const test = suite('/processor/meta_config');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
-    const dst = `file://${rootPath}/dist/`;
-    tcx.site = await Site.create({ idgen, name: 'test', dst });
-    
-    // tcx.siteEntity = tcx.site.getEntity();
-    tcx.es = tcx.site.es;
-});
+
+test.before.each( beforeEach );
 
 
 
@@ -46,7 +28,7 @@ pk: /component/url#/url
   title: BBC News
     `;
 
-    let e = await parse( site, text );
+    let e = await parseEntity( site, text );
 
     assert.equal( e.Title.title, 'BBC News');
 
@@ -88,7 +70,7 @@ pk: /component/url#/url
 
     `;
     
-    let e = await parse( site, text, 'yaml' );
+    let e = await parseEntity( site, text );
 
     assert.equal( e.Title.title, 'BBC News');
 

@@ -3,9 +3,8 @@ import assert from 'uvu/assert';
 import { addMdx, beforeEach, process } from './helpers';
 
 
-const log = (...args) => console.log('[TestProcMDX]', ...args);
-
-const test = suite('processor/mdx/frontmatter');
+const test = suite('/processor/mdx/frontmatter');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 test.before.each(beforeEach);
 

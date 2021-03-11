@@ -17,7 +17,7 @@ export async function createSite(options:SiteOptions = {}){
     const testDB = { uuid: 'TEST-1', isMemory: true, idgen };
     const es = new EntitySetSQL({ ...testDB });
 
-    return await Site.create({ idgen, name: 'test', es, dst, level: Level.WARN, ...options });
+    return await Site.create({ idgen, name: 'test', es, dst, level: Level.FATAL, ...options });
 }
 
 export async function beforeEach(tcx) {

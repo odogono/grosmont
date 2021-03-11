@@ -1,14 +1,9 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { FindEntityOptions } from '../../../src/builder/query';
-import { parse } from '../../../src/builder/config';
-
-import { printAll, printEntity } from 'odgn-entity/src/util/print';
-import { EntityId } from 'odgn-entity/src/entity';
 import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
 
-const test = suite('processor/mdx/master');
-const log = (...args) => console.log(`[${test.name}]`, ...args);
+const test = suite('/processor/mdx/master');
+const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 
 
