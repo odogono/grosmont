@@ -20,7 +20,7 @@ import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { parseUri, toInteger } from '@odgn/utils';
 
 import { process as resolveImports } from './resolve_imports';
-import { buildProps, resolveImport } from '../mdx/util';
+import { applyImports, buildProps, resolveImport } from '../mdx/util';
 import { Component, setEntityId, } from 'odgn-entity/src/component';
 import { setLocation, info, error, debug, warn } from '../../reporter';
 
@@ -42,10 +42,6 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     let ents = await selectJsx(es, { ...options, siteRef: site.getRef() });
     let output = [];
 
-    // log( ents );
-
-
-
     for (const e of ents) {
 
 
@@ -53,9 +49,9 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         output = output.concat(coms);
 
         info(reporter, ``, { eid: e.id });
-
-        // output.push(e);
     }
+
+    info(reporter, `processed ${ents.length}` );
 
     await es.add(output);
 
@@ -75,6 +71,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
             const [eid, url, mime] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
             imports.push(entry);
+            // log('[resolveImportLocal]', url, mime, remove);
             return [url, remove];
         } else {
             warn(reporter, `import ${path} not resolved`, {eid:e.id});
@@ -110,28 +107,6 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
 }
 
-async function applyImports(site: Site, e: Entity, imports, options: ProcessOptions) {
-    const { es } = site;
-    const existingIds = new Set(await getDependencyEntityIds(es, e.id, 'import'));
-
-    // log('[applyImports]', imports);
-
-    for (let [importEid, url] of imports) {
-        let urlCom = es.createComponent('/component/url', { url });
-        let depId = await insertDependency(es, e.id, importEid, 'import', [urlCom]);
-
-        if (existingIds.has(depId)) {
-            existingIds.delete(depId);
-        }
-    }
-
-    // remove dependencies that don't exist anymore
-    await es.removeEntity(Array.from(existingIds));
-
-    return e;
-}
-
-
 const presets = [
     ["@babel/preset-env", {
         "exclude": [
@@ -152,20 +127,28 @@ function transformJSX(jsx: string, resolveImport: Function) {
     ]
     
     let ast = babelParser(jsx, { sourceType: 'module', plugins: ['jsx', 'typescript'] });
-    
+    let changed = false;
+
     traverse(ast, {
-        ImportDeclaration(path) {
+        ImportDeclaration( path ) {
+            // log('[transformJSX]', {path, parent, key, index} );
             let resolved = resolveImport(path.node.source.value);
             if (resolved !== undefined) {
                 const [url, remove] = resolved;
                 path.node.source.value = url;
+                if (remove) {
+                    path.remove();
+                }
+                changed = true;
             }
         }
     });
     
-    let generateResult = babelGenerate(ast);
-    if (generateResult) {
-        jsx = generateResult.code;
+    if( changed ){
+        let generateResult = babelGenerate(ast);
+        if (generateResult) {
+            jsx = generateResult.code;
+        }
     }
     
     let { code, ...other } = Babel.transform(jsx, { presets, plugins });

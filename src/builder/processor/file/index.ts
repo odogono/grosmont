@@ -34,7 +34,9 @@ import { printAll, printEntity } from 'odgn-entity/src/util/print';
 
 
 let logActive = true;
-const log = (...args) => logActive && console.log('[ProcFile]', ...args);
+
+const Label = '/processor/file';
+const log = (...args) => logActive && console.log(`[${Label}]`, ...args);
 
 
 
@@ -54,7 +56,7 @@ export interface ProcessFileOptions extends ProcessOptions {
 export async function process(site: Site, options: ProcessFileOptions = {}) {
     const es = options.es ?? site.es;
     let { reporter, updates } = options;
-    setLocation(reporter, '/processor/file');
+    setLocation(reporter, Label);
     options.siteRef = site.getRef();
 
     // // if we are passed updated entities, then just flag them
@@ -121,6 +123,8 @@ export async function cloneEntitySet(es: EntitySet) {
     for (const def of defs) {
         await result.register(def);
     }
+
+    // log('[cloneEntitySet]', 'copied', defs.length, 'defs', 'from', es.getUrl() );
 
     // copy the site entity
     const se = await selectSite(es);
@@ -295,11 +299,11 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: Pr
  */
 async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
     const es = options.es ?? site.es;
-    const {reporter} = options;
+    const { reporter } = options;
     let rootPath = site.getSrcUrl();
     const siteEntity = site.getEntity();
 
-    if( rootPath === undefined ){
+    if (rootPath === undefined) {
         warn(reporter, `[readFileSystem] no root path`);
         return es;
     }
@@ -367,7 +371,7 @@ async function getMatches(rootPath: string, include, exclude) {
             .on('error', (err, item) => {
                 console.log(err.message)
                 console.log(item.path) // the file the error occurred on
-                rej( err );
+                rej(err);
             })
             .pipe(globFilter)
             .on('data', item => items.push(item))
@@ -437,10 +441,17 @@ function buildGlobFilter(rootPath: string, include: Pattern[], exclude: Pattern[
  * @param options 
  */
 export async function selectSrcByUrl(es: EntitySet, url: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
+    let com: Component;
 
-    const stmt = es.prepare(`[ /component/src#url !ca $url == @c] select`);
-    let com = await stmt.getResult({ url });
-    com = com.length === 0 ? undefined : com[0];
+    // try {
+        const stmt = es.prepare(`[ /component/src#url !ca $url == @c] select`);
+        com = await stmt.getResult({ url });
+        com = com !== undefined ? com[0] : undefined;
+    // } catch (err) {
+    //     log('[selectSrcByUrl]', es.getUrl(), err.message );
+    // }
+
+
 
     // log('[selectSrcByUrl]', 'com', com );
 

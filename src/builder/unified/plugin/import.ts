@@ -27,7 +27,8 @@ export function importPlugin(options: ImportPluginOptions = {}) {
                 ImportDeclaration(path) {
                     let importPath = path.node.source.value;
                     const resolved = options.resolveImport(importPath);
-                    // log('[importCSS]', importPath, resolved);
+                    // log('resolved', importPath, resolved );
+                    
                     if (resolved !== undefined) {
                         const [url, remove] = resolved;
                         path.node.source.value = url;
@@ -70,4 +71,4 @@ export function importPlugin(options: ImportPluginOptions = {}) {
 }
 
 
-const log = (...args) => console.log('[importCSSPlugin]', ...args);
+const log = (...args) => console.log('[/plugin/import]', ...args);

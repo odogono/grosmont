@@ -4,8 +4,8 @@ import { getComponentDefId, getComponentEntityId, toComponentId } from "odgn-ent
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
 import { buildUrl, resolveUrlPath, uriToPath } from "../../util";
-import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions } from "../../types";
-import { getDependencyEntities, getDepenendencyDst, getDstUrl, insertDependency } from "../../query";
+import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions, DependencyType, ImportDescr } from "../../types";
+import { getDependencyEntities, getDependencyEntityIds, getDepenendencyDst, getDstUrl, insertDependency } from "../../query";
 import { Site } from "../../site";
 import { toInteger } from '@odgn/utils';
 import { useServerEffect } from '../jsx/server_effect';
@@ -13,7 +13,7 @@ import { buildProcessors, OutputES } from '../..';
 import { StatementArgs } from 'odgn-entity/src/query';
 import { info } from '../../reporter';
 
-const log = (...args) => console.log('[Util]', ...args);
+const log = (...args) => console.log('[/processor/mdx/util]', ...args);
 
 export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> {
 
@@ -186,7 +186,12 @@ export function getEntityImportUrlFromPath(fileIndex: SiteIndex, path: string, m
 }
 
 
-
+/**
+ * 
+ * @param es 
+ * @param e 
+ * @returns 
+ */
 export async function getEntityCSSDependencies(es: EntitySet, e: Entity) {
     const cssDeps = await getDependencyEntities(es, e.id, 'css');
     if (cssDeps === undefined || cssDeps.length === 0) {
@@ -211,7 +216,16 @@ export async function getEntityCSSDependencies(es: EntitySet, e: Entity) {
     return result;
 }
 
-export function resolveImport( site:Site, url:string, base:string ){
+
+
+/**
+ * 
+ * @param site 
+ * @param url 
+ * @param base 
+ * @returns 
+ */
+export function resolveImport( site:Site, url:string, base:string ): ImportDescr {
     const srcIndex = site.getIndex('/index/srcUrl');
     if (srcIndex === undefined) {
         throw new Error('/index/srcUrl not present');
@@ -246,6 +260,7 @@ export function resolveImport( site:Site, url:string, base:string ){
     // log('[resolveImport]', eid, path, url);
     if (entry !== undefined) {
         const [eid, mime, bf] = entry;
+        // log('[resolveImport]', {eid, path, url, mime});
         if (mime === 'text/jsx') {
             return [eid, `e://${eid}/component/jsx`, mime];
         }
@@ -260,6 +275,51 @@ export function resolveImport( site:Site, url:string, base:string ){
         }
     }
     return undefined;
+}
+
+
+/**
+ * Converts an array of ImportDescr (eid,url,mime) into dependencies
+ * 
+ * @param site 
+ * @param e 
+ * @param imports 
+ * @param options 
+ * @returns 
+ */
+export async function applyImports(site: Site, e: Entity, imports:ImportDescr[], options: ProcessOptions): Promise<Entity> {
+    const { es } = site;
+   
+    // gather existing import and css dependencies
+    const existingIds = new Set(await getDependencyEntityIds(es, e.id, 'import'));
+    const cssIds = await getDependencyEntityIds(es, e.id, 'css');
+    cssIds.forEach(existingIds.add, existingIds);
+
+   
+    for (let [importEid, url] of imports) {
+        let type: DependencyType = 'import';
+   
+        const match = parseEntityUrl(url);
+   
+        if (match !== undefined) {
+            const { eid, did } = match;
+            if (did === '/component/scss') {
+                type = 'css';
+            }
+        }
+
+        let urlCom = es.createComponent('/component/url', { url });
+        let depId = await insertDependency(es, e.id, importEid, type, [urlCom]);
+
+        if (existingIds.has(depId)) {
+            existingIds.delete(depId);
+        }
+    }
+
+    // remove dependencies that don't exist anymore
+    await es.removeEntity(Array.from(existingIds));
+
+    return e;
 }
 
 

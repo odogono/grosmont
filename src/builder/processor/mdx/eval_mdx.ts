@@ -6,7 +6,7 @@ import { Site } from '../../site';
 
 import { DependencyType, ProcessOptions, SiteIndex, TranspileResult } from '../../types';
 import { mdxToJs } from './transpile';
-import { buildProps, parseEntityUrl, resolveImport } from './util';
+import { applyImports, buildProps, parseEntityUrl, resolveImport } from './util';
 import { parse as parseConfig } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
@@ -87,7 +87,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
             const [eid, url, mime] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
             imports.push(entry);
-            // log('[resolveImportLocal]', entry);
+            
             return [url, remove];
         } else {
             warn(reporter, `import ${path} not resolved`, { eid: e.id });
@@ -152,43 +152,6 @@ function isUrlInternal(url: string) {
 }
 
 
-async function applyImports(site: Site, e: Entity, imports, options: EvalMdxOptions) {
-    const { es } = site;
-    const existingIds = new Set(await getDependencyEntityIds(es, e.id, 'import'));
-    const cssIds = await getDependencyEntityIds(es, e.id, 'css');
-    cssIds.forEach(existingIds.add, existingIds);
-
-    // log('[applyImports]', 'existing', existingIds );
-
-    for (let [importEid, url] of imports) {
-        let type: DependencyType = 'import';
-        // let additionalComs = [];
-        const match = parseEntityUrl(url);
-        // log('[applyImports]', match);
-        if (match !== undefined) {
-            const { eid, did } = match;
-            if (did === '/component/scss') {
-                type = 'css';
-            }
-        }
-
-        // log('[applyImports]', type, url );
-
-        let urlCom = es.createComponent('/component/url', { url });
-        let depId = await insertDependency(es, e.id, importEid, type, [urlCom]);
-
-        if (existingIds.has(depId)) {
-            existingIds.delete(depId);
-        }
-    }
-
-    // log('[applyImports]', 'remove', existingIds );
-
-    // remove dependencies that don't exist anymore
-    await es.removeEntity(Array.from(existingIds));
-
-    return e;
-}
 
 async function applyLinks(site: Site, e: Entity, links, options: EvalMdxOptions) {
     const { es } = site;

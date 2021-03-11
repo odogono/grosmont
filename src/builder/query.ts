@@ -253,28 +253,37 @@ export async function selectMetaDisabled(es: EntitySet): Promise<EntityId[]> {
 
 
 export async function selectJsx(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
-    const { ref, onlyUpdated } = parseOptions(options);
+    const { ref, onlyUpdated, eids } = parseOptions(options);
+    let q:string;
 
-    let q = onlyUpdated ? `
-        [
+    if (eids !== undefined) {
+        q = `[
+            $eids
             /component/jsx !bf
-                    /component/upd#op !ca 1 ==
-                    /component/upd#op !ca 2 ==
-                or
-                /component/site_ref#ref !ca $ref ==
-            and
-        and
-        
-        @e ] select` :
-        `[
-            // debug
-                /component/jsx !bf
-                /component/site_ref#ref !ca $ref ==
-            and
             @e
+        ] select`
+    } else if (onlyUpdated) {
+        q = `
+        [
+                    /component/jsx !bf
+                        /component/upd#op !ca 1 ==
+                        /component/upd#op !ca 2 ==
+                    or
+                    /component/site_ref#ref !ca $ref ==
+                and
+            and
+            @e 
         ] select`;
+    } else {
+        q = `[
+            /component/jsx !bf
+            /component/site_ref#ref !ca $ref ==
+        and
+        @e
+    ] select`
+    }
 
-    return await es.prepare(q).getEntities({ ref });
+    return await es.prepare(q).getEntities({ ref, eids });
 }
 
 export async function selectMdx(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
@@ -1286,11 +1295,28 @@ export async function clearUpdates(site: Site, options: FindEntityOptions = {}) 
     const { es } = site;
     const { ref } = parseOptions(options);
 
-    // TODO - select only within the site
     const stmt = es.prepare(`
         [ 
             /component/site_ref#ref !ca $ref ==
             /component/upd !bf 
+            @cid 
+        ] select
+    `);
+    let cids = await stmt.getResult({ ref });
+
+    await es.removeComponents(cids);
+
+    return es;
+}
+
+export async function clearErrors(site: Site, options: FindEntityOptions = {}) {
+    const { es } = site;
+    const { ref } = parseOptions(options);
+
+    const stmt = es.prepare(`
+        [ 
+            /component/site_ref#ref !ca $ref ==
+            /component/error !bf 
             @cid 
         ] select
     `);

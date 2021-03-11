@@ -22,7 +22,7 @@ import { process as write } from './processor/write';
 import { process as copyStatic } from './processor/static/copy';
 import { process as buildDstIndex } from './processor/dst_index';
 import { EntityUpdate, ProcessOptions, SiteProcessor } from './types';
-import { buildSrcIndex, clearUpdates } from './query';
+import { buildSrcIndex, clearUpdates, clearErrors } from './query';
 import { warn } from './reporter';
 import { isFunction, isObject, isString, parseUri } from '@odgn/utils';
 
@@ -41,7 +41,7 @@ export type RawProcessorEntry = [string | Function, number?, any?];
  * 
  * @param site 
  */
-export async function build(site: Site, options: BuildProcessOptions = {}) {
+export async function build(site: Site, options: BuildProcessOptions = {}):Promise<Site> {
 
     let reporter = site.reporter;
     const siteRef = site.getRef();
@@ -54,6 +54,7 @@ export async function build(site: Site, options: BuildProcessOptions = {}) {
 
     let processors: ProcessorEntry[] = [
         [clearUpdates, 1000],
+        [clearErrors, 1000],
         [scanSrc, 0],
         [mark, 0, { exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' }],
         [mark, 0, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' }],
@@ -262,6 +263,7 @@ export async function renderToOutput( site:Site, process:SiteProcessor, eid:Enti
     const {es} = site;
     const bf = es.resolveComponentDefIds('/component/output');
     const pes = new OutputES( es, bf );
+    log('[renderToOutput]', 'render output', pes.getUrl(), 'to', es.getUrl() );
 
     await process(site, {es:pes, eids:[eid], props});
 

@@ -193,3 +193,8 @@ export interface PageMeta {
 
 
 export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img' | 'import';
+
+
+
+// eid, url, mime
+export type ImportDescr = [ EntityId, string, string ];

@@ -80,9 +80,11 @@ export class Site {
         // read from the path
         let site = new Site();
 
-        let reporter = new Reporter();
+        let reporter = options.reporter ?? new Reporter();
         setLocation(reporter, '/site');
-        setLevel(reporter, options.level ?? Level.FATAL);
+        if( options.level !== undefined ){
+            setLevel(reporter, options.level);
+        }
         site.reporter = reporter;
         // log('[create]', options);
 

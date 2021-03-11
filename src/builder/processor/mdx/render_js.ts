@@ -49,8 +49,10 @@ export async function process(site: Site, options: RenderJsOptions = {}) {
             updates.push( await processEntity(site, e, undefined, options) );
 
         } catch (err) {
-            updates.push( createErrorComponent(es, e, err, {from:Label}) );
+            // log('[error]', srcUrl, err.message, err.stack );
             error(reporter, `error ${srcUrl}`, err, { eid: e.id });
+            // log('[error]', es.getUrl(), es.componentDefs );
+            updates.push( createErrorComponent(es, e, err, {from:Label}) );
         }
     }
 

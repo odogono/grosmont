@@ -40,7 +40,7 @@ import {
 import { ServerEffectProvider } from '../jsx/server_effect';
 import { clientProc } from '../../unified/plugin/client';
 
-const log = (...args) => console.log('[TranspileMDX]', ...args);
+const log = (...args) => console.log('[/processor/mdx/transpile]', ...args);
 
 
 
@@ -111,6 +111,7 @@ export function jsToComponent(jsCode: string, props: TranspileProps, options: Tr
  */
 export async function componentToString(component: any, props: TranspileProps, options: TranspileOptions) {
     let { css, cssLinks: inputCssLinks, children, url, comProps } = props;
+    inputCssLinks = inputCssLinks.filter(Boolean);
 
     const components = {
         Head,
@@ -118,7 +119,6 @@ export async function componentToString(component: any, props: TranspileProps, o
             return <style dangerouslySetInnerHTML={{ __html: css }} />;
         },
         CSSLinks: () => {
-            inputCssLinks = inputCssLinks.filter(Boolean);
             // if( inputCssLinks ) log('[transpile][CSSLinks]',inputCssLinks);
 
             // { page.cssLinks?.map(c => <link key={c} rel="stylesheet" href={c} />)}
@@ -136,6 +136,15 @@ export async function componentToString(component: any, props: TranspileProps, o
         // }
     }
 
+    // these two cases are really only used for non-mdx components
+    // undecided whether this is a good idea...
+    if( css !== undefined ){
+        comProps.InlineCSS = () => <style dangerouslySetInnerHTML={{ __html: css }} />;
+    }
+    if( inputCssLinks.length > 0 ){
+        comProps.CSSLinks = () => <>{inputCssLinks.map( c => <link key={c} rel='stylesheet' href='c' />)}</>;
+    }
+
     const ctxValue = {
         children,
         components
@@ -146,6 +155,7 @@ export async function componentToString(component: any, props: TranspileProps, o
         : undefined;
 
     const Component = await component;
+
 
     try {
 

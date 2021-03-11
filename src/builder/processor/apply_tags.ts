@@ -53,7 +53,7 @@ export async function process(site: Site, options:ApplyDepsToChildrenOptions = {
             for( const tagId of tagIds ){
                 let depId = await insertDependency( es, peid, tagId, depType );
                 if( depId !== 0 ) {
-                    info(reporter, `add ${depType} ${tagId} to ${peid}`, {eid:depId});
+                    // info(reporter, `add ${depType} ${tagId} to ${peid}`, {eid:depId});
                 }
             }
 

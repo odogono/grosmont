@@ -67,7 +67,6 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     let config = {};
 
     const context = createRenderContext(site, e, options);
-    
 
     debug(reporter, `process ${base}`, {eid:e.id});
     // log(`process ${base} (${e.id})`);
@@ -80,7 +79,6 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     function onConfig( incoming: any ){
         config = {...config, ...incoming };
     }
-
 
     let result = jsToComponent(data, { path, url:base }, 
         { onConfig, context, resolveImport: resolveImportLocal, require });
@@ -116,11 +114,14 @@ export async function buildImports(site: Site, e: Entity, options:ProcessOptions
         const url = imp.Url?.url;
         const impEid = imp.Dep.dst;
         const match = parseEntityUrl(url);
+
+        // log('[buildImports]', url );
+
         if( match !== undefined ){
             const {eid, did} = match;
 
             if( did === '/component/scss' ){
-
+                console.warn('why no handle /component/scss??', {eid,did} );
             }
             else if( did === '/component/jsx' || did === '/component/js' ){
                 const ie = await es.getEntity(impEid, true);
@@ -136,6 +137,8 @@ export async function buildImports(site: Site, e: Entity, options:ProcessOptions
         // log('import', imp.Dep.dst, match);
 
     }
+
+    // log('[buildImports]', importComs );
     
     function require(path: string, fullPath:string){
         const match = parseEntityUrl(path);
