@@ -20,7 +20,7 @@ import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { parseUri, toInteger } from '@odgn/utils';
 
 import { process as resolveImports } from './resolve_imports';
-import { applyImports, buildProps, resolveImport } from '../mdx/util';
+import { applyImports, buildProps, resolveImport } from '../js/util';
 import { Component, setEntityId, } from 'odgn-entity/src/component';
 import { setLocation, info, error, debug, warn } from '../../reporter';
 

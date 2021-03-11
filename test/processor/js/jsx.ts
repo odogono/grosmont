@@ -38,9 +38,9 @@ test('imports scss', async ({es,site,options}) => {
         [ '/processor/mark#scss' ],
         [ '/processor/build_src_index' ],
         [ '/processor/scss'],
-        [ '/processor/jsx/eval_jsx'],
-        [ '/processor/mdx/eval_js'],
-        [ '/processor/mdx/render_js'],
+        [ '/processor/jsx/eval'],
+        [ '/processor/js/eval'],
+        [ '/processor/js/render'],
     ];
 
     const process = await buildProcessors( site, spec );

@@ -27,9 +27,9 @@ test('process', async ({ es, site, options }) => {
         [ '/processor/build_dir_deps', 0, {createMissingParents:true}],
         // applies parent layout tags to their children
         [ '/processor/apply_tags', 0, {type:'layout'} ],
-        [ '/processor/mdx/eval_mdx'],
-        [ '/processor/mdx/eval_js'],
-        [ '/processor/mdx/render_js'],
+        [ '/processor/mdx/eval'],
+        [ '/processor/js/eval'],
+        [ '/processor/js/render'],
     ];
 
     const bf = es.resolveComponentDefIds('/component/output');

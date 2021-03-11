@@ -66,7 +66,7 @@ function processEntities( site:Site, e:Entity, options:ProcessOptions ){
         let pes = new OutputES(es, bf);
 
         const process = await buildProcessors( site, [
-            [ '/processor/mdx/render_js', 0, renderOptions]
+            [ '/processor/js/render', 0, renderOptions]
         ]);
 
 
@@ -103,7 +103,7 @@ function processEntityOutput( site:Site, e:Entity, options:ProcessOptions ){
         let pes = new OutputES(es, bf);
 
         const process = await buildProcessors( site, [
-            [ '/processor/mdx/render_js', 0, renderOptions]
+            [ '/processor/js/render', 0, renderOptions]
         ]);
         const eids = [ pe.id ];
 

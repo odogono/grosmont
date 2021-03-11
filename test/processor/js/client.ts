@@ -5,11 +5,11 @@ import Path from 'path';
 import { Site } from '../../../src/builder/site';
 import { process as renderScss } from '../../../src/builder/processor/scss';
 import { process as mark } from '../../../src/builder/processor/mark';
-import { process as evalJsx } from '../../../src/builder/processor/jsx/eval_jsx';
+import { process as evalJsx } from '../../../src/builder/processor/jsx/eval';
 
-import { process as evalMdx } from '../../../src/builder/processor/mdx/eval_mdx';
-import { process as evalJs } from '../../../src/builder/processor/mdx/eval_js';
-import { process as renderJs } from '../../../src/builder/processor/mdx/render_js';
+import { process as evalMdx } from '../../../src/builder/processor/mdx/eval';
+import { process as evalJs } from '../../../src/builder/processor/js/eval';
+import { process as renderJs } from '../../../src/builder/processor/js/render';
 
 import { printAll } from 'odgn-entity/src/util/print';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';

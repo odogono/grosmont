@@ -29,9 +29,9 @@ test('rendering an entity with arguments', async ({es,site,options}) => {
     const spec:RawProcessorEntry[] = [
         [ '/processor/build_src_index' ],
         [ '/processor/mark#jsx' ],
-        [ '/processor/jsx/eval_jsx'],
-        [ '/processor/mdx/eval_js'],
-        [ '/processor/mdx/render_js'],
+        [ '/processor/jsx/eval'],
+        [ '/processor/js/eval'],
+        [ '/processor/js/render'],
     ];
 
     let e = await site.getEntityBySrc('file:///pages/main.jsx');

@@ -91,7 +91,7 @@ export class SiteIndex {
     }
 }
 
-export type SiteProcessor = (site:Site, options: ProcessOptions) => Promise<Site>;
+export type SiteProcessor = (site:Site, options?: ProcessOptions) => Promise<Site>;
 
 
 export interface ProcessOptions {

@@ -9,10 +9,10 @@ import { ProxyEntitySet } from 'odgn-entity/src/entity_set_proxy';
 
 import { Site, SiteOptions } from './site';
 import { process as scanSrc } from './processor/file';
-import { process as evalJsx } from './processor/jsx/eval_jsx';
-import { process as evalJs } from './processor/mdx/eval_js';
-import { process as renderJs } from './processor/mdx/render_js';
-import { process as evalMdx } from './processor/mdx/eval_mdx';
+import { process as evalJsx } from './processor/jsx/eval';
+import { process as evalJs } from './processor/js/eval';
+import { process as renderJs } from './processor/js/render';
+import { process as evalMdx } from './processor/mdx/eval';
 import { process as resolveMeta } from './processor/mdx/resolve_meta';
 import { process as mark } from './processor/mark';
 import { process as applyTags } from './processor/apply_tags';

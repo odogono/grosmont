@@ -76,7 +76,7 @@ test.only('using sql es', async () => {
     // sqlClear( liveDB.path );
     // const es = new EntitySetSQL({...testDB});
     // const es = new EntitySetMem(undefined, {idgen});
-    const site = await Site.create({configPath, level:Level.DEBUG});
+    const site = await Site.create({configPath, level:Level.INFO});
 
     await build(site);
     // await printAll(site.es, undefined, ['/component/src', '/component/dst', '/component/meta', '/component/times']);
@@ -88,7 +88,7 @@ test.only('using sql es', async () => {
     [
         // debug
         $eids
-        /component/times#/ctime !ca desc order
+        /component/date#/date !ca desc order
         4 0 limit
         [/component/title /component/mdx] !bf
         // prints
@@ -97,6 +97,7 @@ test.only('using sql es', async () => {
 
     log('>>---');
     // let mdxEids = await site.es.prepare(q).getResult({eids});
+    // mdxEids.forEach( e => printEntity(site.es,e, ['/component/title', '/component/date']));
 
     // let page = await site.getEntityBySrc('file:///weeknotes/2021-01-01.mdx');
     let page = await site.getEntityBySrc('file:///index.mdx');
@@ -114,9 +115,7 @@ test.only('using sql es', async () => {
     //     '/component/title', '/component/meta']);
     
     // mdxEids.forEach( e => { log( e.id, e.Title.title )});
-    // mdxEids.forEach( e => printEntity(site.es,e));
     // log('dst index', site.getIndex('/index/dstUrl').index );
-
 });
 
 

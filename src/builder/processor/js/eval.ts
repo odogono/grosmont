@@ -5,7 +5,7 @@ import { Site } from '../../site';
 
 
 import { ProcessOptions } from '../../types';
-import { jsToComponent } from './transpile';
+import { jsToComponent } from '../mdx/transpile';
 import { createRenderContext, parseEntityUrl, resolveImport } from './util';
 import { parse as parseConfig } from '../../config';
 import { Component, setEntityId } from 'odgn-entity/src/component';
@@ -14,7 +14,7 @@ import { EntitySetMem } from 'odgn-entity/src/entity_set';
 import { buildProcessors } from '../..';
 import { createErrorComponent } from '../../util';
 
-const Label = '/processor/mdx/eval_js';
+const Label = '/processor/js/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);
 
 

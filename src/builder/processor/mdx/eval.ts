@@ -6,13 +6,13 @@ import { Site } from '../../site';
 
 import { DependencyType, ProcessOptions, SiteIndex, TranspileResult } from '../../types';
 import { mdxToJs } from './transpile';
-import { applyImports, buildProps, parseEntityUrl, resolveImport } from './util';
+import { applyImports, buildProps, parseEntityUrl, resolveImport } from '../js/util';
 import { parse as parseConfig } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
 import { createErrorComponent, resolveUrlPath } from '../../util';
 
-const Label = '/processor/mdx/eval_mdx';
+const Label = '/processor/mdx/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);
 
 
