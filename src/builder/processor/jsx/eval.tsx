@@ -1,8 +1,7 @@
-import * as Babel from "@babel/core";
-import babelGenerate from '@babel/generator';
+
 import traverse from "@babel/traverse";
 
-import { parse as babelParser } from '@babel/parser';
+
 
 import { Entity } from 'odgn-entity/src/entity';
 import { selectJsx } from '../../query';
@@ -14,6 +13,7 @@ import { createErrorComponent } from '../../util';
 import { applyImports, resolveImport } from '../js/util';
 import { Component, setEntityId, } from 'odgn-entity/src/component';
 import { setLocation, info, error, debug, warn } from '../../reporter';
+import { generateFromAST, parseJSX, transformJSX } from "../../transpile";
 
 const Label = '/processor/jsx/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -77,7 +77,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
         // let props = await buildProps(site, e);
 
-        let js = transformJSX(data, resolveImportLocal);
+        let js = transform(data, resolveImportLocal);
         // let {Component,requires, ...meta} = evalCode(code, props.path, {site, importData});
 
         const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
@@ -89,6 +89,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return [jsCom];
 
     } catch (err) {
+        log('error', err.stack);
         error(reporter, 'error', err, { eid: e.id });
         return [ createErrorComponent(es, e, err, {from:Label}) ];
     }
@@ -96,31 +97,16 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
 }
 
-const presets = [
-    ["@babel/preset-env", {
-        "exclude": [
-            "@babel/plugin-transform-spread"
-        ],
-        "targets": { "node": "current" }
-    }],
-    "@babel/preset-react"
-];
 
+function transform(jsx: string, resolveImport: Function) {
 
-function transformJSX(jsx: string, resolveImport: Function) {
-    const plugins = [
-        ["module-resolver", {
-            "root": ["."],
-            // alias
-        }]
-    ]
+    let ast = parseJSX( jsx );
     
-    let ast = babelParser(jsx, { sourceType: 'module', plugins: ['jsx', 'typescript'] });
     let changed = false;
 
     traverse(ast, {
         ImportDeclaration( path ) {
-            // log('[transformJSX]', {path, parent, key, index} );
+            // log('[transform]', {path, parent, key, index} );
             let resolved = resolveImport(path.node.source.value);
             if (resolved !== undefined) {
                 const [url, remove] = resolved;
@@ -134,15 +120,14 @@ function transformJSX(jsx: string, resolveImport: Function) {
     });
     
     if( changed ){
-        let generateResult = babelGenerate(ast);
-        if (generateResult) {
-            jsx = generateResult.code;
-        }
+        jsx = generateFromAST( ast );
     }
-    
-    let { code, ...other } = Babel.transform(jsx, { presets, plugins });
+    // log('[transform]', {jsx});
+    let code = transformJSX( jsx );
 
-    // log('[transformJSX]', other);
+    // let { code, ...other } = Babel.transform(jsx, { presets, plugins });
+    // log('[transform]', {code});
+
     return code;
 }
 

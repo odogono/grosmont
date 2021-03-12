@@ -5,7 +5,7 @@ import { Site } from '../../site';
 
 
 import { ProcessOptions, SiteIndex } from '../../types';
-import { mdxToJs } from './transpile';
+import { mdxToJs } from '../../transpile';
 import { applyImports, buildProps, resolveImport } from '../js/util';
 import { parseEntity } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';

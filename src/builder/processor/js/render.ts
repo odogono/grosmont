@@ -6,7 +6,7 @@ import { Site } from '../../site';
 
 
 import { ProcessOptions, TranspileProps, TranspileResult, EvalScope } from '../../types';
-import { componentToString, jsToComponent, mdxToJs } from '../mdx/transpile';
+import { componentToString, jsToComponent, mdxToJs } from '../../transpile';
 import { buildProps, createRenderContext, getEntityCSSDependencies, resolveImport } from './util';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';

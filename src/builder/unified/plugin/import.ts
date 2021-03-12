@@ -1,8 +1,6 @@
-import unistRemove from 'unist-util-remove';
 import unistVisit from 'unist-util-visit';
-import { parse as babelParser } from '@babel/parser';
-import babelGenerate from '@babel/generator';
 import traverse from "@babel/traverse";
+import { generateFromAST, parseJSX } from '../../transpile';
 
 
 export interface ImportPluginOptions {
@@ -21,7 +19,7 @@ export function importPlugin(options: ImportPluginOptions = {}) {
         unistVisit(tree, ['import'], (node, index, parent) => {
             let changed = false;
             let removed = false;
-            const ast = babelParser(node.value as string, { sourceType: 'module' });
+            const ast = parseJSX(node.value as string);
 
             traverse(ast, {
                 ImportDeclaration(path) {
@@ -48,8 +46,7 @@ export function importPlugin(options: ImportPluginOptions = {}) {
             }
 
             if (changed) {
-                let generateResult = babelGenerate(ast);
-                node.value = generateResult.code;
+                node.value = generateFromAST(ast);
             }
         });
 

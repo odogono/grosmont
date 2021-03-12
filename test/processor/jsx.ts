@@ -108,5 +108,33 @@ export default () => <div>Message: <Message /></div>;
 
 
 
+test('typescript', async ({es, site, options}) => {
+    await addSrc( site, 'file:///main.tsx', `
+    export const dst:string = '/main.html';
+    
+    const noun:string = 'World';
+
+    export default () => <div>Hello {noun}</div>;
+    `);
+
+    const spec:RawProcessorEntry[] = [
+        [ '/processor/mark#jsx' ],
+        [ '/processor/build_src_index' ],
+        [ '/processor/jsx/eval'],
+        [ '/processor/js/eval'],
+        [ '/processor/js/render'],
+        [ '/processor/build_dst_index'],
+    ];
+
+    const process = await buildProcessors( site, spec );
+    await process(site,options);
+
+    // await printAll(site.es);
+
+    let e = await site.getEntityByDst('/main.html');
+
+    assert.equal( e.Output.data, '<div>Hello World</div>');
+})
+
 
 test.run();

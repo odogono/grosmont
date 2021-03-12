@@ -5,7 +5,7 @@ import { Site } from '../../site';
 
 
 import { ProcessOptions } from '../../types';
-import { jsToComponent } from '../mdx/transpile';
+import { jsToComponent } from '../../transpile';
 import { createRenderContext, parseEntityUrl, resolveImport } from './util';
 import { parseEntity } from '../../config';
 import { createErrorComponent } from '../../util';

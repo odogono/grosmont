@@ -7,6 +7,10 @@ import ReactDOMServer from 'react-dom/server';
 import { mdx as mdxReact, MDXProvider } from '@mdx-js/react'
 
 import * as Babel from "@babel/core";
+import babelGenerate from '@babel/generator';
+import { parse as babelParser } from '@babel/parser';
+import { File as BabelAST } from "@babel/types";
+
 import unified from 'unified';
 import parse from 'remark-parse';
 import stringify from 'remark-stringify';
@@ -16,29 +20,29 @@ import mdx from 'remark-mdx';
 import mdxjs from 'remark-mdxjs';
 import squeeze from 'remark-squeeze-paragraphs';
 import mdxAstToMdxHast from '@mdx-js/mdx/mdx-ast-to-mdx-hast';
-import mdxHastToJsx from './mdx-hast-to-jsx';
+import mdxHastToJsx from './processor/mdx/mdx-hast-to-jsx';
 
 const _eval = require('eval');
 const emoji = require('remark-emoji')
 
-import { importPlugin } from '../../unified/plugin/import';
-import { linkProc } from '../../unified/plugin/link';
-import { process as imgProc } from '../../unified/plugin/img';
-import { configPlugin } from '../../unified/plugin/config';
-import { removeCommentPlugin } from '../../unified/plugin/remove_comment';
-import { titlePlugin } from '../../unified/plugin/title';
+import { importPlugin } from './unified/plugin/import';
+import { linkProc } from './unified/plugin/link';
+import { process as imgProc } from './unified/plugin/img';
+import { configPlugin } from './unified/plugin/config';
+import { removeCommentPlugin } from './unified/plugin/remove_comment';
+import { titlePlugin } from './unified/plugin/title';
 
 
-import { Head } from '../../../components/head';
+import { Head } from '../components/head';
 import { isObject, isPromise } from "@odgn/utils";
 
 import {
     TranspileProps,
     TranspileOptions,
     TranspileResult,
-} from '../../types';
-import { ServerEffectProvider } from '../jsx/server_effect';
-import { clientProc } from '../../unified/plugin/client';
+} from './types';
+import { ServerEffectProvider } from './processor/jsx/server_effect';
+import { clientProc } from './unified/plugin/client';
 
 const log = (...args) => console.log('[/processor/mdx/transpile]', ...args);
 
@@ -111,21 +115,21 @@ export function jsToComponent(jsCode: string, props: TranspileProps, options: Tr
  */
 export async function componentToString(component: any, props: TranspileProps, options: TranspileOptions) {
     let { css, cssLinks: inputCssLinks, children, url, comProps } = props;
-    
+
 
 
     // these two cases are really only used for non-mdx components
     // undecided whether this is a good idea...
-    
-    comProps.InlineCSS = css !== undefined ? 
-        () => <style dangerouslySetInnerHTML={{ __html: css }} /> 
+
+    comProps.InlineCSS = css !== undefined ?
+        () => <style dangerouslySetInnerHTML={{ __html: css }} />
         : null;
-    
+
     inputCssLinks = inputCssLinks !== undefined ? inputCssLinks.filter(Boolean) : [];
-    comProps.CSSLinks = inputCssLinks.length > 0 ? 
-            () => <>{inputCssLinks.map( c => <link key={c} rel='stylesheet' href={c} />)}</>
-            : null;
-    
+    comProps.CSSLinks = inputCssLinks.length > 0 ?
+        () => <>{inputCssLinks.map(c => <link key={c} rel='stylesheet' href={c} />)}</>
+        : null;
+
 
     const components = {
         Head,
@@ -141,7 +145,7 @@ export async function componentToString(component: any, props: TranspileProps, o
         // }
     }
 
-    
+
 
     const ctxValue = {
         children,
@@ -173,17 +177,17 @@ export async function componentToString(component: any, props: TranspileProps, o
 
     } catch (err) {
         log('[componentToString]', url, err.message);
-        
+
         throw err;
     }
 }
 
 
 export type ProcessMDXOptions = {
-    
-    resolveImport?: (path: string) => [string,boolean] | undefined;
+
+    resolveImport?: (path: string) => [string, boolean] | undefined;
     resolveLink?: (url: string, text?: string) => any;
-    onConfig: (config:any) => void;
+    onConfig: (config: any) => void;
     require?: (path: string, fullPath: string) => any;
     context?: any;
 }
@@ -211,7 +215,7 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
         .use(configPlugin, { onConfig })
         .use(removeCommentPlugin)
         // .use(() => console.dir)
-        .use(clientProc, { })
+        .use(clientProc, {})
         .use(imgProc, { resolveLink })
         .use(linkProc, { resolveLink })
         // take a snap of the AST
@@ -219,7 +223,7 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
         .use(() => tree => { ast = tree })
         .use(mdx)
         .use(mdxjs)
-        .use(titlePlugin, {onConfig} )
+        .use(titlePlugin, { onConfig })
         .use(importPlugin, { resolveImport })
         .use(squeeze)
         .use(mdxAstToMdxHast)
@@ -235,19 +239,46 @@ export function processMdx(content: string, options: ProcessMDXOptions): Process
 }
 
 
-const presets = [
-    // ["latest-node", { "target": "current" }],
-    ["@babel/preset-env", {
-        "exclude": [
-            "@babel/plugin-transform-spread"
-        ],
-        "targets": { "node": "current" }
-    }],
-    "@babel/preset-react"
-];
+export function parseJSX(jsx: string): BabelAST {
+    // const plugins = [
+    //     ["module-resolver", {
+    //         "root": ["."],
+    //         // alias
+    //     }],
+    //     ["@babel/plugin-transform-typescript", {
+    //         isTSX: true
+    //     }]
+    //     // "@babel/plugin-transform-typescript"
+    // ];
+
+    return babelParser(jsx, { sourceType: 'module', plugins: ['jsx', 'typescript'] });
+}
+
+/**
+ * 
+ * @param ast 
+ * @returns 
+ */
+export function generateFromAST(ast: BabelAST): string {
+
+    let generateResult = babelGenerate(ast);
+    return generateResult !== undefined ? generateResult.code : undefined;
 
 
-export function transformJSX(jsx: string) {
+}
+
+export function transformJSX(jsx: string):string {
+    const presets = [
+        // ["latest-node", { "target": "current" }],
+        ["@babel/preset-env", {
+            "exclude": [
+                "@babel/plugin-transform-spread"
+            ],
+            "targets": { "node": "current" }
+        }],
+        "@babel/preset-react"
+    ];
+
     // const alias = {
     //     "react": "preact-compat",
     //     'react-dom': 'preact-compat',
@@ -256,6 +287,9 @@ export function transformJSX(jsx: string) {
         ["module-resolver", {
             "root": ["."],
             // alias
+        }],
+        ["@babel/plugin-transform-typescript", {
+            isTSX: true
         }]
     ]
     return Babel.transform(jsx, { presets, plugins }).code;
@@ -274,7 +308,7 @@ interface EvalOptions {
  * @param path 
  */
 function evalCode(code: string, path: string, options: EvalOptions = {}) {
-    let { context, scope:inScope } = options;
+    let { context, scope: inScope } = options;
 
     // log('[evalCode]', path, code );
 
@@ -283,7 +317,7 @@ function evalCode(code: string, path: string, options: EvalOptions = {}) {
         ...context
     }
 
-    
+
     // log('[evalCode]', path, context.useServerEffect.toString() );
 
     const requireManual = (requirePath) => {
