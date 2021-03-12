@@ -5,10 +5,11 @@ import { Site } from '../../site';
 
 
 import { ProcessOptions } from '../../types';
-import { jsToComponent } from '../../transpile';
+
 import { createRenderContext, parseEntityUrl, resolveImport } from './util';
 import { parseEntity } from '../../config';
 import { createErrorComponent } from '../../util';
+import { transformJS } from '../mdx/transform';
 
 const Label = '/processor/js/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -76,7 +77,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         config = {...config, ...incoming };
     }
 
-    let result = jsToComponent(data, { path, url:base }, 
+    let result = transformJS(data, { path, url:base }, 
         { onConfig, context, resolveImport: resolveImportLocal, require });
 
     const { component, ...jsProps } = result;

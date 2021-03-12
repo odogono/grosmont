@@ -1,6 +1,7 @@
 import unistVisit from 'unist-util-visit';
 import traverse from "@babel/traverse";
-import { generateFromAST, parseJSX } from '../../transpile';
+import { generateFromAST, parseJSX } from '../../../../transpile';
+
 
 
 export interface ImportPluginOptions {

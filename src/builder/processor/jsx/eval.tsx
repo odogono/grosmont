@@ -72,17 +72,11 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     try {
 
         // gather the import dependencies
-        // let importData = await buildImportData(site, e, options);
         let data = await site.getEntityData(e);
 
-        // let props = await buildProps(site, e);
-
         let js = transform(data, resolveImportLocal);
-        // let {Component,requires, ...meta} = evalCode(code, props.path, {site, importData});
 
         const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
-
-        // log('out js', js);
 
         await applyImports(site, e, imports, options);
 

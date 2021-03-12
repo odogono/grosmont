@@ -4,13 +4,14 @@ import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { ProcessOptions, SiteIndex } from '../../types';
-import { mdxToJs } from '../../transpile';
+import { ProcessOptions, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
+import { transformJSX } from '../../transpile';
 import { applyImports, buildProps, resolveImport } from '../js/util';
 import { parseEntity } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
 import { createErrorComponent, resolveUrlPath } from '../../util';
+import { transformMdx } from './transform';
 
 const Label = '/processor/mdx/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -187,3 +188,28 @@ async function getUrlEntityId(es: EntitySet, url: string, options: EvalMdxOption
     return com;
 }
 
+
+
+/**
+ * 
+ * @param data 
+ * @param path 
+ * @param options 
+ */
+ function mdxToJs(mdxData: string, props: TranspileProps, options: TranspileOptions): TranspileResult {
+    let meta = props.meta ?? {};
+    let { css, cssLinks: inputCssLinks, children } = props;
+    const { resolveImport, resolveLink, onConfig, require, context } = options;
+
+    const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
+    let processOpts = { pageProps: inPageProps, resolveLink, resolveImport, onConfig, require, context };
+
+    // convert the mdx to jsx
+    let { jsx, ast } = transformMdx(mdxData, processOpts);
+    // log('[parseMdx]', jsx );
+
+    // convert from jsx to js
+    let js = transformJSX(jsx);
+
+    return { js, jsx, ast };
+}

@@ -4,8 +4,8 @@ import parse from 'remark-parse';
 import unistVisit from 'unist-util-visit';
 import { select } from 'unist-util-select';
 import unistRemove from 'unist-util-remove';
-import { toJSX } from '../../processor/mdx/mdx-hast-to-jsx';
-import { transformJSX, processMdx, parseJSX, generateFromAST } from '../../transpile';
+import { toJSX } from '../../mdx-hast-to-jsx';
+import { parseJSX, generateFromAST, transformJSX } from '../../../../transpile';
 
 export interface LinkProcProps {
     resolveLink?: (url: string, text?: string) => any;
@@ -25,29 +25,31 @@ export function clientProc({ resolveLink }: LinkProcProps) {
 
                 // console.log('[clientProc]', 'index', index, parent);
 
-                
+
 
                 const holderNode = {
                     type: 'mdxBlockElement',
                     name: 'div',
                     attributes: [
-                        { type:'mdxAttribute', name:'id', 
-                            value:{ type: 'mdxValueExpression', value:`'holder'`} }
+                        {
+                            type: 'mdxAttribute', name: 'id',
+                            value: { type: 'mdxValueExpression', value: `'holder'` }
+                        }
                     ]
                 };
 
-                
+
 
                 // setDebug( true );
-                let jsx = toJSX( (node as any).children[0], undefined, { odgnMode:true } );
+                let jsx = toJSX((node as any).children[0], undefined, { odgnMode: true });
                 const ast = parseJSX(jsx);
 
                 let code = generateFromAST(ast);
                 // console.log('[clientProc]', 'code', generateResult.code);
 
-                console.log('[clientProc]', 'jsx', jsx );
-                console.log('[clientProc]', 'bG', code );
-                console.log('[clientProc]', 'transform', transformJSX( jsx ) );
+                console.log('[clientProc]', 'jsx', jsx);
+                console.log('[clientProc]', 'bG', code);
+                console.log('[clientProc]', 'transform', transformJSX(jsx));
 
                 // setDebug( false );
                 (parent.children as any[])[index] = holderNode; //splice( Math.max(0,(index-1)), 0, holderNode );

@@ -1,19 +1,20 @@
 import React from 'react';
 import { Entity } from 'odgn-entity/src/entity';
-import { findEntityByUrl, getDependencies, getLayoutFromDependency, insertDependency, selectJs } from '../../query';
+import { getLayoutFromDependency, insertDependency, selectJs } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
 
 
 import { ProcessOptions, TranspileProps, TranspileResult, EvalScope } from '../../types';
-import { componentToString, jsToComponent, mdxToJs } from '../../transpile';
-import { buildProps, createRenderContext, getEntityCSSDependencies, resolveImport } from './util';
+import { createRenderContext, getEntityCSSDependencies } from './util';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
 import { hash, toInteger } from '@odgn/utils';
 import { buildImports } from './eval';
 import { useServerEffect, serverEffectValue, beginServerEffects, endServerEffects } from '../jsx/server_effect';
 import { createErrorComponent } from '../../util';
+import { transformComponent } from './transform';
+import { transformJS } from '../mdx/transform';
 
 const Label = '/processor/js/render';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -109,7 +110,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // reset requests
     beginServerEffects(base);
     
-    let result:any = jsToComponent(data, props, { context, onConfig, require, scope });
+    let result:any = transformJS(data, props, { context, onConfig, require, scope });
 
     result.css = props.css;
     result.cssLinks = props.cssLinks;
@@ -129,7 +130,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     const {component} = result;
 
-    let output = await componentToString( component, props, { onConfig, require });
+    let output = await transformComponent( component, props, { onConfig, require });
 
     
     // resolve all the server effects
@@ -140,7 +141,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     }
 
     // render again to reconcile any server effects
-    output = await componentToString( component, props, { require, onConfig });
+    output = await transformComponent( component, props, { require, onConfig });
 
     // replace any e:// urls with dst url links
     output = replaceEntityUrls(site, output);

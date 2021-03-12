@@ -1,8 +1,6 @@
 import Fs from 'fs-extra';
-const _eval = require('eval');
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import * as Babel from "@babel/core";
 
 import { Entity } from 'odgn-entity/src/entity';
 import { getDependencyEntities, selectJsx } from '../../query';
@@ -12,6 +10,8 @@ import { ProcessOptions } from '../../types';
 import { parseUri, toInteger } from '@odgn/utils';
 
 import { process as resolveImports } from './resolve_imports';
+import { evalCode, EvalOptions } from '../../eval';
+import { transformJSX } from '../../transpile';
 
 const log = (...args) => console.log('[ProcJSX]', ...args);
 
@@ -83,7 +83,7 @@ export async function preprocess(site: Site, options:ProcessOptions = {}){
 
             let props = await buildProps(site, e);
             let code = transformJSX(props.data);
-            let {Component,requires, ...meta} = evalCode(code, props.path, {site, importData});
+            let {Component, ...meta} = evalJS(code, props.path, {site, importData});
 
             await parseEntity(site, meta, {add:false, e} );
 
@@ -116,7 +116,7 @@ async function renderJsx(site: Site, e: Entity, options: ProcessOptions) {
         
         let code = transformJSX(data);
 
-        let el = evalCode(code, path, {site, importData});
+        let el = evalJS(code, path, {site, importData});
 
         // log( el );
 
@@ -197,99 +197,76 @@ function renderHTML({ components, default:Component, children }) {
     return data;
 }
 
+function evalJS( code:string, path: string, context: any = {} ){
 
-export interface EvalCodeResult {
-    default: any;
-    components: any;
-    children: any;
-    [key: string]: any;
-}
-
-/**
- * 
- * @param code 
- * @param path 
- */
-function evalCode(code: string, path: string, context:any = {}): EvalCodeResult {
-    let requires = [];
-    const {importData} = context;
-
-    const requireManual = (requirePath) => {
-        // log('[evalCode][requireManual]', requirePath);
-
-        if( requirePath === '@site' || requirePath === '@odgn/grosmont' ){
-            return context;
-        }
-
-        if( importData && importData[requirePath] ){
-            // log('[evalCode][requireManual]', importData[requirePath] );
-            return importData[requirePath];
-        }
-        // if( requirePath.startsWith('e://') ){
-        //     let euri = parseEntityUri(requirePath);
-        //     if( euri !== undefined ){
-        //         euri.eid
-        //     }
-        // }
-
-        // const fullPath = Path.resolve(Path.dirname(path), requirePath);
-
-        // let extPath = findFileWithExt(fullPath, ['mdx']);
-
-        // extPath = findFileWithExt(fullPath, ['jsx', 'js']);
-        // if (extPath.endsWith('.jsx')) {
-        //     requires.push({ path: extPath });
-        //     let jsx = Fs.readFileSync(extPath, 'utf8');
-        //     let code = transformJSX(jsx);
-        //     return evalCode(code, extPath);
-        // }
-
-        // the default behaviour - normal require
-        const req = require(requirePath);
-
-        requires.push({ exports: Object.keys(req).join(','), path: requirePath })
-        return req;
+    let scope = {
+        React,
+        log: (...args) => log('[evalCode]', ...args),
     }
 
-
-
-    let out = _eval(code, path, {
-        // createElement: mdxReact,
-        React,
-        require: requireManual,
-        console: console
-    });
-
-    // log('[evalCode]', code );
-
-    // const { default, ...rest } = out;
-
-    return { ...out, requires };
+    return evalCode( code, path, {context, scope} );
 }
 
-const presets = [
-    ["@babel/preset-env", {
-        "exclude": [
-            "@babel/plugin-transform-spread"
-        ],
-        "targets": { "node": "current" }
-    }],
-    "@babel/preset-react"
-];
+// /**
+//  * 
+//  * @param code 
+//  * @param path 
+//  */
+// function evalCode(code: string, path: string, context:any = {}): EvalCodeResult {
+//     const {importData} = context;
+
+//     const requireManual = (requirePath) => {
+//         // log('[evalCode][requireManual]', requirePath);
+
+//         if( requirePath === '@site' || requirePath === '@odgn/grosmont' ){
+//             return context;
+//         }
+
+//         if( importData && importData[requirePath] ){
+//             return importData[requirePath];
+//         }
+
+//         // the default behaviour - normal require
+//         const req = require(requirePath);
+
+//         return req;
+//     }
 
 
-function transformJSX(jsx: string) {
-    const plugins = [
-        ["module-resolver", {
-            "root": ["."],
-            // alias
-        }]
-    ]
-    const {code,...other} = Babel.transform(jsx, { presets, plugins });
 
-    // log('[transformJSX]', other);
-    return code;
-}
+//     let out = _eval(code, path, {
+//         // createElement: mdxReact,
+//         React,
+//         require: requireManual,
+//         console: console
+//     });
+
+//     return { ...out };
+// }
+
+// const presets = [
+//     ["@babel/preset-env", {
+//         "exclude": [
+//             "@babel/plugin-transform-spread"
+//         ],
+//         "targets": { "node": "current" }
+//     }],
+//     "@babel/preset-react"
+// ];
+
+
+// function transformJSX(jsx: string) {
+//     const plugins = [
+//         ["module-resolver", {
+//             "root": ["."],
+//             // alias
+//         }]
+//     ]
+//     const {code,...other} = Babel.transform(jsx, { presets, plugins });
+
+//     // log('[transformJSX]', other);
+//     return code;
+// }
 
 
 
