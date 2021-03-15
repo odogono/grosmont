@@ -1679,3 +1679,38 @@ export async function getDependencyComponents(es: EntitySet, eid: EntityId, type
     `);
     return await stmt.getResult({ eid, type });
 }
+
+
+/**
+ * Returns EntityIds of the dependency entities which match the given eid and type
+ * 
+ * @param es 
+ * @param eid 
+ * @param type 
+ */
+ export async function getDependenciesOf(es: EntitySet, eid: EntityId, type?: DependencyType, returnEid: boolean = true): Promise<Entity[] | EntityId[]> {
+    const ret = returnEid ? '@eid' : '@e';
+    const q = type !== undefined ? `
+    [
+        /component/dep#type !ca $type ==
+        /component/dep#dst !ca $eid ==
+        and
+        /component/dep !bf
+        ${ret}
+    ] select
+    ` : `
+    [
+        /component/dep#dst !ca $eid ==
+        /component/dep !bf
+        ${ret}
+    ] select`;
+
+    return await es.prepare(q).getResult({ eid, type });
+}
+
+export async function getDependencyOfEntityIds(es: EntitySet, eid: EntityId, type?: DependencyType): Promise<EntityId[]> {
+    return getDependenciesOf(es, eid, type, true) as Promise<EntityId[]>;
+}
+export async function getDependencyOfEntities(es: EntitySet, eid: EntityId, type?: DependencyType): Promise<Entity[]> {
+    return getDependenciesOf(es, eid, type, false) as Promise<Entity[]>;
+}

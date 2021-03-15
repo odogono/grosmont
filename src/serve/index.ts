@@ -15,9 +15,9 @@ import { build, renderToOutput } from '../builder';
 import { process as scanSrc } from '../builder/processor/file';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntityUpdate } from '../builder/types';
-import { clearUpdates, getDependencyEntities } from '../builder/query';
+import { clearUpdates, getDependencyEntities, getDependencyOfEntities } from '../builder/query';
 import Day from 'dayjs';
-import { EntityId } from 'odgn-entity/src/entity';
+import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { debounce, parseUri, toInteger } from "@odgn/utils";
 import { Reporter, setLocation, info, error, Level, setLevel } from '../builder/reporter';
 import { printAll, printEntity } from 'odgn-entity/src/util/print';
@@ -186,6 +186,33 @@ function heartbeat(res) {
 }
 
 
+app.get('/_e/:eid', async (req, res, next) => {
+    const eid = toInteger(req.params.eid);
+
+    const e = site.es.getEntity(eid, false);
+
+    if (e === undefined) {
+        return res.status(404).send(`Entity ${eid} not found`);
+    }
+
+    let output = [];
+    let outputData = await site.getEntityOutput(eid);
+    let path = await site.getEntityDstUrl(eid);
+
+
+    if (outputData !== undefined) {
+        output.push(outputData);
+    }
+
+    output.push(await buildEntityDisplay(site, eid));
+    output.push(await buildEntityDepsDisplay(site, eid));
+    output.push(await buildEntityDepsOfDisplay(site, eid));
+    output.push(clientIdHeader(eid, path));
+    output.push(clientHandler);
+
+    return res.send(output.join('\n'));
+});
+
 
 app.use(async (req, res, next) => {
     let originalUrl = parseUrl.original(req)
@@ -198,37 +225,56 @@ app.use(async (req, res, next) => {
         eid = site.getEntityIdByDst(path);
     }
 
-    log('[ok]', originalUrl.href, eid, path);
-
-    if (eid !== undefined) {
-        let output = await site.getEntityOutput(eid);
-        // log('found', eid, output);
-        // printEntity(site.es, await site.es.getEntity(eid,true));
-        if (output !== undefined) {
-            let [data, mime] = output;
-
-            if (mime === 'text/html') {
-                res.send(
-                    data
-                    // + debugHTML 
-                    + await buildEntityDisplay(site, eid)
-                    + await buildEntityDepsDisplay(site, eid)
-                    + clientIdHeader(eid, path)
-                    + clientHandler
-
-                );
-            } else {
-                res.send(data);
-            }
-
-            return;
-        }
-        else {
-            return res.send(`${eid} /component/output not found`);
-        }
+    if (eid === undefined) {
+        return res.status(404).send(`not found`);
     }
 
-    return next();
+    log('[ok]', originalUrl.href, eid, path);
+
+    let output = [];
+
+    let outputEntry = await site.getEntityOutput(eid);
+
+    if (outputEntry === undefined) {
+        return res.status(404).send(`/output not found for ${eid}`);
+    }
+
+    // log('found', eid, output);
+    // printEntity(site.es, await site.es.getEntity(eid,true));
+    // if (output !== undefined) {
+    let [data, mime] = output;
+
+    output.push(data);
+    output.push(await buildEntityDisplay(site, eid));
+    output.push(await buildEntityDepsDisplay(site, eid));
+    output.push(await buildEntityDepsOfDisplay(site, eid));
+    output.push(clientIdHeader(eid, path));
+    output.push(clientHandler);
+
+    return res.send(output.join('\n'));
+
+    //         if (mime === 'text/html') {
+    //             res.send(
+    //                 data
+    //                 // + debugHTML 
+    //                 + await buildEntityDisplay(site, eid)
+    //                 + await buildEntityDepsDisplay(site, eid)
+    //                 + clientIdHeader(eid, path)
+    //                 + clientHandler
+
+    //             );
+    //         } else {
+    //             res.send(data);
+    //         }
+
+    //         return;
+    //     }
+    //     else {
+    //         return res.send(`${eid} /component/output not found`);
+    //     }
+    // }
+
+    // return next();
 
 })
 
@@ -240,29 +286,10 @@ app.use(async (req, res, next) => {
  * @returns 
  */
 async function buildEntityDisplay(site: Site, eid: EntityId) {
-
-    let displayE = await site.getEntityBySrc('file:///admin/entity.tsx');
-
-    if (displayE === undefined) {
-        return '';
-    }
-
     const e = await site.es.getEntity(eid, true);
-    // printEntity(site.es, e);
     const props = { e, es: site.es };
-    try {
-        // log('[buildEntityDisplay]', site.es.getUrl(), e.id );
-        const output = await renderToOutput(site, build, displayE.id, props);
 
-        if (output !== undefined) {
-            return output.data;
-        }
-    } catch (err) {
-        log('[error]', err.stack);
-        log('[error]', site.es.getUrl());
-    }
-
-    return ``;
+    return renderEntityOutput(site, 'file:///admin/entity.tsx', props);
 }
 
 /**
@@ -274,27 +301,48 @@ async function buildEntityDisplay(site: Site, eid: EntityId) {
 async function buildEntityDepsDisplay(site: Site, eid: EntityId) {
     let deps = await getDependencyEntities(site.es, eid);
 
-    // console.info('deps for', eid, deps);
-    let displayE = await site.getEntityBySrc('file:///admin/entity_deps.tsx');
-
-
-
-    if( displayE === undefined ){
-        return '';
-    }
-
     // add the src url of the dst to each dep
-    deps = await Promise.all( deps.map( async dep => {
+    deps = await Promise.all(deps.map(async dep => {
         let dst = dep.Dep.dst ?? 0;
-        if( dst === 0 ){
+        if (dst === 0) {
             return dep;
         }
-        let dstSrc = await site.getEntitySrcUrl( dst );
-        return applyMeta( dep, {dstSrc} );
-    }) );
+        let dstSrc = await site.getEntitySrcUrl(dst);
+        return applyMeta(dep, { dstSrc });
+    }));
 
     const e = await site.es.getEntity(eid, true);
-    const props = { e, es:site.es, deps };
+    const props = { e, es: site.es, deps };
+
+    return renderEntityOutput(site, 'file:///admin/entity_deps.tsx', props);
+}
+
+async function buildEntityDepsOfDisplay(site: Site, eid: EntityId) {
+    let deps = await getDependencyOfEntities(site.es, eid);
+
+    // add the src url of the dst to each dep
+    deps = await Promise.all(deps.map(async dep => {
+        let src = dep.Dep.src ?? 0;
+        if (src === 0) {
+            return dep;
+        }
+        let dstSrc = await site.getEntitySrcUrl(src);
+        return applyMeta(dep, { dstSrc });
+    }));
+
+    const e = await site.es.getEntity(eid, true);
+    const props = { e, es: site.es, deps };
+
+    return renderEntityOutput(site, 'file:///admin/entity_deps_of.tsx', props);
+}
+
+
+async function renderEntityOutput(site: Site, src: string, props: any = {}) {
+    let displayE = await site.getEntityBySrc(src);
+
+    if (displayE === undefined) {
+        return '';
+    }
 
     try {
         const output = await renderToOutput(site, build, displayE.id, props);
@@ -306,11 +354,10 @@ async function buildEntityDepsDisplay(site: Site, eid: EntityId) {
         log('[error]', err.stack);
         log('[error]', site.es.getUrl());
     }
-
-    // deps.forEach(dep => printEntity(site.es, dep));
-
     return ``;
 }
+
+
 
 
 function clientIdHeader(eid: EntityId, path: string) {

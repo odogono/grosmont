@@ -17,8 +17,11 @@ details.deps {
     .dep {
         display: flex;
 
+        .type, .e {
+            min-width : 8em;
+        }
+
         div {
-            min-width : 3em;
             margin    : 0.4em;
             text-align: left;
         }
