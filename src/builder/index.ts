@@ -47,8 +47,9 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
     const siteRef = site.getRef();
     const updateOptions = { reporter, onlyUpdated: true, ...options, siteRef };
 
-    let siteE = site.getEntity();
-    let config = Jsonpointer.get(siteE, '/Meta/meta/processors');
+    // let siteE = site.getEntity();
+    // let config = Jsonpointer.get(siteE, '/Meta/meta/processors');
+    let config = site.getConfig('/processors');
 
 
 

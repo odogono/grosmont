@@ -39,6 +39,7 @@ import { createUUID } from '@odgn/utils';
 import { info, Level, Reporter, setLevel, setLocation } from './reporter';
 import { uriToPath } from './util';
 import { buildProcessors, RawProcessorEntry } from '.';
+import JSONPointer from 'jsonpointer';
 
 
 
@@ -316,6 +317,21 @@ export class Site {
      */
     getUrl(): string {
         return this.e.Url?.url ?? 'http://localhost/';
+    }
+
+    /**
+     * Returns config
+     * 
+     * @param ptr 
+     */
+    getConfig(ptr:string, defaultTo?:any): any {
+        const conf = this.getEntity()?.Meta?.meta ?? {};
+        try {
+            const value = JSONPointer.get(conf, ptr) ?? defaultTo;
+            return value;
+        } catch( err ){
+            return defaultTo;
+        }
     }
 
     /**
