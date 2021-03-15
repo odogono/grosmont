@@ -93,12 +93,13 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // props.imgs = options.imgs;
     props = await applyCSSDependencies(es, e, child, props);
 
-    props.comProps = { ...options.props };
+    props.comProps = { e, es, site, page:e, ...options.props };
 
     // log('[processEntity]', base, options );
     
     const context = createRenderContext(site, e, options);
     
+    // scope vars which appear globally defined to the code
     const scope = {
         site,
         e,
@@ -130,7 +131,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     const {component} = result;
 
-    let output = await transformComponent( component, props, { onConfig, require });
+    let output = await transformComponent( component, props);
 
     
     // resolve all the server effects
@@ -141,7 +142,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     }
 
     // render again to reconcile any server effects
-    output = await transformComponent( component, props, { require, onConfig });
+    output = await transformComponent( component, props);
 
     // replace any e:// urls with dst url links
     output = replaceEntityUrls(site, output);

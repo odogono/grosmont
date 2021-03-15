@@ -1,4 +1,5 @@
 import 'stateful-hooks';
+import Process from 'process';
 import Chokidar from 'chokidar';
 import express from 'express';
 import parseUrl from 'parseurl';
@@ -10,17 +11,18 @@ import send from 'send';
 import url from 'url';
 import Mitt from 'mitt'
 import { Site } from '../builder/site';
-import { build } from '../builder';
+import { build, renderToOutput } from '../builder';
 import { process as scanSrc } from '../builder/processor/file';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { EntityUpdate } from '../builder/types';
-import { clearUpdates } from '../builder/query';
+import { clearUpdates, getDependencyEntities } from '../builder/query';
 import Day from 'dayjs';
 import { EntityId } from 'odgn-entity/src/entity';
 import { debounce, parseUri, toInteger } from "@odgn/utils";
-import { Reporter, setLocation, info, error } from '../builder/reporter';
-import { printEntity } from 'odgn-entity/src/util/print';
+import { Reporter, setLocation, info, error, Level, setLevel } from '../builder/reporter';
+import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { buildEntityHTML } from './util';
+import { applyMeta } from '../builder/util';
 const log = (...args) => console.log('[server]', ...args);
 
 const app = express();
@@ -28,87 +30,97 @@ const port = 3000;
 
 const emitter = Mitt();
 
-let site:Site;
+let site: Site;
+let adminSite: Site;
+
+const adminConfigPath = Path.join(__dirname, 'admin.yaml');
 
 const [config] = process.argv.slice(2);
+
+if (config === undefined) {
+    log('missing config');
+    Process.exit(0);
+}
 const configPath = Path.resolve(config);
-
-
 
 const clientHandlerPath = Path.join(__dirname, 'client.js');
 const debugHTMLPath = Path.join(__dirname, 'debug.html');
 
-const clientHandler = '<script>' + Fs.readFileSync( clientHandlerPath, 'utf-8' ) + '</script>';
+const clientHandler = '<script>' + Fs.readFileSync(clientHandlerPath, 'utf-8') + '</script>';
 
-const debugHTML = Fs.readFileSync( debugHTMLPath, 'utf-8' );
+const debugHTML = Fs.readFileSync(debugHTMLPath, 'utf-8');
 
 const reporter = new Reporter();
 setLocation(reporter, '/server');
+setLevel(reporter, Level.INFO);
 
 
-async function onStart(){
+async function onStart() {
     info(reporter, `listening at http://localhost:${port}`);
-    
-    site = await Site.create({configPath});
-    info(reporter, `config: ${configPath}` );
-    info(reporter, `root: ${site.getSrcUrl()}` );
+
+    site = await Site.create({ configPath, reporter });
+    info(reporter, `config: ${configPath}`);
+    info(reporter, `root: ${site.getSrcUrl()}`);
+
+    // adminSite = await Site.create({configPath: adminConfigPath});
+    // await build(adminSite);
 
     await build(site);
 
-    // await printAll(site.es);
+    // await printAll(adminSite.es);
 
     // info(reporter, `index ${site.getIndex('/index/dstUrl').index}` );
-    log(`index`, site.getIndex('/index/dstUrl').index );
+    log(`index`, site.getIndex('/index/dstUrl').index);
 
-    let changeQueue:EntityUpdate[] = [];
+    let changeQueue: EntityUpdate[] = [];
 
-    
-    let processChangeQueue = debounce( async () => {
-        // info(reporter, '[cq]', changeQueue );
+    let processChangeQueue = debounce(async () => {
+        setLocation(reporter, '/serve/change');
+        info(reporter, `processing ${changeQueue.length} changes`);
         // await clearUpdates(site);
-        await build(site, {updates:changeQueue});
+        await build(site, { updates: changeQueue });
         // await scanSrc(site, {updates: changeQueue});
 
 
         const eids = await site.getUpdatedEntityIds();
-        // info(reporter, 'updated:');
+        log('updated:', eids);
         let updates = [];
-        for( const eid of eids ){
-            let url = await site.getEntityDstUrl( eid );
-            let srcUrl = await site.getEntitySrcUrl( eid );
-            info(reporter, `update ${srcUrl} ${url}`,  {eid} );
-            updates.push( [url, srcUrl, eid ] );
+        for (const eid of eids) {
+            let url = await site.getEntityDstUrl(eid);
+            let srcUrl = await site.getEntitySrcUrl(eid);
+            info(reporter, `update ${srcUrl} ${url}`, { eid });
+            updates.push([url, srcUrl, eid]);
             // printEntity( site.es, await site.es.getEntity(eid) );
         }
 
-        emitter.emit( '/serve/e/update', updates );
-        
+        emitter.emit('/serve/e/update', updates);
 
         changeQueue = [];
-    } )
+    })
 
-    Chokidar.watch( site.getSrcUrl() ).on('all', async (event, path) => {
-        let relPath = Path.sep + path.replace( site.getSrcUrl(), '' );
+    Chokidar.watch(site.getSrcUrl()).on('all', async (event, path) => {
+        let relPath = Path.sep + path.replace(site.getSrcUrl(), '');
         // log( '[change]', event, relPath );
 
         let op = ChangeSetOp.None;
-        if( event === 'change' ){
+        if (event === 'change') {
             op = ChangeSetOp.Update;
-        } else if( event === 'add' || event === 'addDir' ){
+        } else if (event === 'add' || event === 'addDir') {
             op = ChangeSetOp.Add;
-        } else if( event === 'unlink' || event === 'unlinkDir' ){
+        } else if (event === 'unlink' || event === 'unlinkDir') {
             op = ChangeSetOp.Remove;
         }
-        
-        const eid = await site.getEntityIdBySrc( 'file://' + relPath );
-        
-        info(reporter, `change - file://${relPath}`, {eid});
-        
-        if( eid !== undefined ){
-            changeQueue.push( [eid,op] );
+
+        const eid = await site.getEntityIdBySrc('file://' + relPath);
+
+        setLocation(reporter, '/serve/watch');
+        info(reporter, `change - file://${relPath}`, { eid });
+
+        if (eid !== undefined) {
+            changeQueue.push([eid, op]);
             processChangeQueue();
         }
-        
+
     })
 }
 
@@ -120,7 +132,7 @@ app.get('/sseEvents', function (req, res) {
 
     try {
         info(reporter, `[sseEvents] connect ${originalUrl.href}`);
-        let {e:rEid,path:rPath} = query;
+        let { e: rEid, path: rPath } = query;
         rEid = toInteger(rEid);
 
 
@@ -133,19 +145,21 @@ app.get('/sseEvents', function (req, res) {
         req.on('close', () => {
             info(reporter, `[sseEvents] disconnected`);
             // clearTimeout(manualShutdown)  // prevent shutting down the connection twice
-          })
+        })
 
         emitter.on('sse', e => {
             const { event, ...rest } = e;
             res.write(`event: ${event}\n`);
             res.write("data: " + JSON.stringify(rest) + "\n\n")
+            setLocation(reporter, '/serve/sse');
             info(reporter, `[/sse] ${e}`);
         });
 
         emitter.on('/serve/e/update', (updates) => {
-            info(reporter, `[/serve/e/update] ${updates}`);
-            const update = updates.find( ([url,srcUrl,eid]) => eid === rEid );
-            if( update !== undefined ){
+            setLocation(reporter, '/serve/e/update');
+            info(reporter, `${updates}`);
+            const update = updates.find(([url, srcUrl, eid]) => eid === rEid);
+            if (update !== undefined) {
                 res.write(`event: reload\n`);
                 res.write("data: " + JSON.stringify(update) + "\n\n");
             }
@@ -164,11 +178,11 @@ app.get('/sseEvents', function (req, res) {
     }
 })
 
-function heartbeat( res ){
+function heartbeat(res) {
     // log('[heartbeat]');
     res.write("event: ping\n");
     res.write(`data: ${Day().toISOString()}\n\n`);
-    setTimeout( () => heartbeat(res), 10000);
+    setTimeout(() => heartbeat(res), 10000);
 }
 
 
@@ -178,30 +192,33 @@ app.use(async (req, res, next) => {
     let path = parseUrl(req).pathname
 
     let eid = site.getEntityIdByDst(path);
-    
-    if( eid === undefined && path.endsWith('/') ){
+
+    if (eid === undefined && path.endsWith('/')) {
         path = path + 'index.html';
         eid = site.getEntityIdByDst(path);
     }
 
     log('[ok]', originalUrl.href, eid, path);
-    
-    if( eid !== undefined ){
-        let output = await site.getEntityOutput( eid );
-        log('found', eid, output);
-        printEntity(site.es, await site.es.getEntity(eid,true));
-        if( output !== undefined ){
-            let [data,mime] = output;
 
-            if( mime === 'text/html' ){
-                res.send( 
-                    data 
-                    + debugHTML 
-                    // + await buildEntityHTML(eid)
-                    + clientIdHeader(eid,path) 
-                    + clientHandler );
+    if (eid !== undefined) {
+        let output = await site.getEntityOutput(eid);
+        // log('found', eid, output);
+        // printEntity(site.es, await site.es.getEntity(eid,true));
+        if (output !== undefined) {
+            let [data, mime] = output;
+
+            if (mime === 'text/html') {
+                res.send(
+                    data
+                    // + debugHTML 
+                    + await buildEntityDisplay(site, eid)
+                    + await buildEntityDepsDisplay(site, eid)
+                    + clientIdHeader(eid, path)
+                    + clientHandler
+
+                );
             } else {
-                res.send( data );
+                res.send(data);
             }
 
             return;
@@ -215,7 +232,88 @@ app.use(async (req, res, next) => {
 
 })
 
-function clientIdHeader(eid:EntityId, path:string){
+
+/**
+ * 
+ * @param site 
+ * @param eid 
+ * @returns 
+ */
+async function buildEntityDisplay(site: Site, eid: EntityId) {
+
+    let displayE = await site.getEntityBySrc('file:///admin/entity.tsx');
+
+    if (displayE === undefined) {
+        return '';
+    }
+
+    const e = await site.es.getEntity(eid, true);
+    // printEntity(site.es, e);
+    const props = { e, es: site.es };
+    try {
+        // log('[buildEntityDisplay]', site.es.getUrl(), e.id );
+        const output = await renderToOutput(site, build, displayE.id, props);
+
+        if (output !== undefined) {
+            return output.data;
+        }
+    } catch (err) {
+        log('[error]', err.stack);
+        log('[error]', site.es.getUrl());
+    }
+
+    return ``;
+}
+
+/**
+ * 
+ * @param site 
+ * @param eid 
+ * @returns 
+ */
+async function buildEntityDepsDisplay(site: Site, eid: EntityId) {
+    let deps = await getDependencyEntities(site.es, eid);
+
+    // console.info('deps for', eid, deps);
+    let displayE = await site.getEntityBySrc('file:///admin/entity_deps.tsx');
+
+
+
+    if( displayE === undefined ){
+        return '';
+    }
+
+    // add the src url of the dst to each dep
+    deps = await Promise.all( deps.map( async dep => {
+        let dst = dep.Dep.dst ?? 0;
+        if( dst === 0 ){
+            return dep;
+        }
+        let dstSrc = await site.getEntitySrcUrl( dst );
+        return applyMeta( dep, {dstSrc} );
+    }) );
+
+    const e = await site.es.getEntity(eid, true);
+    const props = { e, es:site.es, deps };
+
+    try {
+        const output = await renderToOutput(site, build, displayE.id, props);
+
+        if (output !== undefined) {
+            return output.data;
+        }
+    } catch (err) {
+        log('[error]', err.stack);
+        log('[error]', site.es.getUrl());
+    }
+
+    // deps.forEach(dep => printEntity(site.es, dep));
+
+    return ``;
+}
+
+
+function clientIdHeader(eid: EntityId, path: string) {
     return `
     <script>window.odgnServe = { eid: ${eid}, path:'${path}' };</script>
     `;

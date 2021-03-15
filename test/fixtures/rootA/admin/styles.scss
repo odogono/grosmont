@@ -1,0 +1,63 @@
+details {
+    margin-top   : 1em;
+    padding      : 0.5em 0 0.0em 0;
+    border       : 1px solid #ccc;
+    border-radius: 0.2em;
+    box-shadow   : 2px 2px 6px 0px rgba(0, 0, 0, 0.3);
+
+    summary {
+        text-align: left;
+        font-size : 1.1em;
+        margin    : 0.4em;
+    }
+}
+
+details.deps {
+
+    .dep {
+        display: flex;
+
+        div {
+            min-width : 3em;
+            margin    : 0.4em;
+            text-align: left;
+        }
+    }
+}
+
+details.entity {
+
+    .component {
+        display              : grid;
+        grid-template-columns: [names] 0.2fr [attrs] 0.3fr [vals] 2fr;
+        grid-auto-flow       : row;
+
+        div {
+            padding    : 5px;
+            display    : flex;
+            align-items: top;
+            overflow   : hidden;
+        }
+
+        .name {
+            grid-column: names;
+            grid-row   : auto;
+        }
+
+        .attr {
+            grid-column: attrs;
+            grid-row   : auto;
+            font-size  : smaller;
+        }
+
+        .val {
+            grid-area    : vals;
+            grid-row     : auto;
+            font-size    : smaller;
+            text-align   : left;
+            text-overflow: ellipsis;
+        }
+    }
+}
+
+details.deps {}

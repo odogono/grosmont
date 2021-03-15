@@ -10,31 +10,39 @@ function gotActivity(){
 
 if (!!window.EventSource) {
     const {eid,path} = window.odgnServe;
-    var source = new EventSource(`/sseEvents?e=${eid}&path=${path}`)
+    var source = new EventSource(`/sseEvents?e=${eid}&path=${path}`);
+
+    const debugDataEl = document.getElementById('data');
+
+    function setDebug(data){
+        if( debugDataEl !== undefined ){
+            debugDataEl.innerHTML = data;
+        }
+    }
 
     source.addEventListener('message', function (e) {
         log('[message]', e);
-        document.getElementById('data').innerHTML = e.data
+        setDebug( e.dat )a
     }, false)
 
     source.addEventListener('initial', function (e) {
         log('[initial]', e);
-        document.getElementById('data').innerHTML = e.data
+        setDebug( e.dat )a
     }, false)
 
     source.addEventListener('change', function (e) {
         log('[change]', e);
-        document.getElementById('data').innerHTML = JSON.parse(e.data);
+        setDebug( JSON.parse(e.data) );
     }, false);
     
     source.addEventListener('ping', function (e) {
         // log('[ping]', e);
-        // document.getElementById('data').innerHTML = e.data;
+        // setDebug( e.data );
     }, false);
 
     source.addEventListener('reload', function (e) {
         log('[reload]', e);
-        document.getElementById('data').innerHTML = JSON.parse(e.data);
+        setDebug( JSON.parse(e.data) );
         window.location.reload();
     }, false);
 

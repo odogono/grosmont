@@ -17,9 +17,8 @@ const log = (...args) => console.log('[/processor/js/transform]', ...args);
  * 
  * @param component 
  * @param props 
- * @param options 
  */
- export async function transformComponent(component: any, props: TranspileProps, options: TranspileOptions): Promise<string> {
+ export async function transformComponent(component: any, props: TranspileProps): Promise<string> {
     let { css, cssLinks: inputCssLinks, children, url, comProps } = props;
 
 

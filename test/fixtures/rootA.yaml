@@ -16,9 +16,7 @@
 /component/meta:
   meta:
     es:
-      url: es://sqlite/siteA.sqlite?isMemory=true
-    
-
+      url: es://sqlite/siteA.sqlite?isMemory=false
 
 /component/patterns:
   include: 
