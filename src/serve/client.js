@@ -10,24 +10,34 @@ function gotActivity(){
 
 if (!!window.EventSource) {
     const {eid,path} = window.odgnServe;
-    var source = new EventSource(`/sseEvents?e=${eid}&path=${path}`);
+    var source = new EventSource(`/sse?e=${eid}&path=${path}`);
 
-    const debugDataEl = document.getElementById('data');
-
+    
     function setDebug(data){
-        if( debugDataEl !== undefined ){
-            debugDataEl.innerHTML = data;
+        
+        // const debugDataEl = document.getElementById('data');
+        // if( debugDataEl !== undefined ){
+        //     debugDataEl.innerHTML = data;
+        // }
+        log('[debug]', data);
+    }
+
+    function setState(msg){
+        const id_state = document.getElementById('state');
+        if( id_state ){
+            id_state.innerHTML = msg;
         }
+        log('[state]', msg);
     }
 
     source.addEventListener('message', function (e) {
         log('[message]', e);
-        setDebug( e.dat )a
+        setDebug( e.data );
     }, false)
 
     source.addEventListener('initial', function (e) {
         log('[initial]', e);
-        setDebug( e.dat )a
+        setDebug( e.data )
     }, false)
 
     source.addEventListener('change', function (e) {
@@ -51,19 +61,20 @@ if (!!window.EventSource) {
     }
 
     source.addEventListener('open', function (e) {
-        document.getElementById('state').innerHTML = "Connected"
+        log('connected');
+        // document.getElementById('state').innerHTML = "Connected"
     }, false);
     
     source.addEventListener('error', (e) => {
         log('[error]', e);
-        const id_state = document.getElementById('state')
+        
         if (e.eventPhase == EventSource.CLOSED)
             source.close()
         if (e.target.readyState == EventSource.CLOSED) {
-            id_state.innerHTML = "Disconnected"
+            setState( "Disconnected" );
         }
         else if (e.target.readyState == EventSource.CONNECTING) {
-            id_state.innerHTML = "Connecting..."
+            setState( "Connecting..." );
         }
     }, false)
 } else {

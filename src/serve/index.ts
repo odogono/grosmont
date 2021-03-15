@@ -1,89 +1,143 @@
-import 'stateful-hooks';
-import Process from 'process';
-import Chokidar from 'chokidar';
-import express from 'express';
-import parseUrl from 'parseurl';
-import encodeUrl from 'encodeurl';
-import escapeHtml from 'escape-html';
+require('stateful-hooks');
+import Fastify from 'fastify';
+import FastifyAutoLoad from 'fastify-autoload';
+import {FastifySSEPlugin} from "fastify-sse-v2";
 import Path from 'path';
-import Fs from 'fs-extra';
-import send from 'send';
-import url from 'url';
-import Mitt from 'mitt'
+import Mitt, { Emitter } from 'mitt'
+import Chokidar from 'chokidar';
 import { Site } from '../builder/site';
-import { build, renderToOutput } from '../builder';
-import { process as scanSrc } from '../builder/processor/file';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
-import { EntityUpdate } from '../builder/types';
-import { clearUpdates, getDependencyEntities, getDependencyOfEntities } from '../builder/query';
-import Day from 'dayjs';
-import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { debounce, parseUri, toInteger } from "@odgn/utils";
+import { buildProcessors, RawProcessorEntry, renderToOutput } from '../builder';
 import { Reporter, setLocation, info, error, Level, setLevel } from '../builder/reporter';
-import { printAll, printEntity } from 'odgn-entity/src/util/print';
-import { buildEntityHTML } from './util';
-import { applyMeta } from '../builder/util';
-const log = (...args) => console.log('[server]', ...args);
+import { EntityUpdate, SiteProcessor } from '../builder/types';
+import { debounce } from '@odgn/utils';
+import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 
-const app = express();
-const port = 3000;
 
-const emitter = Mitt();
+export interface RoutesConfig {
+    config: Config;
+}
 
-let site: Site;
-let adminSite: Site;
+interface Config {
+    site: Site;
+    process: SiteProcessor;
+    emitter: Emitter;
+}
 
-const adminConfigPath = Path.join(__dirname, 'admin.yaml');
+const log = require('pino')({ level: 'info', prettyPrint: true });
+
+// Require the framework and instantiate it
+const fastify = Fastify({ logger: log });
+
+fastify.register(require('fastify-routes'))
+fastify.register(FastifySSEPlugin);
 
 const [config] = process.argv.slice(2);
 
 if (config === undefined) {
     log('missing config');
-    Process.exit(0);
+    process.exit(1);
 }
+
+
 const configPath = Path.resolve(config);
 
-const clientHandlerPath = Path.join(__dirname, 'client.js');
-const debugHTMLPath = Path.join(__dirname, 'debug.html');
 
-const clientHandler = '<script>' + Fs.readFileSync(clientHandlerPath, 'utf-8') + '</script>';
+// Run the server!
+const start = async () => {
+    try {
+        const emitter = Mitt();
+        let { site, process } = await initialiseSite(configPath);
 
-const debugHTML = Fs.readFileSync(debugHTMLPath, 'utf-8');
+        // console.log( site.getEntity().Meta );
 
-const reporter = new Reporter();
-setLocation(reporter, '/server');
-setLevel(reporter, Level.INFO);
+        await startWatcher( site, process, emitter );
+
+        fastify.register(FastifyAutoLoad, {
+            dir: Path.join(__dirname, 'routes'),
+            options: { config: {emitter, site, process} }
+        });
+
+        // fastify.register(require('./routes/sse'), {options: {config: {site,process,emitter} }} );
+
+        const port = site.getConfig('/serve/port', 3000);
+
+        await fastify.listen(port)
+
+        console.log((fastify as any).routes);
+
+    } catch (err) {
+        fastify.log.error(err)
+        process.exit(1)
+    }
+}
 
 
-async function onStart() {
-    info(reporter, `listening at http://localhost:${port}`);
+start();
 
-    site = await Site.create({ configPath, reporter });
-    info(reporter, `config: ${configPath}`);
+
+
+async function initialiseSite(path: string) {
+    const reporter = new Reporter();
+    setLocation(reporter, '/server');
+    setLevel(reporter, Level.INFO);
+
+    let site = await Site.create({ configPath: path, reporter });
+    info(reporter, `config: ${path}`);
     info(reporter, `root: ${site.getSrcUrl()}`);
 
-    // adminSite = await Site.create({configPath: adminConfigPath});
-    // await build(adminSite);
+    const spec: RawProcessorEntry[] = [
+        ['/query#clearUpdates', 1000],
+        ['/query#clearErrors', 1000],
+        ['/processor/file'],
 
-    await build(site);
+        ['/processor/mark#statics'],
+        ['/processor/mark#jsx'],
+        ['/processor/mark#mdx'],
+        ['/processor/mark#scss'],
 
-    // await printAll(adminSite.es);
+        ['/processor/build_src_index'],
 
-    // info(reporter, `index ${site.getIndex('/index/dstUrl').index}` );
-    log(`index`, site.getIndex('/index/dstUrl').index);
+        ['/processor/scss', 0, { renderScss: true }],
+        ['/processor/jsx/eval'],
+        ['/processor/mdx/eval'],
+        ['/processor/apply_tags', 0, { type: 'tag' }],
+        ['/processor/apply_tags', 0, { type: 'layout' }],
 
+        ['/processor/js/eval'],
+        ['/processor/mdx/resolve_meta'],
+
+        ['/processor/build_dst_index'],
+
+        ['/processor/js/render'],
+        ['/processor/build_dst_index', -99],
+        ['/processor/write', -100],
+        ['/processor/static/copy', -101],
+    ]
+
+    let process = await buildProcessors(site, spec, {onlyUpdated:true});
+
+    await process(site);
+
+    return { site, process };
+}
+
+
+
+async function startWatcher(site: Site, process:SiteProcessor, emitter:Emitter) {
     let changeQueue: EntityUpdate[] = [];
+    const reporter = site.reporter;
 
     let processChangeQueue = debounce(async () => {
         setLocation(reporter, '/serve/change');
         info(reporter, `processing ${changeQueue.length} changes`);
         // await clearUpdates(site);
-        await build(site, { updates: changeQueue });
+        await process(site, {});
+        // await process(site, { updates: changeQueue });
         // await scanSrc(site, {updates: changeQueue});
 
 
         const eids = await site.getUpdatedEntityIds();
-        log('updated:', eids);
+        // log('updated:', eids);
         let updates = [];
         for (const eid of eids) {
             let url = await site.getEntityDstUrl(eid);
@@ -120,469 +174,5 @@ async function onStart() {
             changeQueue.push([eid, op]);
             processChangeQueue();
         }
-
     })
-}
-
-// https://stackoverflow.com/a/50594265/2377677
-app.get('/sseEvents', function (req, res) {
-    let originalUrl = parseUrl.original(req)
-    let path = parseUrl(req).pathname;
-    let query = parseUri(originalUrl.href).queryKey;
-
-    try {
-        info(reporter, `[sseEvents] connect ${originalUrl.href}`);
-        let { e: rEid, path: rPath } = query;
-        rEid = toInteger(rEid);
-
-
-        res.writeHead(200, {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
-        });
-
-        req.on('close', () => {
-            info(reporter, `[sseEvents] disconnected`);
-            // clearTimeout(manualShutdown)  // prevent shutting down the connection twice
-        })
-
-        emitter.on('sse', e => {
-            const { event, ...rest } = e;
-            res.write(`event: ${event}\n`);
-            res.write("data: " + JSON.stringify(rest) + "\n\n")
-            setLocation(reporter, '/serve/sse');
-            info(reporter, `[/sse] ${e}`);
-        });
-
-        emitter.on('/serve/e/update', (updates) => {
-            setLocation(reporter, '/serve/e/update');
-            info(reporter, `${updates}`);
-            const update = updates.find(([url, srcUrl, eid]) => eid === rEid);
-            if (update !== undefined) {
-                res.write(`event: reload\n`);
-                res.write("data: " + JSON.stringify(update) + "\n\n");
-            }
-        });
-
-        setTimeout(() => {
-            res.write(`event: initial\n`)
-            res.write('data: ' + JSON.stringify({ evt: 'connected' }) + '\n\n');
-        }, 1000);
-
-        heartbeat(res);
-
-        // countdown(res, 15);
-    } catch (err) {
-        console.warn('[sseEvents]', err);
-    }
-})
-
-function heartbeat(res) {
-    // log('[heartbeat]');
-    res.write("event: ping\n");
-    res.write(`data: ${Day().toISOString()}\n\n`);
-    setTimeout(() => heartbeat(res), 10000);
-}
-
-
-app.get('/_e/:eid', async (req, res, next) => {
-    const eid = toInteger(req.params.eid);
-
-    const e = site.es.getEntity(eid, false);
-
-    if (e === undefined) {
-        return res.status(404).send(`Entity ${eid} not found`);
-    }
-
-    let output = [];
-    let outputData = await site.getEntityOutput(eid);
-    let path = await site.getEntityDstUrl(eid);
-
-
-    if (outputData !== undefined) {
-        output.push(outputData);
-    }
-
-    output.push(await buildEntityDisplay(site, eid));
-    output.push(await buildEntityDepsDisplay(site, eid));
-    output.push(await buildEntityDepsOfDisplay(site, eid));
-    output.push(clientIdHeader(eid, path));
-    output.push(clientHandler);
-
-    return res.send(output.join('\n'));
-});
-
-
-app.use(async (req, res, next) => {
-    let originalUrl = parseUrl.original(req)
-    let path = parseUrl(req).pathname
-
-    let eid = site.getEntityIdByDst(path);
-
-    if (eid === undefined && path.endsWith('/')) {
-        path = path + 'index.html';
-        eid = site.getEntityIdByDst(path);
-    }
-
-    if (eid === undefined) {
-        return res.status(404).send(`not found`);
-    }
-
-    log('[ok]', originalUrl.href, eid, path);
-
-    let output = [];
-
-    let outputEntry = await site.getEntityOutput(eid);
-
-    if (outputEntry === undefined) {
-        return res.status(404).send(`/output not found for ${eid}`);
-    }
-
-    // log('found', eid, output);
-    // printEntity(site.es, await site.es.getEntity(eid,true));
-    // if (output !== undefined) {
-    let [data, mime] = output;
-
-    output.push(data);
-    output.push(await buildEntityDisplay(site, eid));
-    output.push(await buildEntityDepsDisplay(site, eid));
-    output.push(await buildEntityDepsOfDisplay(site, eid));
-    output.push(clientIdHeader(eid, path));
-    output.push(clientHandler);
-
-    return res.send(output.join('\n'));
-
-    //         if (mime === 'text/html') {
-    //             res.send(
-    //                 data
-    //                 // + debugHTML 
-    //                 + await buildEntityDisplay(site, eid)
-    //                 + await buildEntityDepsDisplay(site, eid)
-    //                 + clientIdHeader(eid, path)
-    //                 + clientHandler
-
-    //             );
-    //         } else {
-    //             res.send(data);
-    //         }
-
-    //         return;
-    //     }
-    //     else {
-    //         return res.send(`${eid} /component/output not found`);
-    //     }
-    // }
-
-    // return next();
-
-})
-
-
-/**
- * 
- * @param site 
- * @param eid 
- * @returns 
- */
-async function buildEntityDisplay(site: Site, eid: EntityId) {
-    const e = await site.es.getEntity(eid, true);
-    const props = { e, es: site.es };
-
-    return renderEntityOutput(site, 'file:///admin/entity.tsx', props);
-}
-
-/**
- * 
- * @param site 
- * @param eid 
- * @returns 
- */
-async function buildEntityDepsDisplay(site: Site, eid: EntityId) {
-    let deps = await getDependencyEntities(site.es, eid);
-
-    // add the src url of the dst to each dep
-    deps = await Promise.all(deps.map(async dep => {
-        let dst = dep.Dep.dst ?? 0;
-        if (dst === 0) {
-            return dep;
-        }
-        let dstSrc = await site.getEntitySrcUrl(dst);
-        return applyMeta(dep, { dstSrc });
-    }));
-
-    const e = await site.es.getEntity(eid, true);
-    const props = { e, es: site.es, deps };
-
-    return renderEntityOutput(site, 'file:///admin/entity_deps.tsx', props);
-}
-
-async function buildEntityDepsOfDisplay(site: Site, eid: EntityId) {
-    let deps = await getDependencyOfEntities(site.es, eid);
-
-    // add the src url of the dst to each dep
-    deps = await Promise.all(deps.map(async dep => {
-        let src = dep.Dep.src ?? 0;
-        if (src === 0) {
-            return dep;
-        }
-        let dstSrc = await site.getEntitySrcUrl(src);
-        return applyMeta(dep, { dstSrc });
-    }));
-
-    const e = await site.es.getEntity(eid, true);
-    const props = { e, es: site.es, deps };
-
-    return renderEntityOutput(site, 'file:///admin/entity_deps_of.tsx', props);
-}
-
-
-async function renderEntityOutput(site: Site, src: string, props: any = {}) {
-    let displayE = await site.getEntityBySrc(src);
-
-    if (displayE === undefined) {
-        return '';
-    }
-
-    try {
-        const output = await renderToOutput(site, build, displayE.id, props);
-
-        if (output !== undefined) {
-            return output.data;
-        }
-    } catch (err) {
-        log('[error]', err.stack);
-        log('[error]', site.es.getUrl());
-    }
-    return ``;
-}
-
-
-
-
-function clientIdHeader(eid: EntityId, path: string) {
-    return `
-    <script>window.odgnServe = { eid: ${eid}, path:'${path}' };</script>
-    `;
-}
-
-
-function countdown(res, count) {
-    res.write("data: " + count + "\n\n")
-    if (count)
-        setTimeout(() => countdown(res, count - 1), 1000)
-    else
-        res.end()
-}
-
-app.get('/', (req, res) => res.send('Hello World!'))
-
-app.listen(port, onStart);
-
-
-
-async function resolveRequestPath(path: string): Promise<[boolean, string]> {
-    const root = Path.join(__dirname, '../../dist');
-    let out = Path.join(root, path);
-
-    const exists = await Fs.pathExists(out);
-
-    if (!exists) {
-        return [false, undefined];
-    }
-
-    const stats = await Fs.stat(out);
-
-    if (stats.isDirectory()) {
-        let index = Path.join(out, 'index.html');
-        const indexExists = await Fs.pathExists(index);
-        return indexExists ? [true, index] : [false, undefined];
-    }
-
-    return [true, out];
-}
-
-
-/**
- * @param {string} root
- * @param {object} [options]
- * @return {function}
- * @public
- */
-
-function serveStatic(root, options = {}) {
-    if (!root) {
-        throw new TypeError('root path required')
-    }
-
-    if (typeof root !== 'string') {
-        throw new TypeError('root path must be a string')
-    }
-
-    // copy options object
-    var opts = Object.create(options || null)
-
-    // fall-though
-    var fallthrough = opts.fallthrough !== false
-
-    // default redirect
-    var redirect = opts.redirect !== false
-
-    // headers listener
-    var setHeaders = opts.setHeaders
-
-    if (setHeaders && typeof setHeaders !== 'function') {
-        throw new TypeError('option setHeaders must be function')
-    }
-
-    // setup options for send
-    opts.maxage = opts.maxage || opts.maxAge || 0
-    opts.root = Path.resolve(root)
-
-    // construct directory listener
-    var onDirectory = redirect
-        ? createRedirectDirectoryListener()
-        : createNotFoundDirectoryListener()
-
-    return function serveStatic(req, res, next) {
-        if (req.method !== 'GET' && req.method !== 'HEAD') {
-            if (fallthrough) {
-                return next()
-            }
-
-            // method not allowed
-            res.statusCode = 405
-            res.setHeader('Allow', 'GET, HEAD')
-            res.setHeader('Content-Length', '0')
-            res.end()
-            return
-        }
-
-        var forwardError = !fallthrough
-        var originalUrl = parseUrl.original(req)
-        var path = parseUrl(req).pathname
-
-        // make sure redirect occurs at mount
-        if (path === '/' && originalUrl.pathname.substr(-1) !== '/') {
-            path = ''
-        }
-
-        // create send stream
-        var stream = send(req, path, opts)
-
-        // add directory handler
-        stream.on('directory', onDirectory)
-
-        // add headers listener
-        if (setHeaders) {
-            stream.on('headers', setHeaders)
-        }
-
-        // add file listener for fallthrough
-        if (fallthrough) {
-            stream.on('file', function onFile() {
-                // once file is determined, always forward error
-                forwardError = true
-            })
-        }
-
-        // forward errors
-        stream.on('error', function error(err) {
-            if (forwardError || !(err.statusCode < 500)) {
-                next(err)
-                return
-            }
-
-            next()
-        })
-
-        // pipe
-        stream.pipe(res);
-
-        console.log('[serveStatic]', originalUrl, path);
-
-    }
-}
-
-/**
- * Collapse all leading slashes into a single slash
- * @private
- */
-function collapseLeadingSlashes(str) {
-    for (var i = 0; i < str.length; i++) {
-        if (str.charCodeAt(i) !== 0x2f /* / */) {
-            break
-        }
-    }
-
-    return i > 1
-        ? '/' + str.substr(i)
-        : str
-}
-
-/**
- * Create a minimal HTML document.
- *
- * @param {string} title
- * @param {string} body
- * @private
- */
-
-function createHtmlDocument(title, body) {
-    return '<!DOCTYPE html>\n' +
-        '<html lang="en">\n' +
-        '<head>\n' +
-        '<meta charset="utf-8">\n' +
-        '<title>' + title + '</title>\n' +
-        '</head>\n' +
-        '<body>\n' +
-        '<pre>' + body + '</pre>\n' +
-        '</body>\n' +
-        '</html>\n'
-}
-
-/**
- * Create a directory listener that just 404s.
- * @private
- */
-
-function createNotFoundDirectoryListener() {
-    return function notFound() {
-        this.error(404)
-    }
-}
-
-/**
- * Create a directory listener that performs a redirect.
- * @private
- */
-
-function createRedirectDirectoryListener() {
-    return function redirect(res) {
-        if (this.hasTrailingSlash()) {
-            this.error(404)
-            return
-        }
-
-        // get original URL
-        var originalUrl = parseUrl.original(this.req)
-
-        // append trailing slash
-        originalUrl.path = null
-        originalUrl.pathname = collapseLeadingSlashes(originalUrl.pathname + '/')
-
-        // reformat the URL
-        var loc = encodeUrl(url.format(originalUrl))
-        var doc = createHtmlDocument('Redirecting', 'Redirecting to <a href="' + escapeHtml(loc) + '">' +
-            escapeHtml(loc) + '</a>')
-
-        // send redirect response
-        res.statusCode = 301
-        res.setHeader('Content-Type', 'text/html; charset=UTF-8')
-        res.setHeader('Content-Length', Buffer.byteLength(doc))
-        res.setHeader('Content-Security-Policy', "default-src 'none'")
-        res.setHeader('X-Content-Type-Options', 'nosniff')
-        res.setHeader('Location', loc)
-        res.end(doc)
-    }
 }
