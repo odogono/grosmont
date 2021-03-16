@@ -1,10 +1,9 @@
 import { toBoolean } from '@odgn/utils';
 import unistVisit from 'unist-util-visit';
 import { ensureQuotes, removeQuotes } from '../../../../util';
-import Unified = require('unified')
-import RHParse = require('rehype-parse')
-import RHStringify = require('rehype-stringify')
+
 import { DependencyType } from '../../../../types';
+import { hastToMdxHast, toHAST } from '../../util';
 
 export interface SvgProcProps {
     // given a srcUrl, returns the data that belongs to the matching entity
@@ -58,9 +57,9 @@ export function process({ resolveData, resolveLink }: SvgProcProps) {
                 continue;
             }
 
-            let hast = toHAST(data);
-            let child = hast.ast.children[0];
-            const replaceNode = hastToMdxHast( child );
+            let {ast} = toHAST(data);
+            
+            const replaceNode = hastToMdxHast( ast );
 
             (parent.children as any[])[index] = replaceNode;
         }
@@ -69,60 +68,3 @@ export function process({ resolveData, resolveLink }: SvgProcProps) {
     }
 }
 
-
-/**
- * Converts incoming html data to an AST
- * 
- * @param content 
- * @returns 
- */
-function toHAST(content: string) {
-    let ast;
-
-    let output = Unified()
-        .use(RHParse, { emitParseErrors: false, fragment: true })
-        // .use(rehype2remark)
-        .use(() => tree => { ast = tree })
-        .use(RHStringify)
-        .processSync(content);
-
-    return {...output, ast};
-}
-
-/**
- * Converts from html AST to mdx AST
- * 
- * @param node 
- * @returns 
- */
-function hastToMdxHast( node ){
-    if (node.type === 'element') {
-        return convertElement( node );
-    }
-}
-
-function convertElement( node ){
-    const props = node.properties ?? {};
-    let attributes = [];
-    for( const key in props ){
-        attributes.push( propertyToAttribute(key, props[key] ) );
-    }
-    let children = [];
-    for( const child of node.children ){
-        children.push( hastToMdxHast(child) );
-    }
-    return {
-        type: 'mdxBlockElement',
-        name: node.tagName,
-        attributes,
-        children
-    }
-}
-
-function propertyToAttribute( name:string, value:any ){
-    return {
-        type: 'mdxAttribute',
-        name,
-        value
-    }
-}

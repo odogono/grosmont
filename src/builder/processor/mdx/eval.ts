@@ -82,8 +82,16 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     // function passed into the mdx parser and called whenever
     // an import is found
     function resolveImportLocal(path: string, mimes?: string[]): [string,boolean]|undefined {
-        // log('[resolveImportLocal]', path);
+
+        // if the path starts with http(s), then this is an import to the page,
+        // most likely js
+        if( !isUrlInternal(path) ){
+            links.push(['ext', undefined, path, undefined, 'script' ]);
+            return [path, true];
+        }
+
         let entry = resolveImport(site, path, base);
+        // log('[resolveImportLocal]', path, entry );
         if (entry !== undefined) {
             const [eid, url, mime] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
@@ -186,14 +194,14 @@ type LinkDescr = [ 'ext'|'int', EntityId, string /*url*/, string? /*text*/, Depe
 
 async function applyLinks(site: Site, e: Entity, links:LinkDescr[], options: EvalMdxOptions) {
     const { es } = site;
-    const existingIds = new Set(await getDependencyEntityIds(es, e.id, ['link']));
+    const existingIds = new Set(await getDependencyEntityIds(es, e.id, ['link', 'script']));
 
     for (let [type, linkEid, url, text, depType] of links) {
         if (type === 'ext') {
             linkEid = await getUrlEntityId(es, url, options);
         }
 
-        let depId = await insertDependency(es, e.id, linkEid, 'link');
+        let depId = await insertDependency(es, e.id, linkEid, depType ?? 'link');
 
         if (existingIds.has(depId)) {
             existingIds.delete(depId);

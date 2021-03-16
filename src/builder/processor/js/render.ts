@@ -1,6 +1,6 @@
 import React from 'react';
 import { Entity } from 'odgn-entity/src/entity';
-import { getLayoutFromDependency, insertDependency, selectJs } from '../../query';
+import { getDependencyEntities, getDependencyComponents, getLayoutFromDependency, insertDependency, selectJs } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
 
@@ -8,7 +8,7 @@ import { Site } from '../../site';
 import { ProcessOptions, TranspileProps, TranspileResult, EvalScope } from '../../types';
 import { createRenderContext, getEntityCSSDependencies } from './util';
 import { EntitySet } from 'odgn-entity/src/entity_set';
-import { Component, setEntityId } from 'odgn-entity/src/component';
+import { Component, setEntityId, toComponentId } from 'odgn-entity/src/component';
 import { hash, toInteger } from '@odgn/utils';
 import { buildImports } from './eval';
 import { useServerEffect, serverEffectValue, beginServerEffects, endServerEffects } from '../jsx/server_effect';
@@ -92,6 +92,9 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     }
     // props.imgs = options.imgs;
     props = await applyCSSDependencies(es, e, child, props);
+
+    const scripts = await getScriptDependencies(es, e);
+    props.scriptSrcs = scripts;
 
     props.comProps = { e, es, site, page:e, ...options.props };
 
@@ -198,3 +201,22 @@ async function applyCSSDependencies(es: EntitySet, e: Entity, child: TranspileRe
 }
 
 
+async function getScriptDependencies(es:EntitySet, e:Entity): Promise<string[]> {
+    const deps = await getDependencyComponents(es, e.id, ['script']);
+
+    if( deps === undefined || deps.length === 0 ){
+        return [];
+    }
+
+    const urlDid = es.resolveComponentDefId('/component/url');
+
+    let result = [];
+    for( const dep of deps ){
+        const dst = dep.dst;
+        const urlCom = await es.getComponent( toComponentId(dst, urlDid) );
+        if( urlCom !== undefined ){
+            result.push( urlCom.url );
+        }
+    }
+    return result;
+}

@@ -20,6 +20,7 @@ export interface TranspileProps {
     css?: string;
     cssLinks?: string[];
     comProps?: any;
+    scriptSrcs?: string[];
 }
 
 export interface TranspileResult {
@@ -194,7 +195,7 @@ export interface PageMeta {
 }
 
 
-export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img' | 'import';
+export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img' | 'import' | 'script';
 
 
 

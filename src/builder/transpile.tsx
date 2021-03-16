@@ -1,29 +1,7 @@
-
-
-
-
-
 import * as Babel from "@babel/core";
 import babelGenerate from '@babel/generator';
 import { parse as babelParser } from '@babel/parser';
 import { File as BabelAST } from "@babel/types";
-
-
-
-
-
-
-
-
-
-
-import {
-    TranspileProps,
-    TranspileOptions,
-    TranspileResult,
-} from './types';
-
-
 
 const log = (...args) => console.log('[/processor/mdx/transpile]', ...args);
 

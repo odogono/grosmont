@@ -99,7 +99,7 @@ export function mergeMeta(metaList: any[]) {
  * @returns 
  */
 export function removeQuotes(str:string):string {
-    return str !== undefined ? str.trim().replace(/^["'](.+(?=["']$))["']$/, '$1') : '';
+    return str !== undefined ? str.trim().replace(/^["']?(.+(?=["']$))["']?$/, '$1') : '';
 }
 
 

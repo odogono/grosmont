@@ -1,5 +1,6 @@
 import unistVisit from 'unist-util-visit';
 import {select} from 'unist-util-select';
+import { removeQuotes } from '../../../../util';
 
 
 export interface LinkProcProps {
@@ -9,33 +10,31 @@ export interface LinkProcProps {
 export function linkProc({ resolveLink }: LinkProcProps) {
     
     return (tree, vFile) => {
-        // let links =  {};
-        // console.log('[linkProc]', tree);
+        unistVisit(tree, ['link', 'linkReference'], (node, index, parent) => {
+            let removed = false;
 
-        // selectAll('linkReference', tree);
-
-        unistVisit(tree, ['link', 'linkReference'], visitor);
-
-        function visitor(node) {
-            // const ctx = node.type === 'link' ? node : Definitions(node.identifier)
-            const ctx = node;
-            if (!ctx) return;
-
-            // console.log('[linkProc]', ctx)
+            // console.log('[linkProc]', node)
 
             const text = select('text', node);
-            const url = node.url;
+            let url = removeQuotes( node.url as string );
 
             if( url === undefined ){
                 return;
             }
 
+            
             if( resolveLink ){
                 let resultUrl = resolveLink( url, text?.value as string )
                 if( resultUrl !== undefined ){
-                    ctx.url = resultUrl;
+                    // console.log('[link]', url, '->', resultUrl );
+                    node.url = resultUrl;
                 }
             }
-        }
+
+            if (removed) {
+                (parent.children as any[]).splice(index, 1);
+                return [unistVisit.SKIP, index]
+            }
+        });
     }
 }

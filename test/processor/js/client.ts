@@ -1,28 +1,20 @@
 import 'stateful-hooks';
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import Path from 'path';
 import { Site } from '../../../src/builder/site';
-import { process as renderScss } from '../../../src/builder/processor/scss';
-import { process as mark } from '../../../src/builder/processor/mark';
-import { process as evalJsx } from '../../../src/builder/processor/jsx/eval';
-
-import { process as evalMdx } from '../../../src/builder/processor/mdx/eval';
-import { process as evalJs } from '../../../src/builder/processor/js/eval';
-import { process as renderJs } from '../../../src/builder/processor/js/render';
 
 import { printAll } from 'odgn-entity/src/util/print';
 import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
-import { ProcessOptions } from '../../../src/builder/types';
-import { buildSrcIndex, FindEntityOptions } from '../../../src/builder/query';
+import { FindEntityOptions } from '../../../src/builder/query';
 import { EntityId } from 'odgn-entity/src/entity';
-import { build } from '../../../src/builder';
+
 import { Level } from '../../../src/builder/reporter';
 
-const log = (...args) => console.log('[TestProcUseSE]', ...args);
+import { addMdx, beforeEach, createSite, process, rootPath } from '../helpers';
 
-const rootPath = Path.resolve(__dirname, "../../../");
 const test = suite('processor/js/client');
+const log = (...args) => console.log(`[${suite.name}]`, ...args);
+test.before.each(beforeEach);
 
 
 
@@ -33,11 +25,17 @@ test('use', async ({ es, site, options }) => {
     // `);
 
     await addMdx(site, 'file:///pages/main.mdx', `
+import 'https://unpkg.com/react@17/umd/react.development.js';
+
+    <ScriptLinks />
+    
     # Client Test
 
 
     <ClientCode element="root">
         import { stuff } from 'src';
+        const sum = 2 + 5;
+
         <h1>Hello, world! <span>nice</span></h1>
     </ClientCode>
     
@@ -80,33 +78,3 @@ test.before.each(async (tcx) => {
 
 
 test.run();
-
-
-async function addMdx(site: Site, url: string, data: string, meta?: any) {
-    let e = await site.addSrc(url);
-    e.Data = { data };
-    if (meta !== undefined) {
-        e.Meta = { meta };
-    }
-    return await site.update(e);
-}
-
-async function process(site: Site, options: ProcessOptions) {
-    await mark(site, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' })
-    await mark(site, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
-    await mark(site, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })
-    
-    await buildSrcIndex(site);
-    
-    await renderScss(site, options);
-
-    await evalJsx(site, options);
-
-    await evalMdx(site, options);
-
-    // evaluates the js, and returns metadata
-    await evalJs(site, options);
-
-    // renders the js to /component/output
-    await renderJs(site, options);
-}

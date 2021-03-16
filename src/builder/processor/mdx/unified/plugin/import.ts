@@ -12,7 +12,7 @@ export interface ImportPluginOptions {
  * 
  * @param options 
  */
-export function importPlugin(options: ImportPluginOptions = {}) {
+export function importPlugin({resolveImport}: ImportPluginOptions = {}) {
     return (tree, vFile) => {
         let cssPaths = [];
         let removeList = [];
@@ -22,10 +22,12 @@ export function importPlugin(options: ImportPluginOptions = {}) {
             let removed = false;
             const ast = parseJSX(node.value as string);
 
+            // log('import', ast );
+            
             traverse(ast, {
                 ImportDeclaration(path) {
                     let importPath = path.node.source.value;
-                    const resolved = options.resolveImport(importPath);
+                    const resolved = resolveImport(importPath);
                     // log('resolved', importPath, resolved );
                     
                     if (resolved !== undefined) {

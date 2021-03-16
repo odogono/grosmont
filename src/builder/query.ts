@@ -1672,17 +1672,31 @@ export async function getDepdendencyComponentBySrc(es: EntitySet, src: EntityId)
     return es.prepare(q).getResult({ src });
 }
 
-export async function getDependencyComponents(es: EntitySet, eid: EntityId, type: DependencyType): Promise<Component[]> {
-    const stmt = es.prepare(`
-    [
-        /component/dep#type !ca ${type} ==
-        /component/dep#src !ca ${eid} ==
-        and
-        /component/dep !bf
-        @c
-    ] select
-    `);
-    return await stmt.getResult({ eid, type });
+export async function getDependencyComponents(es: EntitySet, eid: EntityId, type: DependencyType[]): Promise<Component[]> {
+
+    let q:string;
+
+    if( type !== undefined ){
+        const regexExt = type.join('|');
+        q = `
+        [
+            /component/dep#type !ca ~r/^(${regexExt})$/i ==
+            /component/dep#src !ca $eid ==
+            and
+            /component/dep !bf
+            @c
+        ] select`;
+    } else {
+        q = `
+        [
+            /component/dep#src !ca $eid ==
+            /component/dep !bf
+            @c
+        ] select`;
+    }
+
+    
+    return await es.prepare(q).getResult({ eid });
 }
 
 
