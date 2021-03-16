@@ -103,7 +103,7 @@ export async function buildImports(site: Site, e: Entity, options:ProcessOptions
     const {es} = site;
 
     // retrieve import dependencies for this e and place them
-    let imports = await getDependencyEntities(es, e.id, 'import');
+    let imports = await getDependencyEntities(es, e.id, ['import']);
 
     let importComs = new Map<EntityId, any>();
 
@@ -146,33 +146,3 @@ export async function buildImports(site: Site, e: Entity, options:ProcessOptions
 
     return require;
 }
-
-/*
-async function buildImportData(site:Site, e:Entity, options:ProcessOptions){
-    const {es} = site;
-    let imports = await getDependencyEntities(es, e.id, 'import');
-
-    let result = {};
-
-    for( const imp of imports ){
-        // const dst = imp.Dep.dst;
-        const url = imp.Url?.url;
-
-        // figure out what kind of data the url is asking for
-        let {host, path:did} = parseUri( url );
-        let eid = toInteger(host);
-
-        let dstE = await es.getEntity(eid, true);
-
-        // log('[buildImportData]', eid, url);
-        // printEntity(es, dstE);
-
-        if( did === '/component/jsx' ){
-            const ren = await renderJsx( site, dstE, options );
-            result[url] = ren.default;
-        } else {
-            result[url] = dstE;
-        }
-    }
-    return result;
-}//*/

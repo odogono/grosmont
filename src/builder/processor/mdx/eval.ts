@@ -186,7 +186,7 @@ type LinkDescr = [ 'ext'|'int', EntityId, string /*url*/, string? /*text*/, Depe
 
 async function applyLinks(site: Site, e: Entity, links:LinkDescr[], options: EvalMdxOptions) {
     const { es } = site;
-    const existingIds = new Set(await getDependencyEntityIds(es, e.id, 'link'));
+    const existingIds = new Set(await getDependencyEntityIds(es, e.id, ['link']));
 
     for (let [type, linkEid, url, text, depType] of links) {
         if (type === 'ext') {

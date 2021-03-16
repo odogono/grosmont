@@ -193,7 +193,7 @@ export function getEntityImportUrlFromPath(fileIndex: SiteIndex, path: string, m
  * @returns 
  */
 export async function getEntityCSSDependencies(es: EntitySet, e: Entity) {
-    const cssDeps = await getDependencyEntities(es, e.id, 'css');
+    const cssDeps = await getDependencyEntities(es, e.id, ['css']);
     if (cssDeps === undefined || cssDeps.length === 0) {
         return undefined;
     }
@@ -291,11 +291,8 @@ export async function applyImports(site: Site, e: Entity, imports:ImportDescr[],
     const { es } = site;
    
     // gather existing import and css dependencies
-    const existingIds = new Set(await getDependencyEntityIds(es, e.id, 'import'));
-    const cssIds = await getDependencyEntityIds(es, e.id, 'css');
-    cssIds.forEach(existingIds.add, existingIds);
-
-   
+    const existingIds = new Set(await getDependencyEntityIds(es, e.id, ['import','css']));
+    
     for (let [importEid, url] of imports) {
         let type: DependencyType = 'import';
    

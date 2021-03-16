@@ -1156,8 +1156,8 @@ export async function removeDependency(es: EntitySet, eid: EntityId, type: Depen
 /**
  *  
  */
-export async function getDependency(es: EntitySet, eid: EntityId, type: DependencyType): Promise<EntityId> {
-    const depId = await getDependencies(es, eid, type, true) as EntityId[];
+export async function getDependency(es: EntitySet, eid: EntityId, type: DependencyType ): Promise<EntityId> {
+    const depId = await getDependencies(es, eid, [type], true) as EntityId[];
     return depId.length > 0 ? depId[0] : undefined;
 }
 
@@ -1612,34 +1612,36 @@ export async function getDepenendencyDst(es: EntitySet, src: EntityId, type: Dep
  * @param eid 
  * @param type 
  */
-export async function getDependencies(es: EntitySet, eid: EntityId, type?: DependencyType, returnEid: boolean = true): Promise<Entity[] | EntityId[]> {
+export async function getDependencies(es: EntitySet, eid: EntityId, type?: DependencyType[], returnEid: boolean = true): Promise<Entity[] | EntityId[]> {
     const ret = returnEid ? '@eid' : '@e';
+    let q:string;
 
-    // const regexExt = mime.join('|');
-    // /component/src#/mime !ca ~r/^(${regexExt})$/i ==
+    if( type !== undefined ){
+        const regexExt = type.join('|');
+        q = `
+        [
+            /component/dep#type !ca ~r/^(${regexExt})$/i ==
+            /component/dep#src !ca $eid ==
+            and
+            /component/dep !bf
+            ${ret}
+        ] select`;
+    } else {
+        q = `
+        [
+            /component/dep#src !ca $eid ==
+            /component/dep !bf
+            ${ret}
+        ] select`;
+    }
 
-    const q = type !== undefined ? `
-    [
-        /component/dep#type !ca $type ==
-        /component/dep#src !ca $eid ==
-        and
-        /component/dep !bf
-        ${ret}
-    ] select
-    ` : `
-    [
-        /component/dep#src !ca $eid ==
-        /component/dep !bf
-        ${ret}
-    ] select`;
-
-    return await es.prepare(q).getResult({ eid, type });
+    return await es.prepare(q).getResult({ eid });
 }
 
-export async function getDependencyEntityIds(es: EntitySet, eid: EntityId, type?: DependencyType): Promise<EntityId[]> {
+export async function getDependencyEntityIds(es: EntitySet, eid: EntityId, type?: DependencyType[]): Promise<EntityId[]> {
     return getDependencies(es, eid, type, true) as Promise<EntityId[]>;
 }
-export async function getDependencyEntities(es: EntitySet, eid: EntityId, type?: DependencyType): Promise<Entity[]> {
+export async function getDependencyEntities(es: EntitySet, eid: EntityId, type?: DependencyType[]): Promise<Entity[]> {
     return getDependencies(es, eid, type, false) as Promise<Entity[]>;
 }
 

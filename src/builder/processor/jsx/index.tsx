@@ -136,7 +136,7 @@ async function renderJsx(site: Site, e: Entity, options: ProcessOptions) {
 
 async function buildImportData(site:Site, e:Entity, options:ProcessOptions){
     const {es} = site;
-    let imports = await getDependencyEntities(es, e.id, 'import');
+    let imports = await getDependencyEntities(es, e.id, ['import']);
 
     let result = {};
 

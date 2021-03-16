@@ -65,7 +65,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             let imports = [];
 
             // get a list of existing css dependencies
-            const depIds = await getDependencyEntityIds(es, eid, 'import');
+            const depIds = await getDependencyEntityIds(es, eid, ['import']);
 
             removeEids = new Set([...removeEids, ...depIds]);
 
