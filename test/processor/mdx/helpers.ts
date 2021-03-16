@@ -67,7 +67,7 @@ export async function process( site:Site, options?:ProcessOptions ){
     // const process = await buildProcessors( site, spec );
     // await process(site,options);
 
-
+    await mark(site, {...options, exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' });
     await mark(site, { ...options, exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' } );
     await mark(site, { ...options, exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
     await mark(site, { ...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' })

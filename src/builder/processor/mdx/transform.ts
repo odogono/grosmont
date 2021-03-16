@@ -15,11 +15,12 @@ const emoji = require('remark-emoji')
 import { importPlugin } from './unified/plugin/import';
 import { linkProc } from './unified/plugin/link';
 import { process as imgProc } from './unified/plugin/img';
+import { process as svgProc } from './unified/plugin/svg';
 import { configPlugin } from './unified/plugin/config';
 import { removeCommentPlugin } from './unified/plugin/remove_comment';
 import { titlePlugin } from './unified/plugin/title';
 import { clientProc } from './unified/plugin/client';
-import { TranspileOptions, TranspileProps, TranspileResult } from '../../types';
+import { DependencyType, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
 import { evalCode, EvalOptions } from '../../eval';
 
 import { mdx as mdxReact, MDXProvider } from '@mdx-js/react'
@@ -72,15 +73,18 @@ function evalMDXCode( code:string, path:string, options:EvalOptions = {} ){
         ...options.scope
     }
 
+    // log('[evalMDXCode]', code );
+
     return evalCode( code, path, {...options, scope} );
 }
 
 
 
 export type TransformMDXOptions = {
-
     resolveImport?: (path: string) => [string, boolean] | undefined;
     resolveLink?: (url: string, text?: string) => any;
+    // given a srcUrl, returns the data that belongs to the matching entity
+    resolveData?: (srcUrl: string, text?:string, type?:DependencyType) => Promise<any>;
     onConfig: (config: any) => void;
     require?: (path: string, fullPath: string) => any;
     context?: any;
@@ -91,9 +95,9 @@ export interface TransformMDXResult {
     ast: any;
 }
 
-export function transformMdx(content: string, options: TransformMDXOptions): TransformMDXResult {
+export async function transformMdx(content: string, options: TransformMDXOptions): Promise<TransformMDXResult> {
 
-    let { resolveImport, resolveLink, onConfig } = options;
+    let { resolveImport, resolveLink, resolveData, onConfig } = options;
     let ast;
 
     // remark-mdx has a really bad time with html comments even
@@ -101,7 +105,7 @@ export function transformMdx(content: string, options: TransformMDXOptions): Tra
     // force replace is neccesary here until i can figure it out
     content = content.replace(/<!--(.*?)-->/, '');
 
-    let output = unified()
+    let output = await unified()
         .use(parse)
         .use(stringify)
         .use(frontmatter)
@@ -110,6 +114,7 @@ export function transformMdx(content: string, options: TransformMDXOptions): Tra
         .use(removeCommentPlugin)
         // .use(() => console.dir)
         .use(clientProc, {})
+        .use(svgProc, { resolveLink, resolveData })
         .use(imgProc, { resolveLink })
         .use(linkProc, { resolveLink })
         // take a snap of the AST
@@ -122,7 +127,7 @@ export function transformMdx(content: string, options: TransformMDXOptions): Tra
         .use(squeeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
-        .processSync(content);
+        .process(content);
 
     // log('[processMdx]', ast);
 

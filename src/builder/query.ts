@@ -528,7 +528,6 @@ export async function selectSrcByFilename(es: EntitySet, names: string[], option
     const { ref, onlyUpdated } = parseOptions(options);
 
     const regexExt = names.join('|');
-
     const regex = toBoolean(options.ignoreExt) ? `~r/^.*(${regexExt}).*/i` : `~r/^.*(${regexExt})$/i`;
 
     // console.log('[selectSrcByFilename]', regexExt, ref);
@@ -1615,6 +1614,10 @@ export async function getDepenendencyDst(es: EntitySet, src: EntityId, type: Dep
  */
 export async function getDependencies(es: EntitySet, eid: EntityId, type?: DependencyType, returnEid: boolean = true): Promise<Entity[] | EntityId[]> {
     const ret = returnEid ? '@eid' : '@e';
+
+    // const regexExt = mime.join('|');
+    // /component/src#/mime !ca ~r/^(${regexExt})$/i ==
+
     const q = type !== undefined ? `
     [
         /component/dep#type !ca $type ==

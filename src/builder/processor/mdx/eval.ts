@@ -1,10 +1,10 @@
-import { Entity } from 'odgn-entity/src/entity';
+import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { getDependencyEntityIds, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
 import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { ProcessOptions, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
+import { DependencyType, ProcessOptions, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
 import { transformJSX } from '../../transpile';
 import { applyImports, buildProps, resolveImport } from '../js/util';
 import { parseEntity } from '../../config';
@@ -75,7 +75,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const { reporter } = options;
 
     let imports = [];
-    let links = [];
+    let links:LinkDescr[] = [];
     let meta = e.Meta?.meta ?? {};
     let config = {};
 
@@ -120,6 +120,31 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return url;
     }
 
+    async function resolveData( srcUrl:string, text?:string, type:DependencyType = 'img' ){
+        if (!isUrlInternal(srcUrl)) {
+            links.push(['ext', undefined, srcUrl, text, type]);
+            warn(reporter, `[resolveData] ${srcUrl} not resolved`, { eid: e.id });
+            return undefined;
+        }
+
+        let entry = resolveImport(site, srcUrl, base);
+        // log('[resolveData]', srcUrl, entry );
+        if (entry === undefined) {
+            warn(reporter, `[resolveData] ${srcUrl} not resolved`, { eid: e.id });
+            return undefined;
+        }
+        let eid = entry[0];
+        links.push(['int', entry[0], srcUrl, text, type]);
+        
+        // const srcIndex = site.getIndex('/index/srcUrl');
+        // const eid = srcIndex.getEid(srcUrl);
+        // if( eid === undefined ){
+        //     warn(reporter, `[resolveData] ${srcUrl} not resolved`, { eid: e.id });
+        //     return undefined;
+        // }
+        return e !== undefined ? site.getEntityData( eid ) : undefined;
+    }
+
 
     let props = await buildProps(site, e);
     const { data } = props;
@@ -131,7 +156,11 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return [];
     }
 
-    const { js } = mdxToJs(data, props, { onConfig, resolveLink, resolveImport: resolveImportLocal, require, context });
+    const { js } = await mdxToJs(data, props, { 
+        onConfig, 
+        resolveLink, resolveData, resolveImport: resolveImportLocal,
+        require, context 
+    });
 
     const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
 
@@ -152,13 +181,14 @@ function isUrlInternal(url: string) {
     return re.test(url) === false;
 }
 
+type LinkDescr = [ 'ext'|'int', EntityId, string /*url*/, string? /*text*/, DependencyType? ];
 
 
-async function applyLinks(site: Site, e: Entity, links, options: EvalMdxOptions) {
+async function applyLinks(site: Site, e: Entity, links:LinkDescr[], options: EvalMdxOptions) {
     const { es } = site;
     const existingIds = new Set(await getDependencyEntityIds(es, e.id, 'link'));
 
-    for (let [type, linkEid, url, text] of links) {
+    for (let [type, linkEid, url, text, depType] of links) {
         if (type === 'ext') {
             linkEid = await getUrlEntityId(es, url, options);
         }
@@ -196,16 +226,16 @@ async function getUrlEntityId(es: EntitySet, url: string, options: EvalMdxOption
  * @param path 
  * @param options 
  */
- function mdxToJs(mdxData: string, props: TranspileProps, options: TranspileOptions): TranspileResult {
+ async function mdxToJs(mdxData: string, props: TranspileProps, options: TranspileOptions): Promise<TranspileResult> {
     let meta = props.meta ?? {};
     let { css, cssLinks: inputCssLinks, children } = props;
-    const { resolveImport, resolveLink, onConfig, require, context } = options;
+    const { resolveImport, resolveData, resolveLink, onConfig, require, context } = options;
 
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
-    let processOpts = { pageProps: inPageProps, resolveLink, resolveImport, onConfig, require, context };
+    let processOpts = { pageProps: inPageProps, resolveLink, resolveData, resolveImport, onConfig, require, context };
 
     // convert the mdx to jsx
-    let { jsx, ast } = transformMdx(mdxData, processOpts);
+    let { jsx, ast } = await transformMdx(mdxData, processOpts);
     // log('[parseMdx]', jsx );
 
     // convert from jsx to js

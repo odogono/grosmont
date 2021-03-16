@@ -145,6 +145,8 @@ export interface TranspileOptions {
     forceRender?: boolean;
     resolveImport?: (path: string) => [string,boolean] | undefined;
     resolveLink?: (url:string, text?:string) => any;
+    // given a srcUrl, returns the data that belongs to the matching entity
+    resolveData?: (srcUrl: string, text?:string, type?:DependencyType) => Promise<any>;
     onConfig: (config:any) => void;
     require: (path:string, fullPath:string) => any;
     context?: any;

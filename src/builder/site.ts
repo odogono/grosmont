@@ -204,16 +204,20 @@ export class Site {
      * 
      * @param e 
      */
-    async getEntityData(e: Entity | EntityId): Promise<string> {
-        if (isInteger(e)) {
-            e = await this.es.getEntity(e as EntityId);
-        }
+    async getEntityData(ev: Entity | EntityId): Promise<string> {
+        let eid = isInteger(ev) ? ev as EntityId : (ev as Entity)?.id;
+        let e:Entity = isInteger(ev) ? await this.es.getEntity(eid) : ev as Entity;
+        
+        // if( e === undefined ){
+        //     console.warn('[getEntityData]', `could not find entity ${eid}`);
+        // }
 
-        const data = (e as Entity).Data?.data;
+        const data = e?.Data?.data;
         if (data !== undefined) {
             return data;
         }
-        let srcUrl = this.getSrcUrl(e as Entity);
+
+        let srcUrl = this.getSrcUrl(e);
 
         if (srcUrl === undefined) {
             return undefined;

@@ -26,7 +26,7 @@ export async function process(site: Site, options:DstIndexOptions = {}) {
     const eids = await selectDstTextIds(es);
 
     for( const eid of eids ){
-        const url = await site.getEntityDstUrl(eid, false);// getDstUrl(es, eid);
+        const url = await site.getEntityDstUrl(eid, false);
         if( url !== undefined ){
             dstIndex.set(url, eid);
         }

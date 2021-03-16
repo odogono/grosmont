@@ -13,7 +13,7 @@ import { ComponentDef, getDefId } from 'odgn-entity/src/component_def';
 import { slugify, stringify } from '@odgn/utils';
 import { Site } from './site';
 import { findEntityBySrcUrl, FindEntityOptions, insertDependency, selectTagBySlug } from './query';
-import { applyMeta, createTag, createTimes, resolveUrlPath } from './util';
+import { applyMeta, createTag, uriToPath, resolveUrlPath } from './util';
 import { isString } from '@odgn/utils';
 import { BitField, toValues as bfToValues } from '@odgn/utils/bitfield';
 import { printEntity } from 'odgn-entity/src/util/print';
@@ -104,7 +104,7 @@ export async function parseEntity(from: EntitySet|Site, input: string|object, op
             }
             else if( key === 'dst'){
                 // applyUrlToCom( e, 'Dst', value );
-                e.Dst = {url: value };
+                e.Dst = {url: uriToPath(value) };
             }
             else if( key === 'data'){    
                 e.Data = {data: value };

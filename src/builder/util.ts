@@ -77,9 +77,30 @@ export function mergeMeta(metaList: any[]) {
 
 
 
+/**
+ * Adds single quotes to a string if it does not already have them
+ * 
+ * @param str 
+ * @returns 
+ */
+ export function ensureQuotes(str: string):string {
+    if (str === undefined) {
+        return '';
+    }
+    str = str.trim().replace(/^["'](.+)["']$/, '$1');
+    return `'${str}'`;
+}
 
 
-
+/**
+ * Removes single or double quotes from a string
+ * 
+ * @param str 
+ * @returns 
+ */
+export function removeQuotes(str:string):string {
+    return str !== undefined ? str.trim().replace(/^["'](.+(?=["']$))["']$/, '$1') : '';
+}
 
 
 

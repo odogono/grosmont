@@ -160,13 +160,14 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
  */
 function replaceEntityUrls( site:Site, data:string ){
     const idx = site.getIndex('/index/dstUrl');
-    // log('[replaceEntityUrls]', data);
-
+    
     const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "gi");
     return data.replace( re, (val, eid, path) => {
         let url = idx.getByEid( toInteger(eid) );
-        // log('[replaceEntityUrls]', val, eid, url);
-        return url;
+
+        // log('[replaceEntityUrls]', data, url );
+
+        return url === undefined ? '' : url;
     });
 }
 

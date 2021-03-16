@@ -7,5 +7,6 @@ import './import';
 import './links';
 import './master';
 import './misc';
+import './svg';
 import './tags';
 import './updates';

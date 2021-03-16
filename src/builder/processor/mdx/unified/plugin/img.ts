@@ -1,4 +1,5 @@
 import unistVisit from 'unist-util-visit';
+import { ensureQuotes, removeQuotes } from '../../../../util';
 
 export interface ImgProcProps {
     resolveLink?: (url:string, text?:string) => any;
@@ -7,15 +8,15 @@ export interface ImgProcProps {
 export function process({ resolveLink }: ImgProcProps) {
     
     return (tree, vFile) => {
-        // let links =  {};
-        // console.log('[linkProc]', tree);
-
-        // selectAll('linkReference', tree);
 
         unistVisit(tree, ['mdxSpanElement', 'mdxBlockElement'], visitor);
 
         function visitor(node) {
             if( !node  ){
+                return;
+            }
+
+            if( node.name !== 'img' ){
                 return;
             }
 
@@ -33,11 +34,11 @@ export function process({ resolveLink }: ImgProcProps) {
                 return;
             }
 
-            // clean the src
-            srcValue = srcValue.trim().replace(/^'(.+)'$/,'$1');
-            
-            // log('src', srcValue);
+            // console.log('src', srcValue, node);
 
+            // clean the src
+            srcValue = removeQuotes(srcValue);
+            
             if( resolveLink ){
                 let resultUrl = resolveLink( srcValue, altValue )
                 if( resultUrl !== undefined ){
@@ -46,12 +47,4 @@ export function process({ resolveLink }: ImgProcProps) {
             }
         }
     }
-}
-
-function ensureQuotes(str:string){
-    if( str === undefined ){
-        return '';
-    }
-    str = str.trim().replace(/^'(.+)'$/,'$1');
-    return `'${str}'`;
 }
