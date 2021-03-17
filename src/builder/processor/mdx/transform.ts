@@ -20,7 +20,7 @@ import { configPlugin } from './unified/plugin/config';
 import { removeCommentPlugin } from './unified/plugin/remove_comment';
 import { titlePlugin } from './unified/plugin/title';
 import { clientProc } from './unified/plugin/client';
-import { DependencyType, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
+import { DependencyType, MDXPluginOptions, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
 import { evalCode, EvalOptions } from '../../eval';
 
 import { mdx as mdxReact, MDXProvider } from '@mdx-js/react'
@@ -80,22 +80,12 @@ function evalMDXCode( code:string, path:string, options:EvalOptions = {} ){
 
 
 
-export type TransformMDXOptions = {
-    resolveImport?: (path: string) => [string, boolean] | undefined;
-    resolveLink?: (url: string, text?: string) => any;
-    // given a srcUrl, returns the data that belongs to the matching entity
-    resolveData?: (srcUrl: string, text?:string, type?:DependencyType) => Promise<any>;
-    onConfig: (config: any) => void;
-    require?: (path: string, fullPath: string) => any;
-    context?: any;
-}
-
 export interface TransformMDXResult {
     jsx: string;
     ast: any;
 }
 
-export async function transformMdx(content: string, options: TransformMDXOptions): Promise<TransformMDXResult> {
+export async function transformMdx(content: string, options: MDXPluginOptions): Promise<TransformMDXResult> {
 
     let { resolveImport, resolveLink, resolveData, onConfig } = options;
     let ast;
@@ -113,7 +103,7 @@ export async function transformMdx(content: string, options: TransformMDXOptions
         .use(configPlugin, { onConfig })
         .use(removeCommentPlugin)
         // .use(() => console.dir)
-        .use(clientProc, {})
+        .use(clientProc, options )
         .use(svgProc, { resolveLink, resolveData })
         .use(imgProc, { resolveLink })
         .use(linkProc, { resolveLink })

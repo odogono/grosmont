@@ -12,6 +12,7 @@ const BabelPluginExtractImportNames = require('babel-plugin-extract-import-names
 export interface ToJSXOptions {
     raw?: boolean;
     odgnMode?: boolean;
+    preserveNewlines?: boolean;
 }
 
 export function toJSX(node, parentNode = {}, options:ToJSXOptions = {}) {
@@ -266,7 +267,7 @@ function serializeEsSyntax(node) {
     return node.value
 }
 
-function serializeChildren(node, options) {
+export function serializeChildren(node, options:ToJSXOptions) {
     const raw = options.raw;
     const children = node.children || []
     const childOptions = Object.assign({}, options, {

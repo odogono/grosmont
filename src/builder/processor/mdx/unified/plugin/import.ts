@@ -2,6 +2,7 @@ import unistVisit from 'unist-util-visit';
 import traverse from "@babel/traverse";
 import { generateFromAST, parseJSX } from '../../../../transpile';
 
+const log = (...args) => console.log('[/plugin/import]', ...args);
 
 
 export interface ImportPluginOptions {
@@ -14,8 +15,6 @@ export interface ImportPluginOptions {
  */
 export function importPlugin({resolveImport}: ImportPluginOptions = {}) {
     return (tree, vFile) => {
-        let cssPaths = [];
-        let removeList = [];
 
         unistVisit(tree, ['import'], (node, index, parent) => {
             let changed = false;
@@ -52,23 +51,7 @@ export function importPlugin({resolveImport}: ImportPluginOptions = {}) {
                 node.value = generateFromAST(ast);
             }
         });
-
-        // log('[importCSS]', 'remove', removeList);
-        // if( removeList.length > 0 ){
-        //     removeList.forEach( url => unistRemove(tree, {value:url} ));
-        // }
-
-
-        if (cssPaths.length > 0) {
-            let cssNode = {
-                type: 'export',
-                value: `export const cssLinks = [ ${cssPaths.map(c => `'${c}'`).join(',')} ]`
-            };
-            // log( cssNode );
-            tree.children.unshift(cssNode);
-        }
     }
 }
 
 
-const log = (...args) => console.log('[/plugin/import]', ...args);

@@ -310,6 +310,37 @@ export async function selectMdx(es: EntitySet, options: FindEntityOptions = {}):
     return await es.prepare(q).getEntities({ ref });
 }
 
+
+export async function selectClientCode(es:EntitySet, options:FindEntityOptions = {}): Promise<Component[]> {
+    const { ref, onlyUpdated } = parseOptions(options);
+    let q:string;
+
+    if( onlyUpdated ){
+        q = `
+        [
+            /component/upd#op !ca 1 ==
+            /component/upd#op !ca 2 ==
+            or
+            /component/site_ref#ref !ca $ref ==
+            and
+            /component/client_code !bf
+            @c
+        ] select
+        `
+    } else {
+        q = `[    
+            /component/site_ref#ref !ca $ref ==
+            /component/client_code !bf
+            @c
+        ] select`;
+    };
+
+
+    return es.prepare(q).getResult({ref});
+}
+
+
+
 export async function selectJs(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated, eids } = parseOptions(options);
 
@@ -847,10 +878,11 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
     let com = await stmt.getResult({ url, ref });
     com = com.length === 0 ? undefined : com[0];
 
-    // log('[selectSiteSrcByUrl]', url, com );
+    // console.log('[selectSiteSrcByUrl]', url, com );
+
     if (com === undefined) {
         if (!options.createIfNotFound) {
-            // log('[selectSiteSrcByUrl]', 'nope', {url,ref});
+            // console.log('[selectSiteSrcByUrl]', 'nope', {url,ref});
             // log( stmt );
             return undefined;
         }

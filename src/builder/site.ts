@@ -394,6 +394,19 @@ export class Site {
     }
 
     /**
+     * Returns 
+     * @param eid 
+     * @returns 
+     */
+    getEntityDstUrlIndexed( eid:EntityId ): string {
+        const idx = this.getIndex('/index/dstUrl');
+        if( idx === undefined ){
+            return undefined;
+        }
+        return idx.getByEid(eid,false);
+    }
+
+    /**
      * Adds an entity to the site es
      * @param e 
      */

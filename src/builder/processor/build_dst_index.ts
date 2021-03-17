@@ -2,6 +2,7 @@ import { getDstUrl, selectDstTextIds } from '../query';
 
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
+import { uriToPath } from '../util';
 
 const log = (...args) => console.log('[/processor/build_dst_index]', ...args);
 
@@ -27,8 +28,9 @@ export async function process(site: Site, options:DstIndexOptions = {}) {
 
     for( const eid of eids ){
         const url = await site.getEntityDstUrl(eid, false);
+        
         if( url !== undefined ){
-            dstIndex.set(url, eid);
+            dstIndex.set(uriToPath(url), eid);
         }
     }
 

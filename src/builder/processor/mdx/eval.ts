@@ -1,10 +1,11 @@
+import Path from 'path';
 import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { getDependencyEntityIds, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
 import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { DependencyType, ProcessOptions, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
+import { ClientCodeDetails, DependencyType, ProcessOptions, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
 import { transformJSX } from '../../transpile';
 import { applyImports, buildProps, resolveImport } from '../js/util';
 import { parseEntity } from '../../config';
@@ -12,6 +13,7 @@ import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
 import { createErrorComponent, resolveUrlPath } from '../../util';
 import { transformMdx } from './transform';
+import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 
 const Label = '/processor/mdx/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -154,6 +156,32 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     }
 
 
+    // deals with the client code plugin which will extract code designated to
+    // be executed client side.
+    async function registerClientCode( details:ClientCodeDetails ){
+        const codeName = `code.${e.id}.js`;
+        const codeUrl = Path.dirname(base) + Path.sep + codeName;
+        let codeE = await site.addSrc( codeUrl );
+        codeE.Upd = {op: codeE.id === 0 ? ChangeSetOp.Add : ChangeSetOp.Update };
+        codeE.Dst = {url:`file:///${codeName}`};
+
+        // log('[registerClientCode]', {imports} );
+        // log('[registerClientCode]', {components} );
+
+        let {imports,components} = codeE.ClientCode ?? {imports:[], components:{}};
+
+        imports = imports.concat( details.imports );
+        components = {...components, ...details.components };
+
+        codeE.ClientCode = {imports, components};
+        
+        codeE = await site.update(codeE);
+
+        // log('[registerClientCode]', e.id, codeUrl, codeE.id );
+        links.push(['int', codeE.id, codeUrl, undefined, 'script' ]);
+    }
+
+
     let props = await buildProps(site, e);
     const { data } = props;
     let context = { site, e };
@@ -166,6 +194,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
     const { js } = await mdxToJs(data, props, { 
         onConfig, 
+        registerClientCode,
         resolveLink, resolveData, resolveImport: resolveImportLocal,
         require, context 
     });
@@ -237,15 +266,12 @@ async function getUrlEntityId(es: EntitySet, url: string, options: EvalMdxOption
  async function mdxToJs(mdxData: string, props: TranspileProps, options: TranspileOptions): Promise<TranspileResult> {
     let meta = props.meta ?? {};
     let { css, cssLinks: inputCssLinks, children } = props;
-    const { resolveImport, resolveData, resolveLink, onConfig, require, context } = options;
-
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
-    let processOpts = { pageProps: inPageProps, resolveLink, resolveData, resolveImport, onConfig, require, context };
+    let processOpts = { ...options, pageProps: inPageProps };
 
     // convert the mdx to jsx
     let { jsx, ast } = await transformMdx(mdxData, processOpts);
-    // log('[parseMdx]', jsx );
-
+    
     // convert from jsx to js
     let js = transformJSX(jsx);
 

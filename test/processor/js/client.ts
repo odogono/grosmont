@@ -31,19 +31,15 @@ import 'https://unpkg.com/react@17/umd/react.development.js';
     
     # Client Test
 
-
     <ClientCode element="root">
-        import { stuff } from 'src';
-        const sum = 2 + 5;
-
         <h1>Hello, world! <span>nice</span></h1>
     </ClientCode>
     
     `);
 
-    await process(site,options);
-    
+    await process(site, options);
 
+    console.log('\n\n');
     await printAll(es);
 
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
@@ -66,12 +62,13 @@ test.before.each(async (tcx) => {
     const testDB = { uuid: 'TEST-1', isMemory: true, idgen };
     const es = new EntitySetSQL({ ...testDB });
 
-    tcx.site = await Site.create({ idgen, name: 'test', es, dst, level:Level.ERROR });
+    tcx.site = await Site.create({ idgen, name: 'test', es, dst, level: Level.ERROR });
     // tcx.siteEntity = tcx.site.getEntity();
     tcx.es = tcx.site.es;
-    tcx.options = { 
-        reporter:tcx.site.reporter, 
-        siteRef: tcx.site.getRef() as EntityId } as FindEntityOptions;
+    tcx.options = {
+        reporter: tcx.site.reporter,
+        siteRef: tcx.site.getRef() as EntityId
+    } as FindEntityOptions;
 });
 
 

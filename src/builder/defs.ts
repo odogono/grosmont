@@ -277,6 +277,13 @@ export const defs = [
         properties: [
             { name: 'date', type: 'datetime' }
         ]
+    },
+    {
+        uri: '/component/client_code',
+        properties: [
+            { name: 'imports', type:'json' },
+            { name: 'components', type:'json' },
+        ]
     }
 ];
 

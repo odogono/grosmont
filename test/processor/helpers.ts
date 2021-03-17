@@ -9,6 +9,7 @@ import { process as applyTags } from '../../src/builder/processor/apply_tags';
 import { process as buildDstIndex } from '../../src/builder/processor/build_dst_index';
 
 import { process as mark } from '../../src/builder/processor/mark';
+import { process as evalClientCode } from '../../src/builder/processor/client_code';
 import { process as evalMdx } from '../../src/builder/processor/mdx/eval';
 import { process as evalJs } from '../../src/builder/processor/js/eval';
 import { process as evalJsx } from '../../src/builder/processor/jsx/eval';
@@ -63,6 +64,8 @@ export async function process( site:Site, options?:ProcessOptions ){
 
     await applyTags(site, options);
 
+    await evalClientCode(site, options);
+
     // evaluates the js, and returns metadata
     await evalJs(site, options);
 
@@ -90,8 +93,7 @@ export async function addMdx(site: Site, url: string, data: string, meta?: any) 
 
 
 export async function addSrc(site: Site, url: string, data: string, additional:any = {}) {
-
-    let e = await selectEntityBySrc(site, url, { createIfNotFound: false, siteRef: site.getRef() }) as Entity;
+    let e = await site.getEntityBySrc(url);
     let add = e === undefined;
 
     e = await parseEntity( site, {

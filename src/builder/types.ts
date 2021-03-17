@@ -49,6 +49,8 @@ export interface EvalScope {
 //     index: Map<any, any[]>;
 // }
 
+// type SiteIndexEntry = [EntityId, ...any];
+
 export class SiteIndex {
     query?: string;
     args?: StatementArgs;
@@ -141,6 +143,11 @@ export interface TranspileMeta {
 }
 
 
+export interface ClientCodeDetails {
+    imports: string[];
+    components: ({ [key:string]: string} )
+}
+
 export interface TranspileOptions {
     render?: boolean;
     forceRender?: boolean;
@@ -148,11 +155,14 @@ export interface TranspileOptions {
     resolveLink?: (url:string, text?:string) => any;
     // given a srcUrl, returns the data that belongs to the matching entity
     resolveData?: (srcUrl: string, text?:string, type?:DependencyType) => Promise<any>;
+    registerClientCode?: ( details:ClientCodeDetails ) => Promise<any>;
     onConfig: (config:any) => void;
     require: (path:string, fullPath:string) => any;
     context?: any;
     scope?: EvalScope; // vars which will present in the evaluated code
 }
+
+export interface MDXPluginOptions extends TranspileOptions {}
 
 
 export interface PageLink {

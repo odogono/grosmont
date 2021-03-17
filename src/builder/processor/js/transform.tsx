@@ -18,7 +18,7 @@ const log = (...args) => console.log('[/processor/js/transform]', ...args);
  * @param component 
  * @param props 
  */
- export async function transformComponent(component: any, props: TranspileProps): Promise<string> {
+export async function transformComponent(component: any, props: TranspileProps): Promise<string> {
     let { css, cssLinks: inputCssLinks, scriptSrcs, children, url, comProps } = props;
 
 
@@ -35,8 +35,9 @@ const log = (...args) => console.log('[/processor/js/transform]', ...args);
         () => <>{inputCssLinks.map(c => <link key={c} rel='stylesheet' href={c} />)}</>
         : null;
 
+    // log('[transformComponent]', 'scriptSrcs', scriptSrcs);
     scriptSrcs = scriptSrcs != undefined ? scriptSrcs.filter(Boolean) : [];
-    comProps.ScriptLinks = () => <>{scriptSrcs.map( src => <script crossOrigin="anonymous" key={src} src={src} />)}</>;
+    comProps.ScriptLinks = () => <>{scriptSrcs.map(src => <script crossOrigin="anonymous" key={src} src={src} />)}</>;
 
     const components = {
         Head,

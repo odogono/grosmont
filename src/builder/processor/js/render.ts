@@ -46,46 +46,46 @@ export async function process(site: Site, options: RenderJsOptions = {}) {
 
         try {
 
-            updates.push( await processEntity(site, e, undefined, options) );
+            updates.push(await processEntity(site, e, undefined, options));
 
         } catch (err) {
             // log('[error]', srcUrl, err.message, err.stack );
             error(reporter, `error ${srcUrl}`, err, { eid: e.id });
             // log('[error]', es.getUrl(), es.componentDefs );
-            updates.push( createErrorComponent(es, e, err, {from:Label}) );
+            updates.push(createErrorComponent(es, e, err, { from: Label }));
         }
     }
 
-    await es.add( updates.filter(Boolean) );
+    await es.add(updates.filter(Boolean));
 
     return site;
 }
 
 
-async function processEntity(site: Site, e: Entity, child: TranspileResult, options: RenderJsOptions):Promise<Component> {
+async function processEntity(site: Site, e: Entity, child: TranspileResult, options: RenderJsOptions): Promise<Component> {
 
     const { es } = site;
     const { url: base } = e.Src;
     const applyLayout = options.applyLayout ?? true;
 
-    const {data} = e.Js;
+    const { data } = e.Js;
     let path = site.getSrcUrl(e);
     let meta = e.Meta?.meta ?? {};
 
-    const require = await buildImports( site, e, options );
+    const require = await buildImports(site, e, options);
 
-    function onConfig(config:any){}
+    function onConfig(config: any) { }
 
 
-    if( meta.isEnabled === false ){
+    if (meta.isEnabled === false) {
         return undefined;
     }
 
-    if( meta.isRenderable === false && child === undefined ){
+    if (meta.isRenderable === false && child === undefined) {
         return undefined;
     }
 
-    let props:TranspileProps = {path, url:base};
+    let props: TranspileProps = { path, url: base };
 
     if (child !== undefined) {
         props.children = child.component;
@@ -93,15 +93,16 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // props.imgs = options.imgs;
     props = await applyCSSDependencies(es, e, child, props);
 
-    const scripts = await getScriptDependencies(es, e);
+    const scripts = await getScriptDependencies(site, e);
     props.scriptSrcs = scripts;
+    // log('[processEntity]', base, scripts );
 
-    props.comProps = { e, es, site, page:e, ...options.props };
+    props.comProps = { e, es, site, page: e, ...options.props };
 
     // log('[processEntity]', base, options );
-    
+
     const context = createRenderContext(site, e, options);
-    
+
     // scope vars which appear globally defined to the code
     const scope = {
         site,
@@ -113,45 +114,45 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     // reset requests
     beginServerEffects(base);
-    
-    let result:any = transformJS(data, props, { context, onConfig, require, scope });
+
+    let result: any = transformJS(data, props, { context, onConfig, require, scope });
 
     result.css = props.css;
     result.cssLinks = props.cssLinks;
 
     const layoutE = applyLayout ? await getLayoutFromDependency(es, e.id) : undefined;
 
-    if( layoutE !== undefined ){
+    if (layoutE !== undefined) {
         let layoutScope = {
             ...options.scope,
             e,
             page: e,
             layout: layoutE
         }
-        let com = await processEntity( site, layoutE, result, {...options, scope:layoutScope} );
-        return setEntityId( com, e.id );
+        let com = await processEntity(site, layoutE, result, { ...options, scope: layoutScope });
+        return setEntityId(com, e.id);
     }
 
-    const {component} = result;
+    const { component } = result;
 
-    let output = await transformComponent( component, props);
+    let output = await transformComponent(component, props);
 
-    
+
     // resolve all the server effects
     await endServerEffects(base);
-    
-    if( output === undefined ){
+
+    if (output === undefined) {
         return undefined;
     }
 
     // render again to reconcile any server effects
-    output = await transformComponent( component, props);
+    output = await transformComponent(component, props);
 
     // replace any e:// urls with dst url links
     output = replaceEntityUrls(site, output);
 
     const mime = 'text/html';
-    return setEntityId( es.createComponent('/component/output', {data:output, mime}), e.id);
+    return setEntityId(es.createComponent('/component/output', { data: output, mime }), e.id);
 }
 
 
@@ -161,12 +162,12 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
  * @param site 
  * @param data 
  */
-function replaceEntityUrls( site:Site, data:string ){
+function replaceEntityUrls(site: Site, data: string) {
     const idx = site.getIndex('/index/dstUrl');
-    
+
     const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "gi");
-    return data.replace( re, (val, eid, path) => {
-        let url = idx.getByEid( toInteger(eid) );
+    return data.replace(re, (val, eid, path) => {
+        let url = idx.getByEid(toInteger(eid));
 
         // log('[replaceEntityUrls]', data, url );
 
@@ -201,21 +202,34 @@ async function applyCSSDependencies(es: EntitySet, e: Entity, child: TranspileRe
 }
 
 
-async function getScriptDependencies(es:EntitySet, e:Entity): Promise<string[]> {
+async function getScriptDependencies(site: Site, e: Entity): Promise<string[]> {
+    const { es } = site;
     const deps = await getDependencyComponents(es, e.id, ['script']);
 
-    if( deps === undefined || deps.length === 0 ){
+    if (deps === undefined || deps.length === 0) {
         return [];
     }
 
+    // log('[getScriptDependencies]', deps);
+
     const urlDid = es.resolveComponentDefId('/component/url');
+    
+    // const srcDid = es.resolveComponentDefId('/component/dst');
+
+    // log('[getScriptDependencies]', url);
 
     let result = [];
-    for( const dep of deps ){
+    for (const dep of deps) {
         const dst = dep.dst;
-        const urlCom = await es.getComponent( toComponentId(dst, urlDid) );
-        if( urlCom !== undefined ){
-            result.push( urlCom.url );
+        const urlCom = await es.getComponent(toComponentId(dst, urlDid));
+        if (urlCom !== undefined) {
+            result.push(urlCom.url);
+        }
+        else {
+            const url = site.getEntityDstUrlIndexed( dst );
+            if( url !== undefined ){
+                result.push( url );
+            }
         }
     }
     return result;
