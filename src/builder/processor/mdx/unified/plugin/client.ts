@@ -118,8 +118,9 @@ function extractImports(ast: any) {
     traverse(ast, {
         ImportDeclaration(path) {
             let jsx = generateFromAST(path.node);
+            let specifiers = path.node.specifiers.map( s => generateFromAST(s));
             // we add both the full code line AND the import src
-            imports.push( [jsx, path.node.source.value] );
+            imports.push( [jsx, path.node.source.value, specifiers] );
             path.remove();
         },
         ExportNamedDeclaration(path){

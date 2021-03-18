@@ -83,7 +83,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
     // function passed into the mdx parser and called whenever
     // an import is found
-    function resolveImportLocal(path: string, mimes?: string[]): [string,boolean]|undefined {
+    function resolveImportLocal(path: string, specifiers?: string[]): [string,boolean]|undefined {
 
         // if the path starts with http(s), then this is an import to the page,
         // most likely js
@@ -93,11 +93,11 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         }
 
         let entry = resolveImport(site, path, base);
-        log('[resolveImportLocal]', path, entry );
+        // log('[resolveImportLocal]', path, specifiers, entry );
         if (entry !== undefined) {
-            const [eid, url, mime] = entry;
+            const [eid, url, mime, spec] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
-            imports.push(entry);
+            imports.push([eid,url,mime, specifiers]);
             
             return [url, remove];
         } else {
@@ -164,18 +164,23 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         // log('[registerClientCode]', {imports} );
         // log('[registerClientCode]', {components} );
 
-        let {imports,components} = codeE.ClientCode ?? {imports:[], components:{}};
+        let {imports:clientImports,components} = codeE.ClientCode ?? {imports:[], components:{}};
 
-        for( const [code,path] of details.imports ){
-            resolveImportLocal( path );
+        for( let [code,path,spec] of details.imports ){
+            let [url] = resolveImportLocal( path, spec as any );
+            code = code.replace(path,url);
+            // imports.push( [code,url,undefined,spec] );
+            clientImports.push( [code,url,spec] );
+            // log('[registerClientCode]', 'import', [code, url, undefined,spec]);
         }
 
-        imports = imports.concat( details.imports );
+        // imports = imports.concat( details.imports );
         components = {...components, ...details.components };
-
-        codeE.ClientCode = {imports, components};
+        codeE.ClientCode = {imports:clientImports, components};
         
+        // log('[registerClientCode]', codeE.ClientCode );
         codeE = await site.update(codeE);
+        // log('[registerClientCode]', '<');
 
         // log('[registerClientCode]', e.id, codeUrl, codeE.id );
         links.push(['int', codeE.id, codeUrl, undefined, 'script' ]);

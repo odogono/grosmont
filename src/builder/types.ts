@@ -151,7 +151,7 @@ export interface ClientCodeDetails {
 export interface TranspileOptions {
     render?: boolean;
     forceRender?: boolean;
-    resolveImport?: (path: string) => [string,boolean] | undefined;
+    resolveImport?: (path: string, specifiers:string[]) => [string,boolean] | undefined;
     resolveLink?: (url:string, text?:string) => any;
     // given a srcUrl, returns the data that belongs to the matching entity
     resolveData?: (srcUrl: string, text?:string, type?:DependencyType) => Promise<any>;
@@ -209,5 +209,5 @@ export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img' |
 
 
 
-// eid, url, mime
-export type ImportDescr = [ EntityId, string, string ];
+// eid, url, mime, specifiers
+export type ImportDescr = [ EntityId, string, string, string[] ];

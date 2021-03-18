@@ -6,7 +6,7 @@ const log = (...args) => console.log('[/plugin/import]', ...args);
 
 
 export interface ImportPluginOptions {
-    resolveImport?: (path: string) => [string, boolean] | undefined;
+    resolveImport?: (path: string, specifiers: string[]) => [string, boolean] | undefined;
 }
 
 /**
@@ -25,8 +25,11 @@ export function importPlugin({resolveImport}: ImportPluginOptions = {}) {
             
             traverse(ast, {
                 ImportDeclaration(path) {
+                    let jsx = generateFromAST(path.node);
+                    let specifiers = path.node.specifiers.map( s => generateFromAST(s));
                     let importPath = path.node.source.value;
-                    const resolved = resolveImport(importPath);
+
+                    const resolved = resolveImport(importPath, specifiers);
                     // log('resolved', importPath, resolved );
                     
                     if (resolved !== undefined) {

@@ -3,7 +3,7 @@ import Path from 'path';
 import { getComponentDefId, getComponentEntityId, toComponentId } from "odgn-entity/src/component";
 import { Entity, EntityId } from "odgn-entity/src/entity";
 import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
-import { buildUrl, resolveUrlPath, uriToPath } from "../../util";
+import { applyMeta, buildUrl, resolveUrlPath, uriToPath } from "../../util";
 import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions, DependencyType, ImportDescr } from "../../types";
 import { getDependencyEntities, getDependencyEntityIds, getDepenendencyDst, getDstUrl, insertDependency } from "../../query";
 import { Site } from "../../site";
@@ -262,16 +262,16 @@ export function resolveImport( site:Site, url:string, base:string ): ImportDescr
         const [eid, mime, bf] = entry;
         // log('[resolveImport]', {eid, path, url, mime});
         if (mime === 'text/jsx') {
-            return [eid, `e://${eid}/component/jsx`, mime];
+            return [eid, `e://${eid}/component/jsx`, mime, undefined];
         }
         if (mime === 'text/mdx') {
-            return [eid, `e://${eid}/component/mdx`, mime];
+            return [eid, `e://${eid}/component/mdx`, mime, undefined];
         }
         if (mime === 'text/scss') {
-            return [eid, `e://${eid}/component/scss`, 'text/css'];
+            return [eid, `e://${eid}/component/scss`, 'text/css', undefined];
         }
         else {
-            return [eid, `e://${eid}/`, 'application/x.entity'];
+            return [eid, `e://${eid}/`, 'application/x.entity', undefined];
         }
     }
     return undefined;
@@ -293,7 +293,7 @@ export async function applyImports(site: Site, e: Entity, imports:ImportDescr[],
     // gather existing import and css dependencies
     const existingIds = new Set(await getDependencyEntityIds(es, e.id, ['import','css']));
     
-    for (let [importEid, url] of imports) {
+    for (let [importEid, url, mime, specifiers] of imports) {
         let type: DependencyType = 'import';
    
         const match = parseEntityUrl(url);
@@ -305,8 +305,15 @@ export async function applyImports(site: Site, e: Entity, imports:ImportDescr[],
             }
         }
 
-        let urlCom = es.createComponent('/component/url', { url });
-        let depId = await insertDependency(es, e.id, importEid, type, [urlCom]);
+        // log('[applyImports]', url, specifiers );
+
+        let coms = [];
+        coms.push( es.createComponent('/component/url', { url }) );
+        if( specifiers ){
+            // for now stuff into meta
+            coms.push( es.createComponent('/component/meta', {meta:{specifiers}}));
+        }
+        let depId = await insertDependency(es, e.id, importEid, type, coms );
 
         if (existingIds.has(depId)) {
             existingIds.delete(depId);

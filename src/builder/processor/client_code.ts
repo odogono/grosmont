@@ -37,12 +37,16 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         const eid = getComponentEntityId(com);
         const { imports, components } = com;
+        // log('com', com);
 
         let buffer = [];
         buffer.push('import React from "react"');
         buffer.push('import ReactDOM from "react-dom";');
 
-        buffer = buffer.concat(imports);
+        let importPaths = imports.map( im => im[0] );
+        buffer = buffer.concat(importPaths);
+
+        // log('add imports', imports);
 
         let ids = [];
         for (const [id, fn] of Object.entries(components)) {
@@ -58,6 +62,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         }
 
         let data = buffer.join('\n');
+
+        log( data );
 
         data = await build(data);
 
@@ -123,13 +129,10 @@ function localResolve(resolveMap: any) {
     return {
         name: 'localResolve', // this name will show up in warnings and errors
         resolveId(source) {
-            // log('[resolveId]', source);
+            log('[resolveId]', source);
             if (resolveMap[source]) {
                 return source;
             }
-            // if (source === 'virtual-module') {
-            //     return source; // this signals that rollup should not ask other plugins or check the file system to find this id
-            // }
             return null; // other ids should be handled as usually
         },
         load(id) {
