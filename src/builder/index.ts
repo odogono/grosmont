@@ -11,6 +11,7 @@ import { Site, SiteOptions } from './site';
 import { process as scanSrc } from './processor/file';
 import { process as evalJsx } from './processor/jsx/eval';
 import { process as evalJs } from './processor/js/eval';
+import { process as evalClientCode } from './processor/client_code';
 import { process as renderJs } from './processor/js/render';
 import { process as evalMdx } from './processor/mdx/eval';
 import { process as resolveMeta } from './processor/mdx/resolve_meta';
@@ -68,6 +69,7 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
         [applyTags, 0, { type: 'tag' }],
         [applyTags, 0, { type: 'layout' }],
         [evalJs, 0],
+        [evalClientCode, 0],
         [resolveMeta, 0],
         [buildDstIndex, 0, { url: '/processor/build_dst_index' }],
         [renderJs, 0],
@@ -264,7 +266,7 @@ export async function renderToOutput( site:Site, process:SiteProcessor, eid:Enti
     const {es} = site;
     const bf = es.resolveComponentDefIds('/component/output');
     const pes = new OutputES( es, bf );
-    log('[renderToOutput]', 'render output', pes.getUrl(), 'to', es.getUrl() );
+    // log('[renderToOutput]', 'render output', pes.getUrl(), 'to', es.getUrl() );
 
     await process(site, {es:pes, eids:[eid], props});
 

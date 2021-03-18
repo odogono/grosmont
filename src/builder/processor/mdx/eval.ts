@@ -197,7 +197,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return [];
     }
 
-    const { js } = await mdxToJs(data, props, { 
+    const { js, jsx } = await mdxToJs(data, props, { 
         onConfig, 
         registerClientCode,
         resolveLink, resolveData, resolveImport: resolveImportLocal,
@@ -205,6 +205,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     });
 
     const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
+    // const jsxCom = setEntityId(es.createComponent('/component/jsx', { data: jsx }), e.id);
 
     meta = {...meta, ...config};
     await parseEntity(es, meta, { add: true, e, siteRef });
@@ -277,8 +278,10 @@ async function getUrlEntityId(es: EntitySet, url: string, options: EvalMdxOption
     // convert the mdx to jsx
     let { jsx, ast } = await transformMdx(mdxData, processOpts);
     
+
+    // log('[mdxToJs]', jsx);
     // convert from jsx to js
-    let js = transformJSX(jsx);
+    let js = transformJSX(jsx, true);
 
     return { js, jsx, ast };
 }

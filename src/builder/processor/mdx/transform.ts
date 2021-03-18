@@ -38,32 +38,15 @@ export interface JsToComponentResult {
 }
 
 /**
- * Converts a string of JS code into a JSX Component
+ * Converts a string of MDX code into a JSX Component
  * 
  * @param jsCode 
  * @param props 
  * @param options 
  */
-export function transformJS(jsCode: string, props: TranspileProps, options: TranspileOptions): TranspileResult {
+export function transformJS(code: string, props: TranspileProps, options: TranspileOptions): TranspileResult {
 
     const { path } = props;
-    // let { context } = options;
-
-    // log('[jsToComponent]', options);
-    try {
-        // evaluate the js into a component
-        let evaled = evalMDXCode(jsCode, path, options);
-
-        return evaled;
-    } catch (err) {
-        // log('[jsToComponent]', err);
-        throw err;
-    }
-
-}
-
-
-function evalMDXCode( code:string, path:string, options:EvalOptions = {} ){
     let scope = {
         mdx: mdxReact,
         createElement: mdxReact,
@@ -73,12 +56,16 @@ function evalMDXCode( code:string, path:string, options:EvalOptions = {} ){
         ...options.scope
     }
 
-    // log('[evalMDXCode]', code );
+    try {
+        // evaluate the js into a component
+        return evalCode( code, path, {...options, scope} );
 
-    return evalCode( code, path, {...options, scope} );
+    } catch (err) {
+        // log('[jsToComponent]', err);
+        throw err;
+    }
+
 }
-
-
 
 export interface TransformMDXResult {
     jsx: string;

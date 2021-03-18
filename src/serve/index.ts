@@ -104,6 +104,9 @@ async function initialiseSite(path: string) {
         ['/processor/apply_tags', 0, { type: 'layout' }],
 
         ['/processor/js/eval'],
+        
+        ['/processor/client_code'],
+        
         ['/processor/mdx/resolve_meta'],
 
         ['/processor/build_dst_index'],

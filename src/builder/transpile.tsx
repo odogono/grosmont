@@ -32,14 +32,17 @@ export function generateFromAST(ast: BabelAST): string {
 
 }
 
-export function transformJSX(jsx: string):string {
+export function transformJSX(jsx: string, esModules: boolean = false): string {
+    // const targets = esModules ? { esmodules: true } : { node: 'current' };
+    const targets = { node: 'current' };
     const presets = [
         // ["latest-node", { "target": "current" }],
         ["@babel/preset-env", {
-            "exclude": [
+            exclude: [
                 "@babel/plugin-transform-spread"
             ],
-            "targets": { "node": "current" }
+            modules: esModules ? false : 'commonjs',
+            targets
         }],
         "@babel/preset-react"
     ];
@@ -57,6 +60,18 @@ export function transformJSX(jsx: string):string {
             isTSX: true
         }]
     ]
-    return Babel.transform(jsx, { presets, plugins }).code;
+    return Babel.transformSync(jsx, { presets, plugins }).code;
 }
 
+/**
+ * Transforms any import/export statements to Commonjs equivilents
+ * 
+ * @param js 
+ * @returns 
+ */
+export function transformModulesToCJS(js: string): string {
+    const {code} = Babel.transformSync(js, {
+        plugins: ["@babel/plugin-transform-modules-commonjs"]
+    });
+    return code;
+}

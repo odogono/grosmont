@@ -72,7 +72,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     let path = site.getSrcUrl(e);
     let meta = e.Meta?.meta ?? {};
 
-    const require = await buildImports(site, e, options);
+    const {require} = await buildImports(site, e.id, options);
 
     function onConfig(config: any) { }
 

@@ -1,7 +1,6 @@
 import Path from 'path';
-import Fs from 'fs-extra';
-// const _eval = require('eval');
 import Eval from 'eval';
+import { transformModulesToCJS } from './transpile';
 
 
 export interface EvalOptions {
@@ -18,7 +17,8 @@ export interface EvalOptions {
 export function evalCode(code: string, path: string, options: EvalOptions = {}) {
     let { context, scope: inScope } = options;
 
-    // log('[evalCode]', path, code );
+    // path = path + '.mjs';
+    // console.log('[evalCode]', path, code );
 
     context = {
         useServerEffect: () => { },
@@ -56,6 +56,11 @@ export function evalCode(code: string, path: string, options: EvalOptions = {}) 
         setTimeout,
         ...inScope
     }
+
+    
+    // eval doesn't like es6 import/exports...
+    code = transformModulesToCJS( code );
+    
 
     let out = Eval(code, path, scope);
 

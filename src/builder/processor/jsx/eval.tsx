@@ -55,36 +55,40 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const { url: base } = e.Src;
     let imports = [];
 
-    const resolveImportLocal = (path: string, mimes?: string[]) => {
+    const resolveImportLocal = (path: string, specifiers?: string[]) => {
         let entry = resolveImport(site, path, base);
         // log('[resolveImportLocal]', path, entry);
         if (entry !== undefined) {
-            const [eid, url, mime] = entry;
+            const [eid, url, mime, spec] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
-            imports.push(entry);
+            imports.push([eid,url,mime, specifiers]);
+            // imports.push(entry);
             // log('[resolveImportLocal]', url, mime, remove);
             return [url, remove];
         } else {
             warn(reporter, `import ${path} not resolved`, {eid:e.id});
         }
     }
+    
+    // gather the import dependencies
+    let data = e.Jsx?.data ?? await site.getEntityData(e);
+
 
     try {
 
-        // gather the import dependencies
-        let data = await site.getEntityData(e);
-
-        let js = transform(data, resolveImportLocal);
+        let {js} = transform(data, resolveImportLocal);
 
         const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
+        // const jsxCom = setEntityId(es.createComponent('/component/jsx', { data: jsx }), e.id);
 
         await applyImports(site, e, imports, options);
 
         return [jsCom];
 
     } catch (err) {
-        log('error', err.stack);
+        // log('error', err.stack);
         error(reporter, 'error', err, { eid: e.id });
+        log('error', data);
         return [ createErrorComponent(es, e, err, {from:Label}) ];
     }
 
@@ -116,12 +120,10 @@ function transform(jsx: string, resolveImport: Function) {
     if( changed ){
         jsx = generateFromAST( ast );
     }
-    // log('[transform]', {jsx});
-    let code = transformJSX( jsx );
 
-    // let { code, ...other } = Babel.transform(jsx, { presets, plugins });
-    // log('[transform]', {code});
+    let js = transformJSX( jsx, true );
+    // jsx = transformJSX( jsx, true );
 
-    return code;
+    return {js};
 }
 
