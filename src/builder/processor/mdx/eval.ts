@@ -93,7 +93,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         }
 
         let entry = resolveImport(site, path, base);
-        // log('[resolveImportLocal]', path, entry );
+        log('[resolveImportLocal]', path, entry );
         if (entry !== undefined) {
             const [eid, url, mime] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
@@ -143,15 +143,11 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
             warn(reporter, `[resolveData] ${srcUrl} not resolved`, { eid: e.id });
             return undefined;
         }
+        
         let eid = entry[0];
         links.push(['int', entry[0], srcUrl, text, type]);
         
-        // const srcIndex = site.getIndex('/index/srcUrl');
-        // const eid = srcIndex.getEid(srcUrl);
-        // if( eid === undefined ){
-        //     warn(reporter, `[resolveData] ${srcUrl} not resolved`, { eid: e.id });
-        //     return undefined;
-        // }
+        
         return e !== undefined ? site.getEntityData( eid ) : undefined;
     }
 
@@ -169,6 +165,10 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         // log('[registerClientCode]', {components} );
 
         let {imports,components} = codeE.ClientCode ?? {imports:[], components:{}};
+
+        for( const [code,path] of details.imports ){
+            resolveImportLocal( path );
+        }
 
         imports = imports.concat( details.imports );
         components = {...components, ...details.components };

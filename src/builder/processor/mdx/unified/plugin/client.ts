@@ -118,7 +118,8 @@ function extractImports(ast: any) {
     traverse(ast, {
         ImportDeclaration(path) {
             let jsx = generateFromAST(path.node);
-            imports.push( jsx );
+            // we add both the full code line AND the import src
+            imports.push( [jsx, path.node.source.value] );
             path.remove();
         },
         ExportNamedDeclaration(path){
