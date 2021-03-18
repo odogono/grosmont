@@ -64,11 +64,12 @@ export async function process( site:Site, options?:ProcessOptions ){
 
     await applyTags(site, options);
 
-    await evalClientCode(site, options);
-
+    
     // evaluates the js, and returns metadata
     await evalJs(site, options);
-
+    
+    await evalClientCode(site, options);
+    
     // resolve meta with parents
     await resolveMeta( site, options );
     

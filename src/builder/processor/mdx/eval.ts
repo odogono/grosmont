@@ -155,14 +155,14 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     // deals with the client code plugin which will extract code designated to
     // be executed client side.
     async function registerClientCode( details:ClientCodeDetails ){
+        
+        // log('[registerClientCode]', details );
+
         const codeName = `code.${e.id}.js`;
         const codeUrl = Path.dirname(base) + Path.sep + codeName;
         let codeE = await site.addSrc( codeUrl );
         codeE.Upd = {op: codeE.id === 0 ? ChangeSetOp.Add : ChangeSetOp.Update };
         codeE.Dst = {url:`file:///${codeName}`};
-
-        // log('[registerClientCode]', {imports} );
-        // log('[registerClientCode]', {components} );
 
         let {imports:clientImports,components} = codeE.ClientCode ?? {imports:[], components:{}};
 

@@ -44,9 +44,6 @@ test('use', async ({ es, site, options }) => {
 
     assert.equal(e.Output.data,
         `<div>Count is 5</div>`);
-
-
-    assert.ok(true);
 });
 
 

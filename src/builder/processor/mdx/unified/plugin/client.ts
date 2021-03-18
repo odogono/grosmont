@@ -70,7 +70,9 @@ export function clientProc({ registerClientCode }: MDXPluginOptions) {
                 (parent.children as any[])[index] = replaceNode;
             });
 
-        await registerClientCode( {imports, components} );
+        if( Object.keys(components).length > 0 ){
+            await registerClientCode( {imports, components} );
+        }
 
         return next();
         // unistRemove(tree, { type: 'mdxBlockElement', name: 'ClientCode' });

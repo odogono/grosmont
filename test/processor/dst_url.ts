@@ -5,6 +5,7 @@ import { parseEntity } from '../../src/builder/config';
 import { getDstUrl } from '../../src/builder/query';
 import { build } from '../../src/builder';
 import { beforeEach } from '../helpers';
+import { printAll } from 'odgn-entity/src/util/print';
 
 const test = suite('processor/dst_url');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
