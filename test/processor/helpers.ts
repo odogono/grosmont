@@ -33,9 +33,9 @@ export async function createSite(options:SiteOptions = {}){
 
     const dst = `file://${rootPath}/dist/`;
     const testDB = { uuid: 'TEST-1', isMemory: true, idgen };
-    const es = new EntitySetSQL({ ...testDB });
+    const es = new EntitySetSQL({ ...testDB, idgen });
 
-    return await Site.create({ idgen, name: 'test', es, dst, level: Level.ERROR, ...options });
+    return await Site.create({ name: 'test', es, dst, level: Level.ERROR, ...options });
 }
 
 export async function beforeEach(tcx) {

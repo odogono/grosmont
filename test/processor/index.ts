@@ -1,6 +1,7 @@
 import 'stateful-hooks';
 import './dst_index';
 import './dst_url';
+import './file';
 import './js';
 import './jsx';
 import './mdx';

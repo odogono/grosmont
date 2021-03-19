@@ -26,6 +26,7 @@ import { applyUpdatesToDependencies, buildSrcUrlIndex, selectSrcByFilename } fro
 import { EntityUpdate, ProcessOptions } from '../../types';
 import Day from 'dayjs';
 import { debug, info, warn, setLocation } from '../../reporter';
+import { printAll } from 'odgn-entity/src/util/print';
 
 
 
@@ -72,22 +73,16 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     await readFileSystem(site, { ...options, es: incoming });
 
 
-    // await printAll(incoming);
-    // await printAll(site.es);
+    
 
     // compare the two es
     let diffs = await diffEntitySets(es, incoming, options);
-
+    
     if (diffs.length > 0) {
         info(reporter, `${diffs.length} diffs`);
-        // log('diffs', diffs);
-        // await printAll(incoming);
-        // await printAll(site.es);
     }
-    // apply the diffs
-    await applyEntitySetDiffs(es, incoming, diffs, true, options);
-    // }
 
+    await applyEntitySetDiffs(es, incoming, diffs, true, options);
 
     // read all files marked as being entities
     await readEntityFiles(site, options);
@@ -121,8 +116,6 @@ export async function cloneEntitySet(es: EntitySet) {
     for (const def of defs) {
         await result.register(def);
     }
-
-    // log('[cloneEntitySet]', 'copied', defs.length, 'defs', 'from', es.getUrl() );
 
     // copy the site entity
     const se = await selectSite(es);
@@ -229,6 +222,8 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: Pr
     // log('idxA', idxA);
     // log('idxB', idxB);
 
+    // await printAll( esB );
+
     for (let [url, eid, mtime, bf] of idxA) {
 
         // find url in b
@@ -302,15 +297,21 @@ async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
     const siteEntity = site.getEntity();
 
     setLocation(reporter, `${Label}#read_file_system`);
+    
 
-    if (rootPath === undefined) {
-        warn(reporter, `[readFileSystem] no root path`);
+    if (options.readFSResult) {
+        let coms = [];
+        for await ( const com of options.readFSResult.getComponents() ){
+            coms.push(com);
+        }
+        
+        await es.add(coms);
+        
         return es;
     }
 
-    if (options.readFSResult) {
-        let ents = Array.from(options.readFSResult.components.values());
-        await es.add(ents);
+    if (rootPath === undefined) {
+        warn(reporter, `[readFileSystem] no root path`);
         return es;
     }
 
