@@ -50,7 +50,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             let coms = await processEntity(site, e, options);
             output = output.concat(coms);
 
-            info(reporter, ``, { eid: e.id });
+            info(reporter, `${e.Src?.url}`, { eid: e.id });
 
         } catch (err) {
             output.push( createErrorComponent(es, e, err, {from:Label}) );

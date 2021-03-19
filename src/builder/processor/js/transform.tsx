@@ -5,6 +5,7 @@ import { Head } from '../../../components/head';
 import { TranspileOptions, TranspileProps } from "../../types";
 import { ServerEffectProvider } from '../../processor/jsx/server_effect';
 import { mdx as mdxReact, MDXProvider } from '@mdx-js/react'
+import { isUrlInternal } from '../../util';
 
 
 
@@ -35,7 +36,7 @@ export async function transformComponent(component: any, props: TranspileProps):
         () => <>{inputCssLinks.map(c => <link key={c} rel='stylesheet' href={c} />)}</>;
 
     // log('[transformComponent]', 'scriptSrcs', scriptSrcs);
-    scriptSrcs = scriptSrcs != undefined ? scriptSrcs.filter(Boolean) : [];
+    scriptSrcs = sortScriptSrcs(scriptSrcs);
     comProps.ScriptLinks = () => <>{scriptSrcs.map(src => <script crossOrigin="anonymous" key={src} src={src} />)}</>;
 
     const components = {
@@ -91,3 +92,30 @@ export async function transformComponent(component: any, props: TranspileProps):
     }
 }
 
+
+/**
+ * Sorts script srcs so that external urls are ordered first
+ * 
+ * @param srcs 
+ */
+function sortScriptSrcs( srcs:string[] ){
+    if( srcs === undefined ){
+        return [];
+    }
+    srcs = srcs.filter(Boolean)
+    srcs.sort( (a, b) => {
+        const isAExt = !isUrlInternal(a);
+        const isBExt = !isUrlInternal(b);
+        if( isAExt && isBExt ){
+            return 0;
+        }
+        if( isAExt ){
+            return -1;
+        }
+        if( isBExt ){
+            return 1;
+        }
+        return 0;
+    })
+    return srcs;
+}

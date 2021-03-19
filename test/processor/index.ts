@@ -6,3 +6,4 @@ import './jsx';
 import './mdx';
 import './meta_config';
 import './scss';
+import './static';

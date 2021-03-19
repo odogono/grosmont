@@ -1,3 +1,4 @@
+import Process from 'process';
 import React from 'react';
 import { Entity } from 'odgn-entity/src/entity';
 import { getDependencyEntities, getDependencyComponents, getLayoutFromDependency, insertDependency, selectJs } from '../../query';
@@ -85,6 +86,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
         return undefined;
     }
 
+
     let props: TranspileProps = { path, url: base };
 
     if (child !== undefined) {
@@ -93,14 +95,14 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // props.imgs = options.imgs;
     props = await applyCSSDependencies(es, e, child, props);
 
+
     const scripts = await getScriptDependencies(site, e);
     props.scriptSrcs = scripts;
-    // log('[processEntity]', base, scripts );
-
+    
     props.comProps = { e, es, site, page: e, ...options.props };
-
-    // log('[processEntity]', base, options );
-
+    
+    // log('[processEntity]', base, 'options props', {props:options.props} );
+    
     const context = createRenderContext(site, e, options);
 
     // scope vars which appear globally defined to the code
@@ -116,6 +118,11 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     beginServerEffects(base);
 
     let result: any = transformJS(data, props, { context, onConfig, require, scope });
+
+    if( result.component === undefined ){
+        // no default component found, so no render possible
+        return undefined;
+    }
 
     result.css = props.css;
     result.cssLinks = props.cssLinks;
@@ -133,9 +140,20 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
         return setEntityId(com, e.id);
     }
 
-    const { component } = result;
+    
 
-    let output = await transformComponent(component, props);
+    const { component } = result;
+    let output;
+    // log('[processEntity]', base, '>');
+    // try {
+        output = await transformComponent(component, props);
+    // } catch (err ){
+    //     log('[processEntity]', 'error', err);
+
+    //     log( result );
+    //     Process.exit(1);
+    // }
+    // log('[processEntity]', base, '<');
 
 
     // resolve all the server effects
@@ -150,6 +168,10 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     // replace any e:// urls with dst url links
     output = replaceEntityUrls(site, output);
+
+    // if( base === 'file:///test/components.jsx' ){
+    //     Process.exit(1);
+    // }
 
     const mime = 'text/html';
     return setEntityId(es.createComponent('/component/output', { data: output, mime }), e.id);

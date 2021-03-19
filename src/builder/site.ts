@@ -87,8 +87,7 @@ export class Site {
             setLevel(reporter, options.level);
         }
         site.reporter = reporter;
-        // log('[create]', options);
-
+        
         // attempt to initialise the ES from the configPath
         await initialiseES(site, { ...options, reporter });
 
