@@ -33,7 +33,7 @@ import { debug, info, warn, setLocation } from '../../reporter';
 
 let logActive = true;
 
-const Label = '/processor/file';
+const Label = '/processor/file/';
 const log = (...args) => logActive && console.log(`[${Label}]`, ...args);
 
 
@@ -142,7 +142,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
     let removeEids: EntityId[] = [];
     let diffComs: Component[] = [];
     let updateEs: Entity[] = [];
-    setLocation(reporter, '/processor/file/apply_entity_set_diffs')
+    setLocation(reporter, `${Label}#apply_entity_set_diffs`)
 
     const diffDefId = getDefId(esA.getByUri('/component/upd'));
 
@@ -220,7 +220,7 @@ type SrcUrlDiffResult = [EntityId, ChangeSetOp, EntityId?][];
  */
 export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: ProcessOptions = {}): Promise<SrcUrlDiffResult> {
     const { reporter } = options;
-    setLocation(reporter, '/processor/file/diffEntitySets');
+    setLocation(reporter, `${Label}#diff_entity_sets`);
     const idxA = await buildSrcUrlIndex(esA, options);
     const idxB = await buildSrcUrlIndex(esB, options);
 
@@ -301,6 +301,8 @@ async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
     let rootPath = site.getSrcUrl();
     const siteEntity = site.getEntity();
 
+    setLocation(reporter, `${Label}#read_file_system`);
+
     if (rootPath === undefined) {
         warn(reporter, `[readFileSystem] no root path`);
         return es;
@@ -316,6 +318,8 @@ async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
 
 
     // log('patterns', { include, exclude });
+
+    info(reporter, `reading from ${rootPath}`);
 
     let matches = await getMatches(rootPath, include, exclude);
 

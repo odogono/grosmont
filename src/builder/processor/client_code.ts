@@ -33,7 +33,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     const jsDid = es.resolveComponentDefId('/component/output');
 
-    log( 'com', coms );
+    // log( 'com', coms );
     for (const com of coms) {
 
         const eid = getComponentEntityId(com);
@@ -73,7 +73,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         data = await build(data, importComs);
         
         // log( data );
-        add.push(setEntityId(es.createComponent(jsDid, { data }), eid));
+        add.push(setEntityId(es.createComponent(jsDid, { data, mime: 'text/javascript' }), eid));
 
     }
 

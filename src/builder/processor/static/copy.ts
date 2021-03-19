@@ -5,7 +5,8 @@ import { getDstUrl, selectStaticWithDst } from '../../query';
 import { debug, error, info, setLocation } from "../../reporter";
 import { printEntity } from "odgn-entity/src/util/print";
 
-const log = (...args) => console.log('[ProcStaticCopy]', ...args);
+const Label = '/processor/static/copy';
+const log = (...args) => console.log(`[${Label}]`, ...args);
 
 
 /**
@@ -18,7 +19,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     const es = site.es;
     const { reporter } = options;
     const dryRun = options.dryRun ?? false;
-    setLocation(reporter, '/processor/static/copy');
+    setLocation(reporter, Label);
 
     const srcComs = await selectStaticWithDst(es, options);
 
@@ -31,19 +32,16 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             const dst = await getDstUrl(es, eid);
             
             if( dst === undefined ){
-                log('no dst found for', src);
+                debug(reporter, 'no dst found', {eid});
                 continue;
             }
             
             let path = site.getDstUrl(dst);
             
-            // debug(reporter, `dst ${dst} path ${path}`, {eid});
-            
             if( !dryRun ){
                 await site.copyToUrl(path, src.url);
                 info(reporter, `copied from ${src.url} to ${path}`, { eid });
             } else {
-                // log('fuck', eid, dst, path);
                 info(reporter, `[dryRun] copied from ${src.url} to ${path}`, { eid });
             }
 

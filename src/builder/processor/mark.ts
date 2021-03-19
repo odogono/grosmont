@@ -51,6 +51,7 @@ export async function process(site: Site, options: MarkOptions) {
     // log( {exts, onlyUpdated}, 'coms', coms);
     const def = es.getByUri(comUrl);
     const did = getDefId(def);
+    const srcDid = es.resolveComponentDefId('/component/src');
 
     let addComs = [];
 
@@ -66,7 +67,10 @@ export async function process(site: Site, options: MarkOptions) {
             if (!loadData) {
                 addComs.push(typeCom);
             }
-            info(reporter, `mark`, { eid });
+
+            const srcCom = await es.getComponent(toComponentId(eid,srcDid));
+            let src = srcCom !== undefined ? srcCom.url : '';
+            info(reporter, `mark ${comUrl}\t${src}`, { eid });
         }
 
         if (mime === undefined) {

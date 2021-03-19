@@ -28,12 +28,11 @@ export async function transformComponent(component: any, props: TranspileProps):
 
     comProps.InlineCSS = css !== undefined ?
         () => <style dangerouslySetInnerHTML={{ __html: css }} />
-        : null;
+        : () => null;
 
     inputCssLinks = inputCssLinks !== undefined ? inputCssLinks.filter(Boolean) : [];
-    comProps.CSSLinks = inputCssLinks.length > 0 ?
-        () => <>{inputCssLinks.map(c => <link key={c} rel='stylesheet' href={c} />)}</>
-        : null;
+    comProps.CSSLinks =
+        () => <>{inputCssLinks.map(c => <link key={c} rel='stylesheet' href={c} />)}</>;
 
     // log('[transformComponent]', 'scriptSrcs', scriptSrcs);
     scriptSrcs = scriptSrcs != undefined ? scriptSrcs.filter(Boolean) : [];
@@ -68,7 +67,8 @@ export async function transformComponent(component: any, props: TranspileProps):
     const Component = await component;
 
     // log('[componentToString]', 'CSSLinks', inputCssLinks);
-    // log('[componentToString]', 'CSSLinks', components);
+    // log('[componentToString]', 'props', {comProps});
+    // log('[componentToString]', 'components', {components});
 
     try {
 
