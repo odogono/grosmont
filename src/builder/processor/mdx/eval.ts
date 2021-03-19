@@ -159,7 +159,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         // log('[registerClientCode]', details );
 
         const codeName = `code.${e.id}.js`;
-        const codeUrl = Path.dirname(base) + Path.sep + codeName;
+        let codeUrl = Path.dirname(base) + Path.sep + codeName;
+        codeUrl = codeUrl.replace('file://', 'src://');
         let codeE = await site.addSrc( codeUrl );
         codeE.Upd = {op: codeE.id === 0 ? ChangeSetOp.Add : ChangeSetOp.Update };
         codeE.Dst = {url:`file:///${codeName}`};

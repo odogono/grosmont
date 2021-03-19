@@ -35,7 +35,7 @@ import 'https://unpkg.com/react@17/umd/react.development.js';
     
     `);
 
-    await process(site, options);
+    await process(site, {...options, beautify:true});
 
     // console.log('\n\n');
     // await printAll(es);
@@ -44,10 +44,49 @@ import 'https://unpkg.com/react@17/umd/react.development.js';
 
     // log( e.Output.data );
     assert.equal(e.Output.data,
-        `<script crossorigin="anonymous" src="/code.1004.js"></script><script crossorigin="anonymous" src="https://unpkg.com/react@17/umd/react.development.js"></script><div id="client-code-7d8c94f9"></div>`);
+`<script crossorigin="anonymous" src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script crossorigin="anonymous" src="/code.1004.js"></script>
+<div id="client-code-7d8c94f9"></div>`);
 
 });
 
+
+
+test('layout script links', async ({es, site, options}) => {
+    await addSrc(site, 'file:///layout/main.mdx', `
+---
+isRenderable: false
+---
+
+<html lang="en">
+    <body>{children}</body>
+    <ScriptLinks />
+</html>`);
+
+    await addSrc(site, 'file:///index.mdx', `
+---
+layout: /layout/main
+dst: /index.html
+---
+import 'https://unpkg.com/react@17/umd/react.development.js';
+
+# Index
+    `);
+
+    await process(site, {...options, beautify:true} );
+
+    let e = await site.getEntityByDst('/index.html');
+
+    assert.equal(e.Output.data, `<html lang="en">
+
+<body>
+    <h1>Index</h1>
+</body>
+<script crossorigin="anonymous" src="https://unpkg.com/react@17/umd/react.development.js"></script>
+
+</html>`);
+
+});
 
 
 test.run();

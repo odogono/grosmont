@@ -20,7 +20,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     setLocation(reporter, '/processor/write');
 
     const coms = await selectOutputWithDst(es, options);
-    // log('eids', coms);
+    
 
     for (const com of coms) {
         const eid = getComponentEntityId(com);
@@ -49,6 +49,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             error(reporter, err.message, err, {eid});
         }
     }
+
+    info(reporter, `wrote ${coms.length}`);
 
     return site;
 }

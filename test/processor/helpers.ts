@@ -76,7 +76,7 @@ export async function process( site:Site, options?:ProcessOptions ){
     await buildDstIndex(site, options);
     
     // renders the js to /component/output
-    await renderJs(site, options);
+    await renderJs(site, options );
 
     await assignTitle(site, options);
 }

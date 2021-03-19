@@ -37,7 +37,7 @@ const configPath = Path.resolve(config);
         }
 
     } else {
-        await printAll(site.es);
+        // await printAll(site.es);
     }
     
 })();

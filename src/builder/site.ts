@@ -618,7 +618,6 @@ async function initialiseES(site: Site, options: SiteOptions) {
                 path = Path.join(rootPath, path);
             }
 
-            // log('es path', path);
             if (protocol === 'es') {
                 if (host === 'sqlite') {
                     es = new EntitySetSQL({ path, ...esData, ...queryKey });
@@ -655,6 +654,8 @@ async function initialiseES(site: Site, options: SiteOptions) {
     // log('root:', rootPath);
     // log('config:', configPath);
     // log('[initialiseES]', es.getUrl());
+
+    info(reporter, `dst path ${site.getDstUrl()}`)
 
     return site;
 }

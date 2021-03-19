@@ -72,9 +72,6 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // read the fs into the incoming es
     await readFileSystem(site, { ...options, es: incoming });
 
-
-    
-
     // compare the two es
     let diffs = await diffEntitySets(es, incoming, options);
     
@@ -225,6 +222,11 @@ export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: Pr
     // await printAll( esB );
 
     for (let [url, eid, mtime, bf] of idxA) {
+
+        // log('consider', url);
+        if( !url.startsWith('file://') ){
+            continue;
+        }
 
         // find url in b
         let row = idxB.find(b => b[0] === url);

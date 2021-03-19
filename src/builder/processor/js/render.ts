@@ -1,5 +1,7 @@
 import Process from 'process';
 import React from 'react';
+import {html as BeautifyHTML} from 'js-beautify';
+
 import { Entity } from 'odgn-entity/src/entity';
 import { getDependencyEntities, getDependencyComponents, getLayoutFromDependency, insertDependency, selectJs } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
@@ -26,6 +28,8 @@ export interface RenderJsOptions extends ProcessOptions {
     renderToIndex?: boolean;
     renderToE?: boolean;
     scope?: EvalScope;
+    scripts?: string[];
+    beautify?: boolean;
 }
 
 
@@ -96,12 +100,15 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     props = await applyCSSDependencies(es, e, child, props);
 
 
-    const scripts = await getScriptDependencies(site, e);
+    let scripts = await getScriptDependencies(site, e);
+    if( options.scripts ){
+        scripts = [...scripts, ...options.scripts];
+    }
     props.scriptSrcs = scripts;
     
     props.comProps = { e, es, site, page: e, ...options.props };
     
-    // log('[processEntity]', base, 'options props', {props:options.props} );
+    // log('[processEntity]', base, 'options props', {props} );
     
     const context = createRenderContext(site, e, options);
 
@@ -136,7 +143,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
             page: e,
             layout: layoutE
         }
-        let com = await processEntity(site, layoutE, result, { ...options, scope: layoutScope });
+        let com = await processEntity(site, layoutE, result, { ...options, scripts, scope: layoutScope });
         return setEntityId(com, e.id);
     }
 
@@ -174,6 +181,10 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // }
 
     const mime = 'text/html';
+
+    if( options.beautify ){
+        output = BeautifyHTML( output );
+    }
     return setEntityId(es.createComponent('/component/output', { data: output, mime }), e.id);
 }
 
