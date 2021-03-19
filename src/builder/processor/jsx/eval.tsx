@@ -8,7 +8,7 @@ import { selectJsx } from '../../query';
 import { Site } from '../../site';
 
 import { ProcessOptions } from '../../types';
-import { createErrorComponent } from '../../util';
+import { createErrorComponent, isUrlInternal } from '../../util';
 
 import { applyImports, resolveImport } from '../js/util';
 import { Component, setEntityId, } from 'odgn-entity/src/component';
@@ -55,7 +55,10 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const { url: base } = e.Src;
     let imports = [];
 
-    const resolveImportLocal = (path: string, specifiers?: string[]) => {
+    function resolveImportLocal(path: string, specifiers?: string[]){
+        if( !isUrlInternal(path) ){
+            return;
+        }
         let entry = resolveImport(site, path, base);
         // log('[resolveImportLocal]', path, entry);
         if (entry !== undefined) {

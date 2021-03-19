@@ -156,8 +156,23 @@ export async function selectSiteTargetUri(es: EntitySet, e: Entity) {
 //     return joinPaths(rootPath, e.File.uri);
 // }
 
+/**
+ * Returns true if the given URL is considered 'internal'
+ * 
+ * @param url 
+ * @returns 
+ */
+export function isUrlInternal(url: string) {
+    if( /^(\.|\/|file:).*/.test(url) ){
+        return true;
+    }
 
+    if( /^(http|https).*/.test(url) ){
+        return false;
+    }
 
+    return false;
+}
 
 
 export function joinPaths(a: string, b: string) {

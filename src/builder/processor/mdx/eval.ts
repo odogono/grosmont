@@ -11,7 +11,7 @@ import { applyImports, buildProps, resolveImport } from '../js/util';
 import { parseEntity } from '../../config';
 import { EntitySet } from 'odgn-entity/src/entity_set';
 import { Component, setEntityId } from 'odgn-entity/src/component';
-import { createErrorComponent, resolveUrlPath } from '../../util';
+import { createErrorComponent, isUrlInternal, resolveUrlPath } from '../../util';
 import { transformMdx } from './transform';
 import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 
@@ -219,10 +219,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     return [jsCom];
 }
 
-function isUrlInternal(url: string) {
-    const re = new RegExp('^(http|https).*');
-    return re.test(url) === false;
-}
+
 
 type LinkDescr = [ 'ext'|'int', EntityId, string /*url*/, string? /*text*/, DependencyType? ];
 
