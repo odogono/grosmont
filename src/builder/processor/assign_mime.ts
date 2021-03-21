@@ -2,8 +2,7 @@ import Path from 'path';
 import Mime from 'mime-types';
 
 
-import { Entity } from "odgn-entity/src/entity";
-import { EntitySet } from "odgn-entity/src/entity_set";
+import { Entity } from "../../es";
 import { Site } from '../site';
 import { applyMeta } from '../util';
 import { ProcessOptions } from '../types';

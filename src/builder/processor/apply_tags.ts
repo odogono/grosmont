@@ -1,8 +1,8 @@
-import { getComponentEntityId } from "odgn-entity/src/component";
-import { 
-    getDependencyParents, 
-    getDepenendencyDst, 
-    insertDependency, 
+import { getComponentEntityId } from "../../es";
+import {
+    getDependencyParents,
+    getDepenendencyDst,
+    insertDependency,
     selectSrcByFilename
 } from "../query";
 import { debug, info, setLocation } from "../reporter";
@@ -23,36 +23,36 @@ export interface ApplyDepsToChildrenOptions extends ProcessOptions {
  * @param site 
  * @param options 
  */
-export async function process(site: Site, options:ApplyDepsToChildrenOptions = {}) {
+export async function process(site: Site, options: ApplyDepsToChildrenOptions = {}) {
     const es = options.es ?? site.es;
     const { reporter, onlyUpdated } = options;
     setLocation(reporter, Label);
     const depType = options.type ?? 'tag';
 
-    const eids = await site.getDependencyLeafEntityIds( 'dir', options );
+    const eids = await site.getDependencyLeafEntityIds('dir', options);
 
     // we ignore directory meta, as they have already been processed
     let coms = await site.getDirectoryMetaComponents(options);
-    let excludeEids = coms.map( c => getComponentEntityId(c) );
-    
+    let excludeEids = coms.map(c => getComponentEntityId(c));
+
     debug(reporter, `leafs ${eids} bl ${excludeEids}`);
     // log( `leafs ${eids} bl ${excludeEids}` );
 
-    for( const eid of eids ){
+    for (const eid of eids) {
         // get the parents of this e
-        const peids = await getDependencyParents( es, eid, 'dir' );
-        peids.push( eid );
+        const peids = await getDependencyParents(es, eid, 'dir');
+        peids.push(eid);
 
         let tagIds = [];
 
-        for( const peid of peids ){
-            if( excludeEids.indexOf(peid) !== -1 ){
+        for (const peid of peids) {
+            if (excludeEids.indexOf(peid) !== -1) {
                 continue;
             }
             // apply tags that we have gatherered
-            for( const tagId of tagIds ){
-                let depId = await insertDependency( es, peid, tagId, depType );
-                if( depId !== 0 ) {
+            for (const tagId of tagIds) {
+                let depId = await insertDependency(es, peid, tagId, depType);
+                if (depId !== 0) {
                     // info(reporter, `add ${depType} ${tagId} to ${peid}`, {eid:depId});
                 }
             }
@@ -60,7 +60,7 @@ export async function process(site: Site, options:ApplyDepsToChildrenOptions = {
             // get tags for this e
             const pTagIds = await getDepenendencyDst(es, peid, depType);
             // add them to the tag list
-            tagIds = tagIds.concat( pTagIds );
+            tagIds = tagIds.concat(pTagIds);
             // remove any duplicates
             tagIds = [...new Set(tagIds)];
         }

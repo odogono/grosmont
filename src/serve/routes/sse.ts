@@ -5,7 +5,7 @@ import Day from 'dayjs';
 import parseUrl from 'parseurl';
 
 import { parseUri, toInteger } from "@odgn/utils";
-import { EntityId } from 'odgn-entity/src/entity';
+import { EntityId } from '../../../src/es';
 import { RoutesConfig } from '../index';
 
 

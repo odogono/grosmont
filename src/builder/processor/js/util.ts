@@ -1,8 +1,11 @@
 import Util from 'util';
 import Path from 'path';
-import { getComponentDefId, getComponentEntityId, toComponentId } from "odgn-entity/src/component";
-import { Entity, EntityId } from "odgn-entity/src/entity";
-import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
+import { 
+    getComponentDefId, getComponentEntityId, toComponentId,
+    Entity, EntityId,
+    QueryableEntitySet,
+    StatementArgs 
+} from "../../../es";
 import { applyMeta, buildUrl, resolveUrlPath, uriToPath } from "../../util";
 import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions, DependencyType, ImportDescr } from "../../types";
 import { getDependencyEntities, getDependencyEntityIds, getDepenendencyDst, getDstUrl, insertDependency } from "../../query";
@@ -10,7 +13,6 @@ import { Site } from "../../site";
 import { toInteger } from '@odgn/utils';
 import { useServerEffect } from '../jsx/server_effect';
 import { buildProcessors, OutputES } from '../..';
-import { StatementArgs } from 'odgn-entity/src/query';
 import { info } from '../../reporter';
 
 const log = (...args) => console.log('[/processor/mdx/util]', ...args);
@@ -70,7 +72,7 @@ function processEntities( site:Site, e:Entity, options:ProcessOptions ){
         ]);
 
 
-        await process( site, {es:pes, eids});
+        await process( site, {es:pes as any, eids});
 
         let result:Map<EntityId,Entity> = new Map<EntityId,Entity>();
 
@@ -111,7 +113,7 @@ function processEntityOutput( site:Site, e:Entity, options:ProcessOptions ){
         // reset at the point of eval_mdx/jsx
         await insertDependency( es, e.id, pe.id, 'import' );
         
-        await process( site, {es:pes, eids} );
+        await process( site, {es:pes as any, eids} );
 
         for( const com of pes.components ){
             if( getComponentEntityId(com) === pe.id ){
@@ -125,7 +127,7 @@ function processEntityOutput( site:Site, e:Entity, options:ProcessOptions ){
 
 
 
-export async function buildPageLinks( es:EntitySet, linkIndex:SiteIndex ){
+export async function buildPageLinks( es:QueryableEntitySet, linkIndex:SiteIndex ){
     let result:PageLinks = new Map<string,PageLink>();
 
     
@@ -192,7 +194,7 @@ export function getEntityImportUrlFromPath(fileIndex: SiteIndex, path: string, m
  * @param e 
  * @returns 
  */
-export async function getEntityCSSDependencies(es: EntitySet, e: Entity) {
+export async function getEntityCSSDependencies(es: QueryableEntitySet, e: Entity) {
     const cssDeps = await getDependencyEntities(es, e.id, ['css']);
     if (cssDeps === undefined || cssDeps.length === 0) {
         return undefined;

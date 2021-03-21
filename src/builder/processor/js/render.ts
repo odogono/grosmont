@@ -2,7 +2,6 @@ import Process from 'process';
 import React from 'react';
 import {html as BeautifyHTML} from 'js-beautify';
 
-import { Entity } from 'odgn-entity/src/entity';
 import { getDependencyEntities, getDependencyComponents, getLayoutFromDependency, insertDependency, selectJs } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
@@ -10,8 +9,12 @@ import { Site } from '../../site';
 
 import { ProcessOptions, TranspileProps, TranspileResult, EvalScope } from '../../types';
 import { createRenderContext, getEntityCSSDependencies } from './util';
-import { EntitySet } from 'odgn-entity/src/entity_set';
-import { Component, setEntityId, toComponentId } from 'odgn-entity/src/component';
+import { 
+    Component, setEntityId, toComponentId ,
+    QueryableEntitySet,
+    Entity,
+} from '../../../es';
+
 import { hash, toInteger } from '@odgn/utils';
 import { buildImports } from './eval';
 import { useServerEffect, serverEffectValue, beginServerEffects, endServerEffects } from '../jsx/server_effect';
@@ -212,7 +215,7 @@ function replaceEntityUrls(site: Site, data: string) {
 
 
 
-async function applyCSSDependencies(es: EntitySet, e: Entity, child: TranspileResult, props: TranspileProps): Promise<TranspileProps> {
+async function applyCSSDependencies(es: QueryableEntitySet, e: Entity, child: TranspileResult, props: TranspileProps): Promise<TranspileProps> {
     // build css links and content from deps
     const cssEntries = await getEntityCSSDependencies(es, e);
 

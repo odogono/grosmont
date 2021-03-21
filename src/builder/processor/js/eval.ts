@@ -1,4 +1,4 @@
-import { Entity, EntityId } from 'odgn-entity/src/entity';
+import { Entity, EntityId, toComponentId } from '../../../es';
 import { getDependencyEntities, selectJs } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
@@ -10,7 +10,6 @@ import { createRenderContext, parseEntityUrl, resolveImport } from './util';
 import { parseEntity } from '../../config';
 import { createErrorComponent } from '../../util';
 import { transformJS } from '../mdx/transform';
-import { toComponentId } from 'odgn-entity/src/component';
 
 const Label = '/processor/js/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);

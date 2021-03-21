@@ -1,13 +1,22 @@
 import Path from 'path';
-import { Component, getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
-import { Entity, EntityId, isEntity } from "odgn-entity/src/entity";
-import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
+import { 
+    Component, 
+    Entity,
+    EntityId,
+    isEntity,
+    getComponentEntityId, 
+    setEntityId, 
+    toComponentId,
+    QueryableEntitySet,
+    ComponentDefUrl, getDefId
+} from "../es";
+
 import Day from 'dayjs';
 import { Site } from './site';
 import { buildQueryString, parseUri, slugify, stringify, toBoolean, toInteger } from "@odgn/utils";
 import { isString } from "@odgn/utils";
 import { FindEntityOptions } from './query';
-import { ComponentDefUrl, getDefId } from 'odgn-entity/src/component_def';
+
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
 
@@ -21,11 +30,11 @@ export function applyMeta(e: Entity, data: any): Entity {
     return e;
 }
 
-export async function applyMimeToEntityId(es: EntitySet, eid: EntityId, mime: string): Promise<Component> {
+export async function applyMimeToEntityId(es: QueryableEntitySet, eid: EntityId, mime: string): Promise<Component> {
     return applyMetaComponentToEntityId(es, eid, { mime });
 }
 
-export async function applyMetaComponentToEntityId(es: EntitySet, eid: EntityId, data: any): Promise<Component> {
+export async function applyMetaComponentToEntityId(es: QueryableEntitySet, eid: EntityId, data: any): Promise<Component> {
     const metaDef = es.getByUri('/component/meta');
     const metaDid = getDefId(metaDef);
 
@@ -132,7 +141,7 @@ export function getParentDirectory(uri: string) {
 
 
 
-export async function selectSiteTargetUri(es: EntitySet, e: Entity) {
+export async function selectSiteTargetUri(es: QueryableEntitySet, e: Entity) {
     if (e.Site !== undefined) {
         return e.Target !== undefined ? e.Target.uri : undefined;
     }
@@ -146,15 +155,6 @@ export async function selectSiteTargetUri(es: EntitySet, e: Entity) {
 }
 
 
-// /**
-//  * 
-//  * @param es 
-//  * @param e 
-//  */
-// export async function fileUriToAbsolute( es:EntitySet, e:Entity ){
-//     const rootPath = await selectSitePath( es, e.SiteRef.ref );
-//     return joinPaths(rootPath, e.File.uri);
-// }
 
 /**
  * Returns true if the given URL is considered 'internal'
@@ -201,7 +201,7 @@ export function createTimes() {
 }
 
 
-export async function createTag(es: EntitySet, name: string, options: FindEntityOptions = {}) {
+export async function createTag(es: QueryableEntitySet, name: string, options: FindEntityOptions = {}) {
     if (!isString(name)) {
         name = stringify(name);
     }
@@ -290,7 +290,7 @@ export interface ErrorOptions {
     from?: string;
 }
 
-export function createErrorComponent( es:EntitySet, e:Entity|EntityId, err:Error, options:ErrorOptions = {} ){
+export function createErrorComponent( es:QueryableEntitySet, e:Entity|EntityId, err:Error, options:ErrorOptions = {} ){
     const eid:EntityId = isEntity(e) ? (e as Entity).id : e as EntityId;
     let com = es.createComponent('/component/error', { ...options, message: err.message, stack: err.stack });
     return setEntityId(com, eid);

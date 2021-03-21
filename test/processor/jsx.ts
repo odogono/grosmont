@@ -1,10 +1,5 @@
 import { suite } from 'uvu';
-import Path from 'path';
-import { Site } from '../../src/builder/site';
 import assert from 'uvu/assert';
-import { printAll } from 'odgn-entity/src/util/print';
-import { FindEntityOptions } from '../../src/builder/query';
-import { EntityId } from 'odgn-entity/src/entity';
 import { addSrc, beforeEach } from './helpers';
 import { buildProcessors, RawProcessorEntry } from '../../src/builder';
 

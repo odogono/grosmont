@@ -1,4 +1,4 @@
-import { Entity, EntityId } from "odgn-entity/src/entity";
+import { EntityId } from "../../../es";
 import { selectMdx } from "../../query";
 import { Site } from '../../site';
 import { ProcessOptions } from "../../types";
@@ -23,8 +23,8 @@ export interface ResolveMetaOptions extends ProcessOptions {
  */
 export async function process(site: Site, options: ResolveMetaOptions = {}) {
     const es = site.es;
-    const {e:eid, reporter} = options;
-    setLocation(reporter,'/processor/mdx/resolve_meta');
+    const { e: eid, reporter } = options;
+    setLocation(reporter, '/processor/mdx/resolve_meta');
 
     // second pass - resolving meta with dependencies
     let ents = eid !== undefined ?
@@ -36,7 +36,7 @@ export async function process(site: Site, options: ResolveMetaOptions = {}) {
     for (const e of ents) {
 
         let metaList = await selectDependencyMeta(es, e.id);
-        if( metaList.length === 0 ){
+        if (metaList.length === 0) {
             continue;
         }
         // log('dirCom', metaList);
@@ -45,7 +45,7 @@ export async function process(site: Site, options: ResolveMetaOptions = {}) {
 
         e.Meta = { meta };
 
-        info(reporter, '', {eid:e.id});
+        info(reporter, '', { eid: e.id });
 
         output.push(e);
     }

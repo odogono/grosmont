@@ -1,5 +1,5 @@
 import Path from 'path';
-import { getComponentEntityId } from "odgn-entity/src/component";
+import { getComponentEntityId } from "../../../es";
 import { selectSrcByExt } from "../../query";
 import { setLocation, info } from "../../reporter";
 import { Site } from "../../site";

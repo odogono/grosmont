@@ -1,11 +1,7 @@
 import { suite } from 'uvu';
-import assert from 'uvu/assert';
-import Path from 'path';
-import { Site } from '../../src/builder/site';
 import { parseEntity } from '../../src/builder/config';
-import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { FindEntityOptions, getDstUrl } from '../../src/builder/query';
-import { Reporter } from '../../src/builder/reporter';
+
+import { getDstUrl } from '../../src/builder/query';
 import { process, beforeEach } from './helpers';
 
 

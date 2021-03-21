@@ -1,4 +1,4 @@
-import { EntityId } from "odgn-entity/src/entity";
+import { EntityId } from "../es";
 import { renderToOutput } from "../builder";
 import { getDependencyEntities, getDependencyOfEntities } from "../builder/query";
 import { Site } from "../builder/site";

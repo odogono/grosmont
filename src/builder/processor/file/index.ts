@@ -11,22 +11,26 @@ import Through2 from 'through2';
 import Globalyzer from 'globalyzer';
 import Micromatch from 'micromatch';
 
-import { Entity, EntityId } from "odgn-entity/src/entity";
-import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
+import { 
+    getDefId,
+    Component, getComponentEntityId, setEntityId,
+    ChangeSetOp,
+    Entity, EntityId,
+    EntitySet,
+    QueryableEntitySetMem,
+    QueryableEntitySet
+} from "../../../es";
 
-import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
 import { isTimeSame } from '../../util';
 import { process as buildDirDeps } from '../build_dir_deps';
 import { process as readEntityFiles } from './read_e';
 import { process as applyDirMeta } from './apply_dir_meta';
 import { selectSite, Site } from '../../site';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
-import { getDefId } from 'odgn-entity/src/component_def';
 import { applyUpdatesToDependencies, buildSrcUrlIndex, selectSrcByFilename } from '../../query';
 import { EntityUpdate, ProcessOptions } from '../../types';
 import Day from 'dayjs';
 import { debug, info, warn, setLocation } from '../../reporter';
-import { printAll } from 'odgn-entity/src/util/print';
+
 
 
 
@@ -42,7 +46,7 @@ const log = (...args) => logActive && console.log(`[${Label}]`, ...args);
 export interface ProcessFileOptions extends ProcessOptions {
     debug?: true;
     readFS?: boolean;
-    readFSResult?: EntitySetMem;
+    readFSResult?: QueryableEntitySetMem;
     updates?: EntityUpdate[];
 }
 
@@ -104,10 +108,10 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
  * 
  * @param es 
  */
-export async function cloneEntitySet(es: EntitySet) {
+export async function cloneEntitySet(es: QueryableEntitySet): Promise<QueryableEntitySet> {
     const { idgen, eidEpoch, workerId } = es;
 
-    let result = new EntitySetMem(undefined, { idgen });
+    let result = new QueryableEntitySetMem(undefined, { idgen });
 
     const defs = await es.getComponentDefs();
     for (const def of defs) {
@@ -189,7 +193,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 }
 
 
-async function applyUpdateToEntities(es: EntitySet, updates: EntityUpdate[]) {
+async function applyUpdateToEntities(es: QueryableEntitySet, updates: EntityUpdate[]) {
     const diffDefId = getDefId(es.getByUri('/component/upd'));
 
     let coms: Component[] = [];
@@ -208,7 +212,7 @@ type SrcUrlDiffResult = [EntityId, ChangeSetOp, EntityId?][];
 /**
  * Compares two EntitySets using /component/src#/url as a key
  */
-export async function diffEntitySets(esA: EntitySet, esB: EntitySet, options: ProcessOptions = {}): Promise<SrcUrlDiffResult> {
+export async function diffEntitySets(esA: QueryableEntitySet, esB: QueryableEntitySet, options: ProcessOptions = {}): Promise<SrcUrlDiffResult> {
     const { reporter } = options;
     setLocation(reporter, `${Label}#diff_entity_sets`);
     const idxA = await buildSrcUrlIndex(esA, options);
@@ -445,7 +449,7 @@ function buildGlobFilter(rootPath: string, include: Pattern[], exclude: Pattern[
  * @param uri 
  * @param options 
  */
-export async function selectSrcByUrl(es: EntitySet, url: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
+export async function selectSrcByUrl(es: QueryableEntitySet, url: string, options: SelectOptions = {}): Promise<(Entity | EntityId)> {
     let com: Component;
 
     // try {

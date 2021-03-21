@@ -6,15 +6,12 @@ import GridKISS from 'postcss-grid-kiss';
 import CSSNano from 'cssnano';
 
 
-import { Entity, EntityId } from "odgn-entity/src/entity";
-
 import { Site } from '../../site';
 import { ProcessOptions } from '../../types';
 import { selectScss, FindEntityOptions, getDstUrl, selectSrcByMime } from '../../query';
 import { info, error, setLocation } from '../../reporter';
-import { printEntity } from 'odgn-entity/src/util/print';
 import { createErrorComponent, joinPaths } from '../../util';
-import { Component, getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
+import { Component, getComponentEntityId, setEntityId } from '../../../es';
 
 
 const Label = '/processor/scss';

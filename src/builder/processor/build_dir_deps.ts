@@ -1,14 +1,16 @@
 import Path from 'path';
 
-import { EntitySetMem } from "odgn-entity/src/entity_set";
 import { Site } from "../site";
-import { getComponentEntityId } from 'odgn-entity/src/component';
 import { ProcessOptions } from '../types';
 import { insertDependency, selectFileSrc, selectSrcByUrl } from '../query';
 import { setLocation, info, warn } from '../reporter';
-import { printAll, printEntity } from 'odgn-entity/src/util/print';
-import { EntityId } from 'odgn-entity/src/entity';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
+
+import { 
+    ChangeSetOp ,
+    EntityId,
+    getComponentEntityId,
+    QueryableEntitySetMem
+} from '../../es';
 
 
 const Label = '/processor/build_deps';
@@ -18,7 +20,7 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
 export interface BuildDepsOptions extends ProcessOptions {
     debug?: boolean;
     readFS?: boolean;
-    readFSResult?: EntitySetMem;
+    readFSResult?: QueryableEntitySetMem;
     createMissingParents?: boolean;
 }
 

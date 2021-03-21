@@ -1,11 +1,17 @@
-import Jsonpointer from 'jsonpointer';
-
 import { BitField, get as bfGet } from '@odgn/utils/bitfield';
-import { Component, ComponentId, getComponentDefId, getComponentEntityId, isComponent } from 'odgn-entity/src/component';
-import { getDefId } from 'odgn-entity/src/component_def';
-import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { AddOptions, AddType, EntitySet, EntitySetOptions } from 'odgn-entity/src/entity_set';
-import { ProxyEntitySet } from 'odgn-entity/src/entity_set_proxy';
+import { 
+    Component, 
+    ComponentId, 
+    getComponentDefId, 
+    getComponentEntityId, 
+    isComponent,
+    EntityId,
+    AddOptions, AddType, EntitySet, EntitySetOptions,
+    ProxyEntitySet,
+    QueryableEntitySet,
+} from '../es';
+
+
 
 import { Site, SiteOptions } from './site';
 import { process as scanSrc } from './processor/file';
@@ -225,9 +231,8 @@ async function parseProcessorConfig(config: any[]) {
 export class OutputES extends ProxyEntitySet {
     components: Component[] = [];
     filterBf: BitField;
-    // ecoms: Map<EntityId, Component>;
 
-    constructor(es: EntitySet, filterBf: BitField, options: EntitySetOptions = {}) {
+    constructor(es: QueryableEntitySet, filterBf: BitField, options: EntitySetOptions = {}) {
         super(es, options);
         this.filterBf = filterBf;
         // this.ecoms = new Map<EntityId, Component>();
@@ -268,7 +273,7 @@ export async function renderToOutput( site:Site, process:SiteProcessor, eid:Enti
     const pes = new OutputES( es, bf );
     // log('[renderToOutput]', 'render output', pes.getUrl(), 'to', es.getUrl() );
 
-    await process(site, {es:pes, eids:[eid], props});
+    await process(site, {es:pes as any, eids:[eid], props});
 
     return pes.components.find( com => getComponentEntityId(com) === eid );
 }

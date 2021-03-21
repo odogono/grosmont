@@ -1,9 +1,9 @@
 import { Site } from "../site";
-import { Component, getComponentEntityId } from 'odgn-entity/src/component';
+import { getComponentEntityId } from '../../es';
 import { ProcessOptions } from '../types';
 import { getDstUrl, selectOutputWithDst } from '../query';
 import { debug, error, info, setLocation } from "../reporter";
-import { printEntity } from "odgn-entity/src/util/print";
+
 
 const log = (...args) => console.log('[ProcWrite]', ...args);
 

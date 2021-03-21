@@ -16,12 +16,14 @@ import { process as resolveMeta } from '../../../src/builder/processor/mdx/resol
 
 import { buildSrcIndex, FindEntityOptions } from '../../../src/builder/query';
 
-import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
-import { ProcessOptions } from '../../../src/builder/types';
-import { EntityId } from 'odgn-entity/src/entity';
-import { Level } from '../../../src/builder/reporter';
-import { buildProcessors, RawProcessorEntry } from '../../../src/builder';
 
+import { 
+    EntitySetSQL,
+    EntityId,
+} from '../../../src/es';
+
+import { ProcessOptions } from '../../../src/builder/types';
+import { Level } from '../../../src/builder/reporter';
 export { addMdx, addSrc } from '../helpers';
 
 export const rootPath = Path.resolve(__dirname, "../../../");

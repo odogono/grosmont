@@ -1,16 +1,20 @@
 import Mime from 'mime-types';
 import Path from 'path';
 import Fs from 'fs-extra';
-import { Component, getComponentEntityId, setEntityId, toComponentId } from "odgn-entity/src/component";
-import { getDefId } from "odgn-entity/src/component_def";
-import { Entity, EntityId } from "odgn-entity/src/entity";
-import { EntitySet } from "odgn-entity/src/entity_set";
-import { FindEntityOptions, selectSrcByExt } from '../query';
+import {
+    Component,
+    getComponentEntityId,
+    setEntityId,
+    toComponentId,
+    getDefId,
+} from "../../es";
+
+import { selectSrcByExt } from '../query';
 
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
 import { info, setLocation } from '../reporter';
-import { applyMimeToEntityId } from '../util';
+
 
 const Label = '/processor/mark';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -68,7 +72,7 @@ export async function process(site: Site, options: MarkOptions) {
                 addComs.push(typeCom);
             }
 
-            const srcCom = await es.getComponent(toComponentId(eid,srcDid));
+            const srcCom = await es.getComponent(toComponentId(eid, srcDid));
             let src = srcCom !== undefined ? srcCom.url : '';
             info(reporter, `mark ${comUrl}\t${src}`, { eid });
         }
@@ -86,10 +90,10 @@ export async function process(site: Site, options: MarkOptions) {
         // addComs.push(meta);
 
         if (loadData) {
-            let data = await site.getEntityData( eid );
+            let data = await site.getEntityData(eid);
 
             let dataCom = es.createComponent('/component/data');
-            addComs.push( setEntityId(dataCom, eid) );
+            addComs.push(setEntityId(dataCom, eid));
         }
     }
 
@@ -100,16 +104,16 @@ export async function process(site: Site, options: MarkOptions) {
 
 
 
-export async function mdx(site: Site, options:MarkOptions ){
-    return process(site, {...options, exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
+export async function mdx(site: Site, options: MarkOptions) {
+    return process(site, { ...options, exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
 }
-export async function statics(site: Site, options:MarkOptions ){
-    return process(site, {...options, exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' });
+export async function statics(site: Site, options: MarkOptions) {
+    return process(site, { ...options, exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' });
 }
-export async function jsx(site: Site, options:MarkOptions ){
-    return process(site, {...options, exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' });
+export async function jsx(site: Site, options: MarkOptions) {
+    return process(site, { ...options, exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' });
 }
-export async function scss(site: Site, options:MarkOptions ){
-    return process(site, {...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' });
+export async function scss(site: Site, options: MarkOptions) {
+    return process(site, { ...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' });
 }
 

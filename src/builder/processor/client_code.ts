@@ -5,8 +5,7 @@ const CommonJS = require('@rollup/plugin-commonjs');
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import { terser } from 'rollup-plugin-terser';
 
-import { Component, getComponentEntityId, setEntityId } from "odgn-entity/src/component";
-import { EntitySet } from "odgn-entity/src/entity_set";
+import { Component, getComponentEntityId, setEntityId } from "../../es";
 import { selectClientCode } from "../query";
 import { setLocation } from "../reporter";
 import { Site } from "../site";
@@ -38,14 +37,14 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         const eid = getComponentEntityId(com);
         const { imports, components } = com;
-        
+
 
         let buffer = [];
         buffer.push('import React from "react"');
         buffer.push('import ReactDOM from "react-dom";');
 
-        let importPaths = imports.map( im => im[0] );
-        let urls = imports.map( im => im[1] );
+        let importPaths = imports.map(im => im[0]);
+        let urls = imports.map(im => im[1]);
         buffer = buffer.concat(importPaths);
 
         // log('add imports', imports);
@@ -69,9 +68,9 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         let data = buffer.join('\n');
 
-        
+
         data = await build(data, importComs);
-        
+
         // log( data );
         add.push(setEntityId(es.createComponent(jsDid, { data, mime: 'text/javascript' }), eid));
 
@@ -83,7 +82,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 }
 
 
-async function build(data: string, localImports:Map<string,string> ) {
+async function build(data: string, localImports: Map<string, string>) {
 
     localImports.set('entry.jsx', data);
 
@@ -93,7 +92,7 @@ async function build(data: string, localImports:Map<string,string> ) {
         plugins: [
             babel({ presets: ["@babel/preset-react"], babelHelpers: 'bundled' }),
             CommonJS(),
-            localResolve( localImports ),
+            localResolve(localImports),
             nodeResolve(),
             // terser(),
         ]
@@ -116,7 +115,7 @@ async function build(data: string, localImports:Map<string,string> ) {
         return output[0].code;
 
     } catch (err) {
-        log('[build]', 'error', err );
+        log('[build]', 'error', err);
     }
 
     return data;
@@ -127,12 +126,12 @@ async function build(data: string, localImports:Map<string,string> ) {
 // https://github.com/baleada/rollup-plugin-virtual/blob/main/src/index.js
 // the rollup virtual plugin prefixes names with null, so that plugins ignore - which is
 // undesirable
-function localResolve(resolveMap: Map<string,string>) {
+function localResolve(resolveMap: Map<string, string>) {
     return {
         name: 'localResolve', // this name will show up in warnings and errors
         resolveId(source) {
             // log('[resolveId]', source);
-            if( resolveMap.has(source) ){
+            if (resolveMap.has(source)) {
                 return source;
             }
             // if (resolveMap[source]) {

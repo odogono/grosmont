@@ -3,7 +3,7 @@ import traverse from "@babel/traverse";
 
 
 
-import { Entity } from 'odgn-entity/src/entity';
+import { Entity, Component, setEntityId, } from '../../../es';
 import { selectJsx } from '../../query';
 import { Site } from '../../site';
 
@@ -11,7 +11,6 @@ import { ProcessOptions } from '../../types';
 import { createErrorComponent, isUrlInternal } from '../../util';
 
 import { applyImports, resolveImport } from '../js/util';
-import { Component, setEntityId, } from 'odgn-entity/src/component';
 import { setLocation, info, error, debug, warn } from '../../reporter';
 import { generateFromAST, parseJSX, transformJSX } from "../../transpile";
 
@@ -55,8 +54,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const { url: base } = e.Src;
     let imports = [];
 
-    function resolveImportLocal(path: string, specifiers?: string[]){
-        if( !isUrlInternal(path) ){
+    function resolveImportLocal(path: string, specifiers?: string[]) {
+        if (!isUrlInternal(path)) {
             return;
         }
         let entry = resolveImport(site, path, base);
@@ -64,22 +63,22 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         if (entry !== undefined) {
             const [eid, url, mime, spec] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
-            imports.push([eid,url,mime, specifiers]);
+            imports.push([eid, url, mime, specifiers]);
             // imports.push(entry);
             // log('[resolveImportLocal]', url, mime, remove);
             return [url, remove];
         } else {
-            warn(reporter, `import ${path} not resolved`, {eid:e.id});
+            warn(reporter, `import ${path} not resolved`, { eid: e.id });
         }
     }
-    
+
     // gather the import dependencies
     let data = e.Jsx?.data ?? await site.getEntityData(e);
 
 
     try {
 
-        let {js} = transform(data, resolveImportLocal);
+        let { js } = transform(data, resolveImportLocal);
 
         const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
         // const jsxCom = setEntityId(es.createComponent('/component/jsx', { data: jsx }), e.id);
@@ -92,7 +91,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         // log('error', err.stack);
         error(reporter, 'error', err, { eid: e.id });
         log('error', data);
-        return [ createErrorComponent(es, e, err, {from:Label}) ];
+        return [createErrorComponent(es, e, err, { from: Label })];
     }
 
 
@@ -101,12 +100,12 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
 function transform(jsx: string, resolveImport: Function) {
 
-    let ast = parseJSX( jsx );
-    
+    let ast = parseJSX(jsx);
+
     let changed = false;
 
     traverse(ast, {
-        ImportDeclaration( path ) {
+        ImportDeclaration(path) {
             // log('[transform]', {path, parent, key, index} );
             let resolved = resolveImport(path.node.source.value);
             if (resolved !== undefined) {
@@ -119,14 +118,14 @@ function transform(jsx: string, resolveImport: Function) {
             }
         }
     });
-    
-    if( changed ){
-        jsx = generateFromAST( ast );
+
+    if (changed) {
+        jsx = generateFromAST(ast);
     }
 
-    let js = transformJSX( jsx, true );
+    let js = transformJSX(jsx, true);
     // jsx = transformJSX( jsx, true );
 
-    return {js};
+    return { js };
 }
 

@@ -2,8 +2,7 @@ import traverse from "@babel/traverse";
 import { ProcessOptions } from '../../types';
 import { Site } from '../../site';
 import { getDependencyEntityIds, insertDependency, selectSrcByMime } from '../../query';
-import { getComponentEntityId, setEntityId } from 'odgn-entity/src/component';
-import { EntityId } from 'odgn-entity/src/entity';
+import { getComponentEntityId, EntityId, setEntityId } from '../../../es';
 import { createErrorComponent, resolveUrlPath } from '../../util';
 import { generateFromAST, parseJSX } from '../../transpile';
 
@@ -44,7 +43,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     // let ents = await selectJsx(es, { ...options, siteRef: site.getRef() });
     let src = await selectSrcByMime(es, ['text/jsx'], { ...options, siteRef: site.getRef() });
-    
+
     const did = es.getByUri('/component/data');
 
     // log('ents', src);
@@ -86,7 +85,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
 
             let code = generateFromAST(ast);
-            
+
             if (code) {
                 let dataCom = es.createComponent(did, { data: code });
                 dataCom = setEntityId(dataCom, eid);
@@ -107,7 +106,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             }
 
         } catch (err) {
-            await es.add( createErrorComponent(es, eid, err, {from:Label}) );
+            await es.add(createErrorComponent(es, eid, err, { from: Label }));
             throw err;
         }
     }

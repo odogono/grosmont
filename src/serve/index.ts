@@ -10,7 +10,7 @@ import { buildProcessors, RawProcessorEntry, renderToOutput } from '../builder';
 import { Reporter, setLocation, info, error, Level, setLevel } from '../builder/reporter';
 import { EntityUpdate, SiteProcessor } from '../builder/types';
 import { debounce } from '@odgn/utils';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
+import { ChangeSetOp } from '../es';
 
 
 export interface RoutesConfig {

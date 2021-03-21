@@ -1,8 +1,7 @@
-import './styles';
-
-import { exportEntity } from 'odgn-entity/src/util/export/json';
 import { Entity } from 'odgn-entity/src/entity';
 import { EntitySet } from 'odgn-entity/src/entity_set';
+import './styles';
+
 
 export default ({ InlineCSS, e, deps, es, site, ...args }) => {
 

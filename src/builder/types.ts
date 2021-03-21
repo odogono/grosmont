@@ -1,7 +1,9 @@
-import { EntityId } from 'odgn-entity/src/entity';
-import { EntitySet } from 'odgn-entity/src/entity_set';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
-import { StatementArgs } from 'odgn-entity/src/query';
+import { 
+    EntityId, 
+    QueryableEntitySet, 
+    ChangeSetOp, 
+    StatementArgs 
+} from '../es';
 import { Reporter } from './reporter';
 import { Site } from './site';
 
@@ -99,7 +101,7 @@ export type SiteProcessor = (site:Site, options?: ProcessOptions) => Promise<Sit
 
 export interface ProcessOptions {
     siteRef?: EntityId;
-    es?: EntitySet;
+    es?: QueryableEntitySet;
     dryRun?: boolean;
     onlyUpdated?: boolean;
     srcIndex?: SiteIndex;

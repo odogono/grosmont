@@ -4,8 +4,7 @@ import { Site } from '../../src/builder/site';
 import { build } from '../../src/builder';
 
 import assert from 'uvu/assert';
-import { Entity, EntityId } from 'odgn-entity/src/entity';
-import { printAll } from 'odgn-entity/src/util/print';
+import { EntityId, printAll } from '../../src/es';
 import { Level } from '../../src/builder/reporter';
 
 const log = (...args) => console.log('[TestProcMeta]', ...args);

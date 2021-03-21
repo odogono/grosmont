@@ -8,7 +8,7 @@ import { process as buildDeps } from '../src/builder/processor/build_dir_deps';
 
 import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { getDependencyParents, getDependencyChildren, FindEntityOptions } from '../src/builder/query';
-import { EntitySet, EntitySetMem } from 'odgn-entity/src/entity_set';
+import { QueryableEntitySet } from '../src/es';
 
 
 const log = (...args) => console.log('[TestFile]', ...args);
@@ -21,7 +21,7 @@ let id = 1000;
 const idgen = () => ++id;
 
 interface TestProps {
-    es: EntitySet;
+    es: QueryableEntitySet;
     site: Site;
     e: Entity;
 }

@@ -9,17 +9,21 @@ const Glob = Util.promisify(GlobCb);
 import { defs } from './defs';
 
 import {
-    Entity, EntityId, isEntity
-} from 'odgn-entity/src/entity';
+    ChangeSetOp,
+    Entity, 
+    EntityId, 
+    isEntity,
+    EntitySet,
+    EntitySetOptions,
+    QueryableEntitySet,
+    QueryableEntitySetMem,
+    EntitySetSQL,
+    StatementArgs,
+    setEntityId
+} from '../es';
 
-import {
-    EntitySetMem, EntitySet, EntitySetOptions
-} from 'odgn-entity/src/entity_set';
-import { EntitySetSQL } from 'odgn-entity/src/entity_set_sql';
-import { StatementArgs } from 'odgn-entity/src/query';
 import { getPtr, parseEntity, parseConfigString } from './config';
 import { pathToFileURL, fileURLToPath } from 'url';
-import { Component, setEntityId } from 'odgn-entity/src/component';
 import {
     findEntitiesByTags,
     findLeafDependenciesByType,
@@ -32,13 +36,10 @@ import {
     selectUpdated
 } from './query';
 import { DependencyType, ProcessOptions, SiteIndex } from './types';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 import { isEmpty, isInteger, isString, parseUri } from '@odgn/utils';
-import { printEntity } from 'odgn-entity/src/util/print';
 import { createUUID } from '@odgn/utils';
 import { info, Level, Reporter, setLevel, setLocation } from './reporter';
 import { uriToPath } from './util';
-import { buildProcessors, RawProcessorEntry } from '.';
 import JSONPointer from 'jsonpointer';
 
 
@@ -59,7 +60,7 @@ export interface SiteOptions extends EntitySetOptions {
     name?: string;
     dst?: string;
     dir?: string;
-    es?: EntitySet;
+    es?: QueryableEntitySet;
     configPath?: string;
     rootPath?: string;
     data?: any;
@@ -70,7 +71,7 @@ export interface SiteOptions extends EntitySetOptions {
 
 
 export class Site {
-    es: EntitySet;
+    es: QueryableEntitySet;
     e: Entity; // reference to the active site entity
     rootPath: string;
     reporter: Reporter;
@@ -303,7 +304,7 @@ export class Site {
      * @param options 
      * @returns 
      */
-    getEntitySet(options?: ProcessOptions): EntitySet {
+    getEntitySet(options?: ProcessOptions): QueryableEntitySet {
         return options?.es ?? this.es;
     }
 
@@ -542,7 +543,7 @@ export class Site {
 
 
 
-export async function selectSite(es: EntitySet) {
+export async function selectSite(es: QueryableEntitySet) {
     const stmt = es.prepare(`
     [ /component/site !bf @e ] select
     `);
@@ -595,7 +596,7 @@ async function initialiseES(site: Site, options: SiteOptions) {
 
 
 
-    let es: EntitySet;
+    let es: QueryableEntitySet;
 
     // attempt to initialise an es from the loaded config data
     if (data !== undefined) {
@@ -634,7 +635,7 @@ async function initialiseES(site: Site, options: SiteOptions) {
 
 
     if (es === undefined) {
-        es = new EntitySetMem(undefined, options);
+        es = new QueryableEntitySetMem(undefined, options);
     }
 
     site.es = es;

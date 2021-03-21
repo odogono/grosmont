@@ -1,13 +1,18 @@
 import Path from 'path';
-import { Component, getComponentEntityId, setEntityId } from "odgn-entity/src/component";
-import { Entity, EntityId, isEntity } from "odgn-entity/src/entity";
-import { EntitySet } from "odgn-entity/src/entity_set";
+
+
+import {
+    Component, getComponentEntityId, setEntityId,
+
+    Entity, EntityId, isEntity,
+    QueryableEntitySet
+} from "../es";
 import { Site } from "./site";
 import { uriToPath } from './util';
 import { DependencyType, ProcessOptions } from './types';
 import { BitField } from "@odgn/utils/bitfield";
 import { parseUri, slugify, toBoolean } from '@odgn/utils';
-import { printAll } from 'odgn-entity/src/util/print';
+
 
 
 
@@ -37,7 +42,7 @@ function parseOptions(options: FindEntityOptions = {}) {
     return { ref, onlyUpdated, eids };
 }
 
-export async function selectTagBySlug(es: EntitySet, name: string, options: FindEntityOptions = {}) {
+export async function selectTagBySlug(es: QueryableEntitySet, name: string, options: FindEntityOptions = {}) {
     const slug = slugify(name);
     const { ref } = parseOptions(options);
 
@@ -61,7 +66,7 @@ export async function selectTagBySlug(es: EntitySet, name: string, options: Find
  * @param tags 
  * @param options 
  */
-export async function findEntitiesByTags(es: EntitySet, tags: string[], options: FindEntityOptions = {}): Promise<EntityId[]> {
+export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[], options: FindEntityOptions = {}): Promise<EntityId[]> {
     const { ref } = parseOptions(options);
 
     const q = `
@@ -109,7 +114,7 @@ export async function findEntitiesByTags(es: EntitySet, tags: string[], options:
 
 
 
-export async function selectMeta(es: EntitySet, options: FindEntityOptions = {}) {
+export async function selectMeta(es: QueryableEntitySet, options: FindEntityOptions = {}) {
     const { ref } = parseOptions(options);
 
 
@@ -128,7 +133,7 @@ export async function selectMeta(es: EntitySet, options: FindEntityOptions = {})
 
 
 
-export async function selectTitleAndMeta(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
+export async function selectTitleAndMeta(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const query = `
@@ -146,7 +151,7 @@ export async function selectTitleAndMeta(es: EntitySet, options: FindEntityOptio
 }
 
 
-export async function selectOutputWithDst(es: EntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
+export async function selectOutputWithDst(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const q = onlyUpdated ? `
@@ -180,7 +185,7 @@ export async function selectOutputWithDst(es: EntitySet, options: FindEntityOpti
  * @param es 
  * @param options 
  */
-export async function selectStaticWithDst(es: EntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
+export async function selectStaticWithDst(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const q = onlyUpdated ? `
@@ -208,7 +213,7 @@ export async function selectStaticWithDst(es: EntitySet, options: FindEntityOpti
     return await es.prepare(q).getResult({ ref });
 }
 
-export async function selectMetaSrc(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
+export async function selectMetaSrc(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const q = onlyUpdated ? `
@@ -241,7 +246,7 @@ export async function selectMetaSrc(es: EntitySet, options: FindEntityOptions = 
 
 
 
-export async function selectMetaDisabled(es: EntitySet): Promise<EntityId[]> {
+export async function selectMetaDisabled(es: QueryableEntitySet): Promise<EntityId[]> {
     const stmt = es.prepare(`[
         /component/enabled#is !ca false ==
         // /component/meta#/meta/isEnabled !ca false ==
@@ -252,9 +257,9 @@ export async function selectMetaDisabled(es: EntitySet): Promise<EntityId[]> {
 }
 
 
-export async function selectJsx(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
+export async function selectJsx(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated, eids } = parseOptions(options);
-    let q:string;
+    let q: string;
 
     if (eids !== undefined) {
         q = `[
@@ -286,7 +291,7 @@ export async function selectJsx(es: EntitySet, options: FindEntityOptions = {}):
     return await es.prepare(q).getEntities({ ref, eids });
 }
 
-export async function selectMdx(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
+export async function selectMdx(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     let q = onlyUpdated ? `
@@ -311,11 +316,11 @@ export async function selectMdx(es: EntitySet, options: FindEntityOptions = {}):
 }
 
 
-export async function selectClientCode(es:EntitySet, options:FindEntityOptions = {}): Promise<Component[]> {
+export async function selectClientCode(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
-    let q:string;
+    let q: string;
 
-    if( onlyUpdated ){
+    if (onlyUpdated) {
         q = `
         [
             /component/upd#op !ca 1 ==
@@ -336,12 +341,12 @@ export async function selectClientCode(es:EntitySet, options:FindEntityOptions =
     };
 
 
-    return es.prepare(q).getResult({ref});
+    return es.prepare(q).getResult({ ref });
 }
 
 
 
-export async function selectJs(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
+export async function selectJs(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated, eids } = parseOptions(options);
 
     let q: string;
@@ -379,7 +384,7 @@ export async function selectJs(es: EntitySet, options: FindEntityOptions = {}): 
 
 
 
-export async function selectMdxSrc(es: EntitySet, options: FindEntityOptions = {}) {
+export async function selectMdxSrc(es: QueryableEntitySet, options: FindEntityOptions = {}) {
     const { ref, onlyUpdated } = parseOptions(options);
 
     let q = onlyUpdated ? `
@@ -406,7 +411,7 @@ export async function selectMdxSrc(es: EntitySet, options: FindEntityOptions = {
 
 
 
-export async function selectScss(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
+export async function selectScss(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     let q = onlyUpdated ? `
@@ -431,7 +436,7 @@ export async function selectScss(es: EntitySet, options: FindEntityOptions = {})
 }
 
 
-export async function selectErrors(es: EntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
+export async function selectErrors(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref } = parseOptions(options);
 
     let q = `[
@@ -451,7 +456,7 @@ export async function selectErrors(es: EntitySet, options: FindEntityOptions = {
  * @param ext
  * @param options 
  */
-export async function selectSrcByExt(es: EntitySet, ext: string[], options: FindEntityOptions = {}): Promise<Component[]> {
+export async function selectSrcByExt(es: QueryableEntitySet, ext: string[], options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const regexExt = ext.join('|');
@@ -481,7 +486,7 @@ export async function selectSrcByExt(es: EntitySet, ext: string[], options: Find
     return await es.prepare(q).getResult({ ref });
 }
 
-export async function selectSrcByMime(es: EntitySet, mime: string[], options: FindEntityOptions = {}): Promise<Component[]> {
+export async function selectSrcByMime(es: QueryableEntitySet, mime: string[], options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const regexExt = mime.join('|');
@@ -513,7 +518,7 @@ export async function selectSrcByMime(es: EntitySet, mime: string[], options: Fi
     return await es.prepare(q).getResult({ ref });
 }
 
-export async function selectEntitiesByMime(es: EntitySet, mime: string[], options: FindEntityOptions = {}): Promise<Entity[]> {
+export async function selectEntitiesByMime(es: QueryableEntitySet, mime: string[], options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const regexExt = mime.join('|');
@@ -555,7 +560,7 @@ export interface FindEntityFilenameOptions extends FindEntityOptions {
  * @param names 
  * @param options 
  */
-export async function selectSrcByFilename(es: EntitySet, names: string[], options: FindEntityFilenameOptions = {}): Promise<Component[]> {
+export async function selectSrcByFilename(es: QueryableEntitySet, names: string[], options: FindEntityFilenameOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const regexExt = names.join('|');
@@ -589,7 +594,7 @@ export async function selectSrcByFilename(es: EntitySet, names: string[], option
 
 
 
-export async function selectDstTextIds(es: EntitySet): Promise<EntityId[]> {
+export async function selectDstTextIds(es: QueryableEntitySet): Promise<EntityId[]> {
 
     const q = `
         [ [ /component/dst ] !bf @eid] select
@@ -607,7 +612,7 @@ export async function selectDstTextIds(es: EntitySet): Promise<EntityId[]> {
  * @param path 
  * @param options 
  */
-export async function findEntityBySrcUrl(es: EntitySet, path: string, options: FindEntityOptions = {}): Promise<EntityId> {
+export async function findEntityBySrcUrl(es: QueryableEntitySet, path: string, options: FindEntityOptions = {}): Promise<EntityId> {
     const { ref } = parseOptions(options);
 
     // convert to an extension-less path
@@ -635,7 +640,7 @@ export async function findEntityBySrcUrl(es: EntitySet, path: string, options: F
 }
 
 
-export async function getEntityBySrcUrl(es: EntitySet, url: string, options: FindEntityOptions = {}): Promise<Entity> {
+export async function getEntityBySrcUrl(es: QueryableEntitySet, url: string, options: FindEntityOptions = {}): Promise<Entity> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const query = `
@@ -659,7 +664,7 @@ export async function getEntityBySrcUrl(es: EntitySet, url: string, options: Fin
  * @param url 
  * @param options 
  */
-export async function findEntityByUrl(es: EntitySet, url: string, options: FindEntityOptions = {}): Promise<Entity> {
+export async function findEntityByUrl(es: QueryableEntitySet, url: string, options: FindEntityOptions = {}): Promise<Entity> {
 
     // file:///file:///pages/main.mdx - ref to File component
     // e://component/file?uri=file:///pages/main.mdx - address an entity
@@ -698,7 +703,7 @@ export async function findEntityByUrl(es: EntitySet, url: string, options: FindE
 }
 
 
-export async function getUrlComponent(es: EntitySet, url: string, options: FindEntityOptions = {}) {
+export async function getUrlComponent(es: QueryableEntitySet, url: string, options: FindEntityOptions = {}) {
     const { ref, onlyUpdated } = parseOptions(options);
     const stmt = es.prepare(`
     [
@@ -712,7 +717,7 @@ export async function getUrlComponent(es: EntitySet, url: string, options: FindE
 }
 
 
-export async function getEntityByUrl(es: EntitySet, url: string) {
+export async function getEntityByUrl(es: QueryableEntitySet, url: string) {
     const stmt = es.prepare(`
     [
         /component/url#url !ca $url ==
@@ -743,7 +748,7 @@ export async function buildSrcIndex(site: Site) {
 }
 
 
-export async function buildSrcUrlIndex(es: EntitySet, options: FindEntityOptions = {}): Promise<[string, EntityId, string, BitField][]> {
+export async function buildSrcUrlIndex(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<[string, EntityId, string, BitField][]> {
     const { ref } = parseOptions(options);
 
     const query = `
@@ -763,7 +768,7 @@ export async function buildSrcUrlIndex(es: EntitySet, options: FindEntityOptions
     return Array.isArray(result[0]) ? result : [result];
 }
 
-export async function selectFiles(es: EntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
+export async function selectFiles(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const q = onlyUpdated ? `[
@@ -792,7 +797,7 @@ export async function selectFiles(es: EntitySet, options: FindEntityOptions = {}
  * 
  * @param es 
  */
-export async function selectFileSrc(es: EntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
+export async function selectFileSrc(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     const q = onlyUpdated ? `[
@@ -817,7 +822,7 @@ export async function selectFileSrc(es: EntitySet, options: FindEntityOptions = 
 }
 
 
-export async function selectSrcByUrl(es: EntitySet, url: string): Promise<Component> {
+export async function selectSrcByUrl(es: QueryableEntitySet, url: string): Promise<Component> {
     const stmt = es.prepare(`[
         /component/src#url !ca $url ==
         /component/src !bf
@@ -828,7 +833,7 @@ export async function selectSrcByUrl(es: EntitySet, url: string): Promise<Compon
     return res.length > 0 ? res[0] : undefined;
 }
 
-export async function selectSrcByEntity(es: EntitySet, e: EntityId | Entity): Promise<string> {
+export async function selectSrcByEntity(es: QueryableEntitySet, e: EntityId | Entity): Promise<string> {
     const eid = isEntity(e) ? (e as Entity).id : e as EntityId;
     const stmt = es.prepare(`[
         $eid @eid
@@ -840,7 +845,7 @@ export async function selectSrcByEntity(es: EntitySet, e: EntityId | Entity): Pr
     return res.length > 0 ? res[0] : undefined;
 }
 
-export async function selectOutputByEntity(es: EntitySet, e: EntityId | Entity): Promise<[string, string]> {
+export async function selectOutputByEntity(es: QueryableEntitySet, e: EntityId | Entity): Promise<[string, string]> {
     const eid = isEntity(e) ? (e as Entity).id : e as EntityId;
     const stmt = es.prepare(`[
         $eid @eid
@@ -910,7 +915,7 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
  * 
  * wont return anything if the entity does not have a filename dst
  */
-export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | undefined> {
+export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<string | undefined> {
 
     // TODO - a complex statement which has many words which should be
     // predefined
@@ -1100,7 +1105,7 @@ export async function getDstUrl(es: EntitySet, eid: EntityId): Promise<string | 
  * @param dst 
  * @param type 
  */
-export async function insertDependency(es: EntitySet, src: EntityId, dst: EntityId, type: DependencyType, extra?: Component[]): Promise<EntityId> {
+export async function insertDependency(es: QueryableEntitySet, src: EntityId, dst: EntityId, type: DependencyType, extra?: Component[]): Promise<EntityId> {
     if (src === 0 || dst === 0) {
         return 0;
     }
@@ -1131,7 +1136,7 @@ export async function insertDependency(es: EntitySet, src: EntityId, dst: Entity
  * @param eid 
  * @param type 
  */
-export async function removeDependency(es: EntitySet, eid: EntityId, type: DependencyType) {
+export async function removeDependency(es: QueryableEntitySet, eid: EntityId, type: DependencyType) {
     const dstEid = await getDependency(es, eid, type);
     if (dstEid === undefined) {
         return false;
@@ -1146,7 +1151,7 @@ export async function removeDependency(es: EntitySet, eid: EntityId, type: Depen
 /**
  * Selects a dependency entity
  */
-// export async function selectDependency(es: EntitySet, src?: EntityId, dst?: EntityId, type?: DependencyType, asEntity: boolean = false) {
+// export async function selectDependency(es: QueryableEntitySet, src?: EntityId, dst?: EntityId, type?: DependencyType, asEntity: boolean = false) {
 //     // const did:ComponentDefId = es.resolveComponentDefId('/component/dep');
 
 //     let conds = [];
@@ -1188,7 +1193,7 @@ export async function removeDependency(es: EntitySet, eid: EntityId, type: Depen
 /**
  *  
  */
-export async function getDependency(es: EntitySet, eid: EntityId, type: DependencyType ): Promise<EntityId> {
+export async function getDependency(es: QueryableEntitySet, eid: EntityId, type: DependencyType): Promise<EntityId> {
     const depId = await getDependencies(es, eid, [type], true) as EntityId[];
     return depId.length > 0 ? depId[0] : undefined;
 }
@@ -1196,7 +1201,7 @@ export async function getDependency(es: EntitySet, eid: EntityId, type: Dependen
 
 
 
-export async function getLayoutFromDependency(es: EntitySet, eid: EntityId): Promise<Entity> {
+export async function getLayoutFromDependency(es: QueryableEntitySet, eid: EntityId): Promise<Entity> {
     // eid = 0;
     const stmt = es.prepare(`
     [
@@ -1298,7 +1303,7 @@ export async function applyUpdatesToDependencies(site: Site, options: ProcessOpt
  * 
  * @param site 
  */
-export async function selectUpdated(es: EntitySet, options: FindEntityOptions = {}): Promise<EntityId[]> {
+export async function selectUpdated(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<EntityId[]> {
     const { ref } = parseOptions(options);
 
     const stmt = es.prepare(`
@@ -1360,7 +1365,7 @@ export async function clearErrors(site: Site, options: FindEntityOptions = {}) {
 
 
 
-export async function selectTarget(es: EntitySet): Promise<Entity[]> {
+export async function selectTarget(es: QueryableEntitySet): Promise<Entity[]> {
     const query = `[
         /component/target !bf
         @e
@@ -1379,7 +1384,7 @@ export async function selectTarget(es: EntitySet): Promise<Entity[]> {
  * @param es 
  * @param eid 
  */
-export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Component | undefined> {
+export async function selectDirTarget(es: QueryableEntitySet, eid: EntityId): Promise<Component | undefined> {
     const stmt = es.prepare(`
     [
         // ["💥 eid is" $eid] to_str! .
@@ -1422,7 +1427,7 @@ export async function selectDirTarget(es: EntitySet, eid: EntityId): Promise<Com
 /**
  * Returns an array of Meta starting at the eid and working up the dir dependencies
  */
-export async function selectDependencyMeta(es: EntitySet, eid: EntityId) {
+export async function selectDependencyMeta(es: QueryableEntitySet, eid: EntityId) {
     const stmt = es.prepare(`
 
     // selects the parent dir entity, or 0 if none is found
@@ -1484,7 +1489,7 @@ export async function selectDependencyMeta(es: EntitySet, eid: EntityId) {
  * @param eid EntityId
  * @param type string
  */
-export async function getDependencyParents(es: EntitySet, eid: EntityId, type: DependencyType): Promise<EntityId[]> {
+export async function getDependencyParents(es: QueryableEntitySet, eid: EntityId, type: DependencyType): Promise<EntityId[]> {
     const stmt = es.prepare(`
     // selects the parent dir entity, or 0 if none is found
     // ( es eid -- es eid )
@@ -1534,7 +1539,7 @@ export async function getDependencyParents(es: EntitySet, eid: EntityId, type: D
  * @param type 
  * @param depth 
  */
-export async function getDependencyChildren(es: EntitySet, eid: EntityId, type: DependencyType, depth: number = 100): Promise<EntityId[]> {
+export async function getDependencyChildren(es: QueryableEntitySet, eid: EntityId, type: DependencyType, depth: number = 100): Promise<EntityId[]> {
     const stmt = es.prepare(`
 
     // selects child ids of the e, or false if none found
@@ -1585,7 +1590,7 @@ export async function getDependencyChildren(es: EntitySet, eid: EntityId, type: 
  * @param type 
  * @param options 
  */
-export async function findLeafDependenciesByType(es: EntitySet, type: DependencyType, options: FindEntityOptions = {}): Promise<EntityId[]> {
+export async function findLeafDependenciesByType(es: QueryableEntitySet, type: DependencyType, options: FindEntityOptions = {}): Promise<EntityId[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
     // select dependency components by type
@@ -1623,7 +1628,7 @@ export async function findLeafDependenciesByType(es: EntitySet, type: Dependency
  * @param src 
  * @param type 
  */
-export async function getDepenendencyDst(es: EntitySet, src: EntityId, type: DependencyType): Promise<EntityId[]> {
+export async function getDepenendencyDst(es: QueryableEntitySet, src: EntityId, type: DependencyType): Promise<EntityId[]> {
     const stmt = es.prepare(`
     [
         /component/dep#type !ca $type ==
@@ -1644,11 +1649,11 @@ export async function getDepenendencyDst(es: EntitySet, src: EntityId, type: Dep
  * @param eid 
  * @param type 
  */
-export async function getDependencies(es: EntitySet, eid: EntityId, type?: DependencyType[], returnEid: boolean = true): Promise<Entity[] | EntityId[]> {
+export async function getDependencies(es: QueryableEntitySet, eid: EntityId, type?: DependencyType[], returnEid: boolean = true): Promise<Entity[] | EntityId[]> {
     const ret = returnEid ? '@eid' : '@e';
-    let q:string;
+    let q: string;
 
-    if( type !== undefined ){
+    if (type !== undefined) {
         const regexExt = type.join('|');
         q = `
         [
@@ -1670,14 +1675,14 @@ export async function getDependencies(es: EntitySet, eid: EntityId, type?: Depen
     return await es.prepare(q).getResult({ eid });
 }
 
-export async function getDependencyEntityIds(es: EntitySet, eid: EntityId, type?: DependencyType[]): Promise<EntityId[]> {
+export async function getDependencyEntityIds(es: QueryableEntitySet, eid: EntityId, type?: DependencyType[]): Promise<EntityId[]> {
     return getDependencies(es, eid, type, true) as Promise<EntityId[]>;
 }
-export async function getDependencyEntities(es: EntitySet, eid: EntityId, type?: DependencyType[]): Promise<Entity[]> {
+export async function getDependencyEntities(es: QueryableEntitySet, eid: EntityId, type?: DependencyType[]): Promise<Entity[]> {
     return getDependencies(es, eid, type, false) as Promise<Entity[]>;
 }
 
-export async function getDependencyComponent(es: EntitySet, src: EntityId, dst: EntityId, type: DependencyType): Promise<Component> {
+export async function getDependencyComponent(es: QueryableEntitySet, src: EntityId, dst: EntityId, type: DependencyType): Promise<Component> {
     const stmt = es.prepare(`
     [
         /component/dep#src !ca ${src} ==
@@ -1693,7 +1698,7 @@ export async function getDependencyComponent(es: EntitySet, src: EntityId, dst: 
     return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getDepdendencyComponentBySrc(es: EntitySet, src: EntityId): Promise<Component[]> {
+export async function getDepdendencyComponentBySrc(es: QueryableEntitySet, src: EntityId): Promise<Component[]> {
     const q = `
     [
         /component/dep#src !ca $src ==
@@ -1704,11 +1709,11 @@ export async function getDepdendencyComponentBySrc(es: EntitySet, src: EntityId)
     return es.prepare(q).getResult({ src });
 }
 
-export async function getDependencyComponents(es: EntitySet, eid: EntityId, type: DependencyType[]): Promise<Component[]> {
+export async function getDependencyComponents(es: QueryableEntitySet, eid: EntityId, type: DependencyType[]): Promise<Component[]> {
 
-    let q:string;
+    let q: string;
 
-    if( type !== undefined ){
+    if (type !== undefined) {
         const regexExt = type.join('|');
         q = `
         [
@@ -1727,7 +1732,7 @@ export async function getDependencyComponents(es: EntitySet, eid: EntityId, type
         ] select`;
     }
 
-    
+
     return await es.prepare(q).getResult({ eid });
 }
 
@@ -1739,7 +1744,7 @@ export async function getDependencyComponents(es: EntitySet, eid: EntityId, type
  * @param eid 
  * @param type 
  */
- export async function getDependenciesOf(es: EntitySet, eid: EntityId, type?: DependencyType, returnEid: boolean = true): Promise<Entity[] | EntityId[]> {
+export async function getDependenciesOf(es: QueryableEntitySet, eid: EntityId, type?: DependencyType, returnEid: boolean = true): Promise<Entity[] | EntityId[]> {
     const ret = returnEid ? '@eid' : '@e';
     const q = type !== undefined ? `
     [
@@ -1759,9 +1764,9 @@ export async function getDependencyComponents(es: EntitySet, eid: EntityId, type
     return await es.prepare(q).getResult({ eid, type });
 }
 
-export async function getDependencyOfEntityIds(es: EntitySet, eid: EntityId, type?: DependencyType): Promise<EntityId[]> {
+export async function getDependencyOfEntityIds(es: QueryableEntitySet, eid: EntityId, type?: DependencyType): Promise<EntityId[]> {
     return getDependenciesOf(es, eid, type, true) as Promise<EntityId[]>;
 }
-export async function getDependencyOfEntities(es: EntitySet, eid: EntityId, type?: DependencyType): Promise<Entity[]> {
+export async function getDependencyOfEntities(es: QueryableEntitySet, eid: EntityId, type?: DependencyType): Promise<Entity[]> {
     return getDependenciesOf(es, eid, type, false) as Promise<Entity[]>;
 }

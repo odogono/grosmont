@@ -2,7 +2,7 @@ import Fs from 'fs-extra';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
-import { Entity } from 'odgn-entity/src/entity';
+import { Entity } from '../../../es';
 import { getDependencyEntities, selectJsx } from '../../query';
 import { Site } from '../../site';
 import { parseEntity } from '../../config';

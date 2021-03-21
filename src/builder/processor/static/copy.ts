@@ -1,9 +1,9 @@
 import { Site } from "../../site";
-import { Component, getComponentEntityId } from 'odgn-entity/src/component';
+import { getComponentEntityId } from '../../../es';
 import { ProcessOptions } from '../../types';
 import { getDstUrl, selectStaticWithDst } from '../../query';
 import { debug, error, info, setLocation } from "../../reporter";
-import { printEntity } from "odgn-entity/src/util/print";
+
 
 const Label = '/processor/static/copy';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -24,21 +24,21 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     const srcComs = await selectStaticWithDst(es, options);
 
     // log('src', srcComs);
-    
+
     for (const src of srcComs) {
         const eid = getComponentEntityId(src);
         try {
-            
+
             const dst = await getDstUrl(es, eid);
-            
-            if( dst === undefined ){
-                debug(reporter, 'no dst found', {eid});
+
+            if (dst === undefined) {
+                debug(reporter, 'no dst found', { eid });
                 continue;
             }
-            
+
             let path = site.getDstUrl(dst);
-            
-            if( !dryRun ){
+
+            if (!dryRun) {
                 await site.copyToUrl(path, src.url);
                 info(reporter, `copied from ${src.url} to ${path}`, { eid });
             } else {
@@ -47,7 +47,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
 
         } catch (err) {
-            error(reporter, err.message, err, {eid});
+            error(reporter, err.message, err, { eid });
         }
     }
 

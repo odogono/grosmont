@@ -1,5 +1,10 @@
 import Path from 'path';
-import { Entity, EntityId } from 'odgn-entity/src/entity';
+import { 
+    ChangeSetOp,
+    Entity, EntityId,
+    Component, setEntityId,
+    QueryableEntitySet
+} from '../../../es';
 import { getDependencyEntityIds, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
 import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
@@ -9,11 +14,8 @@ import { ClientCodeDetails, DependencyType, ProcessOptions, SiteIndex, Transpile
 import { transformJSX } from '../../transpile';
 import { applyImports, buildProps, resolveImport } from '../js/util';
 import { parseEntity } from '../../config';
-import { EntitySet } from 'odgn-entity/src/entity_set';
-import { Component, setEntityId } from 'odgn-entity/src/component';
 import { createErrorComponent, isUrlInternal, resolveUrlPath } from '../../util';
 import { transformMdx } from './transform';
-import { ChangeSetOp } from 'odgn-entity/src/entity_set/change_set';
 
 const Label = '/processor/mdx/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -248,7 +250,7 @@ async function applyLinks(site: Site, e: Entity, links:LinkDescr[], options: Eva
 }
 
 
-async function getUrlEntityId(es: EntitySet, url: string, options: EvalMdxOptions) {
+async function getUrlEntityId(es: QueryableEntitySet, url: string, options: EvalMdxOptions) {
     let com = await getUrlComponent(es, url, options);
 
     if (com === undefined) {

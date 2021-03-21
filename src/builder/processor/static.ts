@@ -1,4 +1,5 @@
-import { EntitySet } from "odgn-entity/src/entity_set";
+import { Site } from "../site";
+import { ProcessOptions } from "../types";
 
 
 
@@ -7,6 +8,6 @@ import { EntitySet } from "odgn-entity/src/entity_set";
  * 
  * @param es 
  */
-export async function process(es: EntitySet){
+export async function process(site: Site, options: ProcessOptions){
 
 }

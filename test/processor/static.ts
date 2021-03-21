@@ -83,7 +83,7 @@ test('copies static files', async ({site,es, options}) => {
     src: file:///index.mdx
     `);
 
-    options.reporter = new Reporter();
+    // options.reporter = new Reporter();
     await markStatic(site, options);
     await copyStatic(site, {...options, dryRun:true});
 
@@ -103,7 +103,7 @@ test('ignore non-relevent', async ({site, es, options}) => {
         data: "# Alpha"
     `);
 
-    options.reporter = new Reporter();
+    // options.reporter = new Reporter();
     await markStatic(site, options);
     await copyStatic(site, {...options, dryRun:true});
 

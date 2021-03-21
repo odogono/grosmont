@@ -1,10 +1,9 @@
-import { Entity, EntityId } from "odgn-entity/src/entity";
-import { EntitySet, EntitySetMem } from "odgn-entity/src/entity_set";
+import { QueryableEntitySet } from "../../es";
 import { selectMetaDisabled } from "../query";
 // import { selectDependencies, selectDirDependencies } from "./file_deps";
 
 
-export async function process(es: EntitySet) {
+export async function process(es: QueryableEntitySet) {
 
     // select entities which have Meta with enabled set to false
     const disabled = await selectMetaDisabled( es );
@@ -21,10 +20,9 @@ export async function process(es: EntitySet) {
 
     removeEids = Array.from(new Set([...removeEids,...removeDepEids]));
 
-    // log('removing A', es.uuid, (es as EntitySetMem).entities ); //entChanges.removed );
 
     // remove all the entities
-    es = await es.removeEntity( removeEids );
+    es = await es.removeEntity( removeEids ) as QueryableEntitySet;
 
     // log('removing B', es.uuid, (es as EntitySetMem).entities ); //entChanges.removed );
     // log('  added', es.entChanges.added );

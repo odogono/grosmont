@@ -1,5 +1,5 @@
 import { toCapitalized, toPascalCase } from "@odgn/utils";
-import { EntityId } from "odgn-entity/src/entity";
+import { EntityId } from "../es";
 
 // https://stackoverflow.com/a/41407246
 const Reset = "\x1b[0m";

@@ -1,13 +1,11 @@
 import Path from 'path';
-import { Entity, EntityId } from "odgn-entity/src/entity";
+import { Entity, EntityId } from "../../es";
 import { Site } from '../site';
 import { extensionFromMime } from "./assign_mime";
 import { ProcessOptions } from '../types';
 import { selectTitleAndMeta } from '../query';
 import { isString, slugify } from "@odgn/utils";
-import { printAll, printEntity } from 'odgn-entity/src/util/print';
 import { info, setLocation } from '../reporter';
-import { toComponentId } from 'odgn-entity/src/component';
 
 
 

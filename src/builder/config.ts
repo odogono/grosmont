@@ -3,20 +3,24 @@ import Yaml from 'yaml';
 import Path from 'path';
 import Jsonpointer from 'jsonpointer';
 
-import { Entity, EntityId, getEntityId } from "odgn-entity/src/entity";
-import { EntitySet, EntitySetMem, isEntitySet } from "odgn-entity/src/entity_set";
-import { getEntityAttribute } from "odgn-entity/src/util/entity";
+
+import { 
+    Component,
+    ComponentDef,
+    QueryableEntitySet, 
+    Entity, EntityId, getEntityId,
+    isEntitySet,
+    getEntityAttribute,
+ } from "../es";
 
 
-import { Component, getComponentDefId } from 'odgn-entity/src/component';
-import { ComponentDef, getDefId } from 'odgn-entity/src/component_def';
 import { slugify, stringify } from '@odgn/utils';
 import { Site } from './site';
 import { findEntityBySrcUrl, FindEntityOptions, insertDependency, selectTagBySlug } from './query';
 import { applyMeta, createTag, uriToPath, resolveUrlPath } from './util';
 import { isString } from '@odgn/utils';
 import { BitField, toValues as bfToValues } from '@odgn/utils/bitfield';
-import { printEntity } from 'odgn-entity/src/util/print';
+
 
 
 const log = (...args) => console.log('[Config]', ...args);
@@ -24,7 +28,7 @@ const log = (...args) => console.log('[Config]', ...args);
 export interface ParseOptions {
     add?: boolean;
     e?: Entity;
-    es?: EntitySet;
+    es?: QueryableEntitySet;
     excludeList?: BitField;
     siteRef?: EntityId;
     // the url of the src
@@ -41,8 +45,8 @@ export interface ParseOptions {
  * @param type 
  * @param options 
  */
-export async function parseEntity(from: EntitySet|Site, input: string|object, options:ParseOptions = {}): Promise<Entity> {
-    const es:EntitySet = isEntitySet(from) ? from as EntitySet : (from as Site).es;
+export async function parseEntity(from: QueryableEntitySet|Site, input: string|object, options:ParseOptions = {}): Promise<Entity> {
+    const es:QueryableEntitySet = isEntitySet(from) ? from as QueryableEntitySet : (from as Site).es;
     const addToES = options.add ?? true;
     let {excludeList,siteRef,srcUrl} = options;
     const type = options.type ?? 'yaml';
@@ -228,7 +232,7 @@ function applyToCom( e:Entity, name:string, attrs:any, overwrite:boolean = true 
 }
 
 
-async function applyLayout( es:EntitySet, e:Entity, url:string, options:FindEntityOptions = {} ) {
+async function applyLayout( es:QueryableEntitySet, e:Entity, url:string, options:FindEntityOptions = {} ) {
     let { srcUrl } = options;
     srcUrl = srcUrl ?? e.Src?.url ?? '';
 
@@ -255,7 +259,7 @@ async function applyLayout( es:EntitySet, e:Entity, url:string, options:FindEnti
 }
 
 
-async function applyTags( es:EntitySet, e:Entity, tags:string|string[], options:FindEntityOptions = {}){
+async function applyTags( es:QueryableEntitySet, e:Entity, tags:string|string[], options:FindEntityOptions = {}){
     let names:string[] = isString(tags) ? [ tags as string ] : tags as string[];
     
     // get rid of duplicates
@@ -322,14 +326,14 @@ export function getPtr(data:any, path:string){
     return Jsonpointer.get(data, path);
 }
 
-async function getEntityByUrl(es: EntitySet, url: string, val: string) {
+async function getEntityByUrl(es: QueryableEntitySet, url: string, val: string) {
     const q = `[ ${url} !ca ${stringify(val)} == @e ] select`;
     const stmt = es.prepare(q);
     const ents = await stmt.getEntities();
     return ents.length > 0 ? ents[0] : undefined;
 }
 
-function copyEntity(es: EntitySet, src: Entity, dst?: Entity, id?: EntityId) {
+function copyEntity(es: QueryableEntitySet, src: Entity, dst?: Entity, id?: EntityId) {
     let e = es.createEntity(id ?? src.id);
     for (const [did, com] of src.components) {
         // log('adding', getEntityId(e) );
