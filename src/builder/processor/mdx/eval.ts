@@ -92,7 +92,9 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         if( !isUrlInternal(path) ){
             // log('[resolveImportLocal]', 'ext', path);
             let remove = path === '@site' ? false : true;
-            links.push(['ext', undefined, path, undefined, 'script' ]);
+            if( remove ){
+                links.push(['ext', undefined, path, undefined, 'script' ]);
+            }
             return [path, remove];
         }
 

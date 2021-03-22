@@ -38,7 +38,6 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         const eid = getComponentEntityId(com);
         const { imports, components } = com;
 
-
         let buffer = [];
         buffer.push('import React from "react"');
         buffer.push('import ReactDOM from "react-dom";');
