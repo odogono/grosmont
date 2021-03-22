@@ -1,6 +1,6 @@
 import Process from 'process';
 import React from 'react';
-import {html as BeautifyHTML} from 'js-beautify';
+import { html as BeautifyHTML } from 'js-beautify';
 
 import { getDependencyEntities, getDependencyComponents, getLayoutFromDependency, insertDependency, selectJs } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
@@ -9,8 +9,8 @@ import { Site } from '../../site';
 
 import { ProcessOptions, TranspileProps, TranspileResult, EvalContext, EvalScope } from '../../types';
 import { createRenderContext, getEntityCSSDependencies } from './util';
-import { 
-    Component, setEntityId, toComponentId ,
+import {
+    Component, setEntityId, toComponentId,
     QueryableEntitySet,
     Entity,
 } from '../../../es';
@@ -58,7 +58,7 @@ export async function process(site: Site, options: RenderJsOptions = {}) {
             updates.push(await processEntity(site, e, undefined, options));
 
         } catch (err) {
-            // log('[error]', srcUrl, err.message, err.stack );
+            log('[error]', srcUrl, err.message);
             error(reporter, `error ${srcUrl}`, err, { eid: e.id });
             // log('[error]', es.getUrl(), es.componentDefs );
             updates.push(createErrorComponent(es, e, err, { from: Label }));
@@ -81,7 +81,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     let path = site.getSrcUrl(e);
     let meta = e.Meta?.meta ?? {};
 
-    const {require} = await buildImports(site, e.id, options);
+    const { require } = await buildImports(site, e.id, options);
 
     function onConfig(config: any) { }
 
@@ -107,20 +107,20 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
 
     let scripts = await getScriptDependencies(site, e);
-    if( options.scripts ){
+    if (options.scripts) {
         scripts = [...scripts, ...options.scripts];
     }
     props.scriptSrcs = scripts;
-    
+
     props.comProps = { e, es, site, page: e, ...options.props };
-    
-    
-    
+
+
+
     let context = createRenderContext(site, e, options);
-    if( options.context ){
+    if (options.context) {
         context = { ...context, ...options.context };
     }
-    if( layoutE !== undefined ){
+    if (layoutE !== undefined) {
         context.layout = layoutE;
     }
 
@@ -141,7 +141,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     let result: any = transformJS(data, props, { context, onConfig, require, scope });
 
-    if( result.component === undefined ){
+    if (result.component === undefined) {
         // no default component found, so no render possible
         return undefined;
     }
@@ -149,7 +149,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     result.css = props.css;
     result.cssLinks = props.cssLinks;
 
-    
+
 
     if (layoutE !== undefined) {
         let layoutScope = {
@@ -165,18 +165,18 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
             layout: layoutE
         }
         // log('[processEntity]', base, 'eid', e.id);
-        let com = await processEntity(site, layoutE, result, 
-            { ...options, context:layoutContext, scripts, scope: layoutScope });
+        let com = await processEntity(site, layoutE, result,
+            { ...options, context: layoutContext, scripts, scope: layoutScope });
         return setEntityId(com, e.id);
     }
 
-    
+
 
     const { component } = result;
     let output;
     // log('[processEntity]', base, '>');
     // try {
-        output = await transformComponent(component, props);
+    output = await transformComponent(component, props);
     // } catch (err ){
     //     log('[processEntity]', 'error', err);
 
@@ -205,8 +205,8 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     const mime = 'text/html';
 
-    if( options.beautify ){
-        output = BeautifyHTML( output );
+    if (options.beautify) {
+        output = BeautifyHTML(output);
     }
     return setEntityId(es.createComponent('/component/output', { data: output, mime }), e.id);
 }
@@ -239,16 +239,19 @@ async function applyCSSDependencies(es: QueryableEntitySet, e: Entity, child: Tr
     // build css links and content from deps
     const cssEntries = await getEntityCSSDependencies(es, e);
 
-    // log('[applyCSSDependencies]', e.id, cssEntries);
 
     if (cssEntries === undefined) {
         return props;
     }
 
+    
     let css = cssEntries.map(ent => ent.text).join('\n');
     let cssLinks = cssEntries.map(ent => ent.path);
     if (child !== undefined) {
-        css = css + ' ' + child.css;
+        // log('[applyCSSDependencies]', e.id, {css, child:child.css});
+        if( child.css !== undefined ){
+            css = css + ' ' + child.css;
+        }
         // log('[applyCSSDependencies]', child.cssLinks);
 
         cssLinks = Array.isArray(child.cssLinks) ? cssLinks.concat(child.cssLinks) : cssLinks;
@@ -269,7 +272,7 @@ async function getScriptDependencies(site: Site, e: Entity): Promise<string[]> {
     // log('[getScriptDependencies]', deps);
 
     const urlDid = es.resolveComponentDefId('/component/url');
-    
+
     // const srcDid = es.resolveComponentDefId('/component/dst');
 
     // log('[getScriptDependencies]', url);
@@ -282,9 +285,9 @@ async function getScriptDependencies(site: Site, e: Entity): Promise<string[]> {
             result.push(urlCom.url);
         }
         else {
-            const url = site.getEntityDstUrlIndexed( dst );
-            if( url !== undefined ){
-                result.push( url );
+            const url = site.getEntityDstUrlIndexed(dst);
+            if (url !== undefined) {
+                result.push(url);
             }
         }
     }

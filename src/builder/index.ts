@@ -78,7 +78,7 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
         [evalClientCode, 0],
         [resolveMeta, 0],
         [buildDstIndex, 0, { url: '/processor/build_dst_index' }],
-        [renderJs, 0],
+        [renderJs, 0, {beautify:true}],
         [buildDstIndex, -99],
         [write, -100],
         [copyStatic, -101],

@@ -68,7 +68,7 @@ export class Reporter {
     }
     error(message: string, error?: Error, options: ReportOptions = {}) {
         if (this.level < Level.ERROR) { return; }
-        console.error(compose('Error', this.prefix, '', options), error);
+        console.error(compose(message, this.prefix, '', options), error);
     }
 
     write(level: string, message: string, options: ReportOptions = {}) {

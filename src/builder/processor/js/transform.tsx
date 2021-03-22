@@ -35,6 +35,7 @@ export async function transformComponent(component: any, props: TranspileProps):
     comProps.CSSLinks =
         () => <>{inputCssLinks.map(c => <link key={c} rel='stylesheet' href={c} />)}</>;
 
+    // log('[transformComponent]', 'css', css);
     // log('[transformComponent]', 'scriptSrcs', scriptSrcs);
     scriptSrcs = sortScriptSrcs(scriptSrcs);
     comProps.ScriptLinks = () => <>{scriptSrcs.map(src => <script crossOrigin="anonymous" key={src} src={src} />)}</>;
@@ -54,8 +55,6 @@ export async function transformComponent(component: any, props: TranspileProps):
         // }
     }
 
-
-
     const ctxValue = {
         children,
         components
@@ -67,9 +66,9 @@ export async function transformComponent(component: any, props: TranspileProps):
 
     const Component = await component;
 
-    // log('[componentToString]', 'CSSLinks', inputCssLinks);
-    // log('[componentToString]', 'props', {comProps});
-    // log('[componentToString]', 'components', {components});
+    // log('[transformComponent]', 'CSSLinks', inputCssLinks);
+    // log('[transformComponent]', 'props', {comProps});
+    // log('[transformComponent]', 'components', {components});
 
     try {
 
@@ -86,7 +85,7 @@ export async function transformComponent(component: any, props: TranspileProps):
         return output;
 
     } catch (err) {
-        log('[componentToString]', url, err.message);
+        log('[transformComponent]', url, err.message);
 
         throw err;
     }
@@ -98,21 +97,21 @@ export async function transformComponent(component: any, props: TranspileProps):
  * 
  * @param srcs 
  */
-function sortScriptSrcs( srcs:string[] ){
-    if( srcs === undefined ){
+function sortScriptSrcs(srcs: string[]) {
+    if (srcs === undefined) {
         return [];
     }
     srcs = srcs.filter(Boolean)
-    srcs.sort( (a, b) => {
+    srcs.sort((a, b) => {
         const isAExt = !isUrlInternal(a);
         const isBExt = !isUrlInternal(b);
-        if( isAExt && isBExt ){
+        if (isAExt && isBExt) {
             return 0;
         }
-        if( isAExt ){
+        if (isAExt) {
             return -1;
         }
-        if( isBExt ){
+        if (isBExt) {
             return 1;
         }
         return 0;
