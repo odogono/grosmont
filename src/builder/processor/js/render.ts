@@ -107,10 +107,12 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
 
     let scripts = await getScriptDependencies(site, e);
+    // log('[processEntity]', base, {scripts} );
     if (options.scripts) {
         scripts = [...scripts, ...options.scripts];
     }
     props.scriptSrcs = scripts;
+
 
     props.comProps = { e, es, site, page: e, ...options.props };
 
@@ -137,7 +139,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // reset requests
     beginServerEffects(base);
 
-    // log('[processEntity]', base, {context} );
+    // log('[processEntity]', base, {data} );
 
     let result: any = transformJS(data, props, { context, onConfig, require, scope });
 

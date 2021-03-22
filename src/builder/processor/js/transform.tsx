@@ -69,6 +69,7 @@ export async function transformComponent(component: any, props: TranspileProps):
     // log('[transformComponent]', 'CSSLinks', inputCssLinks);
     // log('[transformComponent]', 'props', {comProps});
     // log('[transformComponent]', 'components', {components});
+    // log('[transformComponent]', 'component', {component});
 
     try {
 

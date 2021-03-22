@@ -1,4 +1,5 @@
 require('stateful-hooks');
+import Process from 'process';
 import Fastify from 'fastify';
 import FastifyAutoLoad from 'fastify-autoload';
 import {FastifySSEPlugin} from "fastify-sse-v2";
@@ -31,11 +32,11 @@ const fastify = Fastify({ logger: log });
 fastify.register(require('fastify-routes'))
 fastify.register(FastifySSEPlugin);
 
-const [config] = process.argv.slice(2);
+const [config] = Process.argv.slice(2);
 
 if (config === undefined) {
     log('missing config');
-    process.exit(1);
+    Process.exit(1);
 }
 
 
@@ -67,7 +68,7 @@ const start = async () => {
 
     } catch (err) {
         fastify.log.error(err)
-        process.exit(1)
+        Process.exit(1)
     }
 }
 
@@ -111,7 +112,7 @@ async function initialiseSite(path: string) {
 
         ['/processor/build_dst_index'],
 
-        ['/processor/js/render'],
+        ['/processor/js/render', 0, { beautify: true} ],
         ['/processor/build_dst_index', -99],
         ['/processor/write', -100],
         ['/processor/static/copy', -101],

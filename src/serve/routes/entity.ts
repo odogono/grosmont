@@ -34,7 +34,7 @@ export default async function routes(app, { config: { site, process } }: RoutesC
             output.push(data);
         }
 
-        console.info(`!!!! ${path} ${eid} ${type}`);
+        // console.info(`!!!! ${path} ${eid} ${type}`);
 
         output.push(await buildEntityDisplay(site, process, eid));
         output.push(await buildEntityDepsDisplay(site, process, eid));

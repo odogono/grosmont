@@ -120,8 +120,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return false;
     };
 
-    const resolveLink = (url: string, text: string) => {
-        // log('[resolveLink]', url);
+    function resolveLink(url: string, text: string){
+        
         if (!isUrlInternal(url)) {
             links.push(['ext', undefined, url, text]);
             return url;
@@ -129,8 +129,13 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
         let entry = resolveImport(site, url, base);
         if (entry !== undefined) {
-            links.push(['int', entry[0], url, text]);
-            return entry[1];
+            const [eid, url, mime] = entry;
+            // log('[resolveLink]', e.id, [eid,url]);
+            if( eid !== e.id ){
+                links.push(['int', entry[0], url, text]);
+                return url;
+            }
+            return undefined;
         }
 
         return url;

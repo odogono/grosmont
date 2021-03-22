@@ -46,7 +46,7 @@ export function evalCode(code: string, path: string, options: EvalOptions = {}) 
         if (result === undefined) {
             result = require(requirePath);
         }
-        // log('[evalCode]', requirePath, result);
+        // console.log('[evalCode]', requirePath, result);
         return result;
     }
 
