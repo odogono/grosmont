@@ -104,50 +104,9 @@ export async function buildImports(site: Site, eid: EntityId, options: ProcessOp
 
     // retrieve import dependencies for this e and place them
     let imports = await getDependencyEntities(es, eid, ['import', 'script']);
-    const urls = imports.map( imp => imp.Url?.url ).filter(Boolean);
+    const urls = imports.map(imp => imp.Url?.url).filter(Boolean);
 
-    return buildImportsFromUrls( site, urls, options );
-
-    // let importComs = new Map<EntityId, any>();
-
-    // for (const imp of imports) {
-    //     const url = imp.Url?.url;
-    //     const impEid = imp.Dep.dst;
-    //     const match = parseEntityUrl(url);
-
-    //     // log('[buildImports]', url );
-
-    //     if (match !== undefined) {
-    //         const { eid, did } = match;
-
-    //         if (did === '/component/scss') {
-    //             console.warn('why no handle /component/scss??', { eid, did });
-    //         }
-    //         else if (did === '/component/jsx' || did === '/component/js') {
-    //             const ie = await es.getEntity(impEid, true);
-    //             let out = await processEntity(site, ie, options);
-    //             importComs.set(ie.id, out.component);
-    //         }
-    //         else {
-    //             const ie = await es.getEntity(impEid, true);
-    //             importComs.set(ie.id, ie);
-    //         }
-    //     }
-
-    //     // log('import', imp.Dep.dst, match);
-
-    // }
-
-    // // log('[buildImports]', importComs );
-
-    // function require(path: string, fullPath: string) {
-    //     const match = parseEntityUrl(path);
-    //     let result = importComs.get(match?.eid);
-    //     // log('[require]', path);
-    //     return result !== undefined ? result : undefined;
-    // };
-
-    // return { require, importComs };
+    return buildImportsFromUrls(site, urls, options);
 }
 
 /**
@@ -173,12 +132,13 @@ export async function buildImportsFromUrls(site: Site, urls: string[], options: 
         if (did === '/component/scss') {
             console.warn('why no handle /component/scss??', { eid, did });
         }
-        else if (did === '/component/jsx' || did === '/component/js') {
+        else if (did === '/component/jsx' || did === '/component/js' || did === '/component/mdx') {
             const ie = await es.getEntity(eid, true);
             let out = await processEntity(site, ie, options);
             importComs.set(ie.id, out.component);
         }
         else {
+            console.warn('[buildImportsFromUrls]', 'default to return e', { eid, did });
             const ie = await es.getEntity(eid, true);
             importComs.set(ie.id, ie);
         }
@@ -195,7 +155,7 @@ export async function buildImportsFromUrls(site: Site, urls: string[], options: 
 }
 
 
-export async function buildImportCodeFromUrls(site: Site, urls: string[], result?:Map<string, any> ) {
+export async function buildImportCodeFromUrls(site: Site, urls: string[], result?: Map<string, any>) {
     const { es } = site;
     result = result ?? new Map<string, any>();
 
@@ -214,7 +174,7 @@ export async function buildImportCodeFromUrls(site: Site, urls: string[], result
         else if (did === '/component/jsx' || did === '/component/js') {
             // const ie = await es.getEntity(eid, true);
 
-            await processEntityImport( site, eid, url, result );
+            await processEntityImport(site, eid, url, result);
 
             // let out = await processEntity(site, ie, options);
             // importComs.set(ie.id, out.component);
@@ -236,25 +196,25 @@ export async function buildImportCodeFromUrls(site: Site, urls: string[], result
 }
 
 
-async function processEntityImport( site:Site, eid:EntityId, url:string, result:Map<string,any> ){
-    const {es} = site;
+async function processEntityImport(site: Site, eid: EntityId, url: string, result: Map<string, any>) {
+    const { es } = site;
 
     const did = es.resolveComponentDefId('/component/js');
 
-    const com = await es.getComponent( toComponentId(eid,did) );
+    const com = await es.getComponent(toComponentId(eid, did));
 
-    if( com === undefined ){
+    if (com === undefined) {
         return result;
     }
 
     const { data } = com;
 
-    result.set( url, data );
+    result.set(url, data);
 
     let imports = await getDependencyEntities(es, eid, ['import', 'script']);
-    const urls = imports.map( imp => imp.Url?.url ).filter(Boolean);
+    const urls = imports.map(imp => imp.Url?.url).filter(Boolean);
 
-    await buildImportCodeFromUrls( site, urls, result );
+    await buildImportCodeFromUrls(site, urls, result);
 
     return result;
 }
