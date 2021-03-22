@@ -46,12 +46,13 @@ Hello _world_
 });
 
 test('master page receives childs properties', async ({ es, site, options }) => {
-    await addMdx(site, 'file:///layout/main.mdx', `
+    await addMdx(site, 'file:///layout/master.mdx', `
 ---
 isRenderable: false
 title: Master Page
 ---
-    
+import { e } from '@site';
+
     <html lang="en"><head>
     <title>{e.Title.title}</title></head>
     <body>{children}</body></html>`);
@@ -59,31 +60,33 @@ title: Master Page
 
     await addMdx(site, 'file:///pages/main.mdx', `
 ---
-layout: /layout/main
+layout: /layout/master
 date: 2021/03/10
 isMain: true
 ---
+import { e, layout } from '@site';
 
     # Main Page
-    Hello {e.Title.title}
+    Hello {e.Title.title}, layout is {layout.Title.title}
         `);
 
-    // console.log('\n\n');
-    await process(site, options);
-
-    // await printAll(es);
-    // console.log('\n\n');
+    await process(site, {...options, beautify:true} );
 
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
-    // let e = await site.getEntityBySrc('file:///layout/main.mdx');
-    // printEntity(es, e);
-
-    // log(e.Js.data);
-    // console.log('\n\n');
-    // log(e.Output.data);
 
     assert.equal(e.Output.data,
-        `<html lang="en"><head><title>Main Page</title></head><body><h1>Main Page</h1><p>Hello Main Page</p></body></html>`);
+`<html lang="en">
+
+<head>
+    <title>Main Page</title>
+</head>
+
+<body>
+    <h1>Main Page</h1>
+    <p>Hello Main Page, layout is Master Page</p>
+</body>
+
+</html>`);
 })
 
 

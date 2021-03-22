@@ -90,8 +90,10 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         // if the path starts with http(s), then this is an import to the page,
         // most likely js
         if( !isUrlInternal(path) ){
+            // log('[resolveImportLocal]', 'ext', path);
+            let remove = path === '@site' ? false : true;
             links.push(['ext', undefined, path, undefined, 'script' ]);
-            return [path, true];
+            return [path, remove];
         }
 
         let entry = resolveImport(site, path, base);

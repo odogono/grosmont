@@ -31,7 +31,7 @@ export function evalCode(code: string, path: string, options: EvalOptions = {}) 
     const requireManual = (requirePath) => {
 
         if (requirePath === '@odgn/grosmont' || requirePath === '@site') {
-            // log('[evalCode]', context);
+            // console.log('[evalCode]', 'context', {context});
             return context;
         }
 

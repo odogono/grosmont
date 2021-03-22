@@ -7,7 +7,7 @@ import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { ProcessOptions, TranspileProps, TranspileResult, EvalScope } from '../../types';
+import { ProcessOptions, TranspileProps, TranspileResult, EvalContext, EvalScope } from '../../types';
 import { createRenderContext, getEntityCSSDependencies } from './util';
 import { 
     Component, setEntityId, toComponentId ,
@@ -31,6 +31,7 @@ export interface RenderJsOptions extends ProcessOptions {
     renderToIndex?: boolean;
     renderToE?: boolean;
     scope?: EvalScope;
+    context?: EvalContext;
     scripts?: string[];
     beautify?: boolean;
 }
@@ -95,6 +96,8 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
 
     let props: TranspileProps = { path, url: base };
+    const layoutE = applyLayout ? await getLayoutFromDependency(es, e.id) : undefined;
+
 
     if (child !== undefined) {
         props.children = child.component;
@@ -111,21 +114,30 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     
     props.comProps = { e, es, site, page: e, ...options.props };
     
-    // log('[processEntity]', base, 'options props', {props} );
     
-    const context = createRenderContext(site, e, options);
+    
+    let context = createRenderContext(site, e, options);
+    if( options.context ){
+        context = { ...context, ...options.context };
+    }
+    if( layoutE !== undefined ){
+        context.layout = layoutE;
+    }
+
 
     // scope vars which appear globally defined to the code
     const scope = {
-        site,
-        e,
-        page: e,
-        layout: undefined,
+        // site,
+        // e,
+        // page: e,
+        // layout: undefined,
         ...options.scope
     }
 
     // reset requests
     beginServerEffects(base);
+
+    // log('[processEntity]', base, {context} );
 
     let result: any = transformJS(data, props, { context, onConfig, require, scope });
 
@@ -137,16 +149,24 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     result.css = props.css;
     result.cssLinks = props.cssLinks;
 
-    const layoutE = applyLayout ? await getLayoutFromDependency(es, e.id) : undefined;
+    
 
     if (layoutE !== undefined) {
         let layoutScope = {
             ...options.scope,
+            // e,
+            // page: e,
+            // layout: layoutE
+        };
+        let layoutContext = {
+            ...context,
             e,
             page: e,
             layout: layoutE
         }
-        let com = await processEntity(site, layoutE, result, { ...options, scripts, scope: layoutScope });
+        // log('[processEntity]', base, 'eid', e.id);
+        let com = await processEntity(site, layoutE, result, 
+            { ...options, context:layoutContext, scripts, scope: layoutScope });
         return setEntityId(com, e.id);
     }
 

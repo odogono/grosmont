@@ -15,6 +15,7 @@ test('frontmatter', async ({ es, site, options }) => {
 ---
 title: Test Page
 ---
+import {page} from '@site';
 
 # {page.Title.title}
 

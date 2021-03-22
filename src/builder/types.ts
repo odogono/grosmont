@@ -45,6 +45,10 @@ export interface EvalScope {
     [key: string]: any;
 }
 
+export interface EvalContext {
+    [key: string]: any;
+}
+
 // export interface SiteIndex {
 //     query?: string;
 //     args?: StatementArgs;

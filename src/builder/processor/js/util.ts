@@ -7,7 +7,7 @@ import {
     StatementArgs 
 } from "../../../es";
 import { applyMeta, buildUrl, resolveUrlPath, uriToPath } from "../../util";
-import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions, DependencyType, ImportDescr } from "../../types";
+import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions, DependencyType, ImportDescr, EvalContext } from "../../types";
 import { getDependencyEntities, getDependencyEntityIds, getDepenendencyDst, getDstUrl, insertDependency } from "../../query";
 import { Site } from "../../site";
 import { toInteger } from '@odgn/utils';
@@ -29,8 +29,14 @@ export async function buildProps(site:Site, e: Entity): Promise<TranspileProps> 
     return props;
 }
 
-
-export function createRenderContext( site:Site, e:Entity, options:ProcessOptions = {} ){
+/**
+ * 
+ * @param site 
+ * @param e 
+ * @param options 
+ * @returns 
+ */
+export function createRenderContext( site:Site, e:Entity, options:ProcessOptions = {} ): EvalContext {
     const { url: base } = e.Src;
     const {reporter}  = site;
 
@@ -38,6 +44,7 @@ export function createRenderContext( site:Site, e:Entity, options:ProcessOptions
 
     const context = { 
         e,
+        page: e,
         es: site.es,
         site, 
         log,
