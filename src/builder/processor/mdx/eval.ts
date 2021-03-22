@@ -174,8 +174,13 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         for( let [code,path,spec] of details.imports ){
             let [url] = resolveImportLocal( path, spec as any );
             code = code.replace(path,url);
-            // imports.push( [code,url,undefined,spec] );
-            clientImports.push( [code,url,spec] );
+
+            // ensure we are not re-adding the same import
+            const notFound = clientImports.findIndex( imp => imp[0] === code ) === -1;
+            
+            if( notFound ){
+                clientImports.push( [code,url,spec] );
+            }
             // log('[registerClientCode]', 'import', [code, url, undefined,spec]);
         }
 
