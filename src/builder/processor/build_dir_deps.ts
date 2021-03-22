@@ -85,6 +85,8 @@ async function addMissingSrcDirs(site: Site) {
     const missing = getMissingPaths(site);
     let coms = [];
 
+    // log('[addMissingSrcDirs]', missing);
+
     for (const url of missing) {
         coms.push(es.createComponent('/component/src', { url }));
         coms.push(es.createComponent('/component/upd', { op: ChangeSetOp.Add }));
@@ -108,8 +110,14 @@ function getMissingPaths(site: Site) {
     }
     const srcs = Array.from(srcIdx.index.keys());
 
+    // log('[getMissingPaths]', 'srcs');
+    // srcs.forEach( s => log(s) );
+
     let paths = new Set<string>(srcs);
     for (let src of srcs) {
+        if( !src.startsWith('file://') ){
+            continue;
+        }
         while (src !== './') {
             paths.add(src);
             src = Path.dirname(src) + Path.sep;

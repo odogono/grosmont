@@ -63,7 +63,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         for (const id of ids) {
             buffer.push(`comEl = document.getElementById("client-code-${id}");`);
-            buffer.push(`ReactDOM.render( <StrictMode><Component${id} /></StrictMode>, comEl);`);
+            buffer.push(`ReactDOM.render( <React.StrictMode><Component${id} /></React.StrictMode>, comEl);`);
         }
 
         let data = buffer.join('\n');
