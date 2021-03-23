@@ -3,7 +3,7 @@ import assert from 'uvu/assert';
 import { FindEntityOptions } from '../../../src/builder/query';
 import { parseEntity } from '../../../src/builder/config';
 import { EntityId } from 'odgn-entity/src/entity';
-import { addMdx, addSrc, beforeEach, createSite, process, rootPath } from './helpers';
+import { addMdx, addSrc, beforeEach, createSite, process, rootPath } from '../../helpers';
 import { printAll } from 'odgn-entity/src/util/print';
 
 const test = suite('/processor/mdx/misc');

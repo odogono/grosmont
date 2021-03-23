@@ -1,7 +1,7 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 
-import { addMdx, beforeEach, createSite, process, rootPath } from '../helpers';
+import { addMdx, beforeEach, process } from '../../helpers';
 import { buildProcessors, OutputES, RawProcessorEntry, renderToOutput } from '../../../src/builder';
 
 const test = suite('processor/js/render');

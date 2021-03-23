@@ -2,7 +2,7 @@ import 'stateful-hooks';
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 
-import { addMdx, addSrc, beforeEach, createSite, process, rootPath } from '../helpers';
+import { addMdx, addSrc, beforeEach, process} from '../../helpers';
 
 const test = suite('processor/js/client');
 const log = (...args) => console.log(`[${suite.name}]`, ...args);

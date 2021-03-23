@@ -1,10 +1,8 @@
-import { printAll } from 'odgn-entity/src/util/print';
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { parseEntity } from '../../../src/builder/config';
-import { addSrc } from '../helpers';
 
-import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
+import { addMdx, addSrc, beforeEach, process } from '../../helpers';
 
 const test = suite('/processor/mdx/links');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);

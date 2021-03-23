@@ -1,7 +1,7 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { parseEntity } from '../../../src/builder/config';
-import { beforeEach, process } from './helpers';
+import { beforeEach, process } from '../../helpers';
 
 const test = suite('/processor/mdx/updates');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);

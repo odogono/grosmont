@@ -7,7 +7,7 @@ import { process as buildDstIndex } from '../../src/builder/processor/build_dst_
 import { process as write } from '../../src/builder/processor/write';
 import { printAll } from 'odgn-entity/src/util/print';
 import { FindEntityOptions } from '../../src/builder/query';
-import { addDirDep } from './helpers';
+import { addDirDep } from '../helpers';
 
 
 const rootPath = Path.resolve(__dirname, "../../");

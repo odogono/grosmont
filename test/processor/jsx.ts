@@ -1,6 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addSrc, beforeEach } from './helpers';
+import { addSrc, beforeEach } from '../helpers';
 import { buildProcessors, RawProcessorEntry } from '../../src/builder';
 
 const test = suite('/processor/jsx');

@@ -2,7 +2,7 @@ import { suite } from 'uvu';
 import { parseEntity } from '../../src/builder/config';
 
 import { getDstUrl } from '../../src/builder/query';
-import { process, beforeEach } from './helpers';
+import { process, beforeEach } from '../helpers';
 
 
 const test = suite('/processor/meta');

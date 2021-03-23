@@ -1,7 +1,6 @@
-import { printAll } from 'odgn-entity/src/util/print';
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addSrc, beforeEach, createSite, process, rootPath } from './helpers';
+import { addSrc, beforeEach, process } from '../../helpers';
 
 const test = suite('/processor/mdx/css');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);

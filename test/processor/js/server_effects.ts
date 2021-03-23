@@ -3,7 +3,7 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import Path from 'path';
 
-import { addMdx, beforeEach, createSite, process, rootPath } from '../helpers';
+import { addMdx, beforeEach, process } from '../../helpers';
 
 const test = suite('/processor/js/use_se');
 const log = (...args) => console.log(`[${suite.name}]`, ...args);

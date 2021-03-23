@@ -1,6 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
+import { addMdx, beforeEach, process } from '../../helpers';
 
 
 const test = suite('/processor/mdx/import');
