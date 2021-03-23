@@ -299,6 +299,16 @@ export function createErrorComponent(es: QueryableEntitySet, e: Entity | EntityI
 }
 
 
+export function mapToTargetMime(mime: string) {
+    switch (mime) {
+        case 'text/x-scss':
+            return 'text/css';
+        case 'text/mdx':
+            return 'text/html';
+        default:
+            return mime;
+    }
+}
 
 /**
  * 

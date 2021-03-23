@@ -1,9 +1,9 @@
 import Mime from 'mime-types';
 import Path from 'path';
-import { getDstUrl, selectDstTextIds } from '../query';
+import { getDstUrl, selectDstEntityIds } from '../query';
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
-import { uriToPath } from '../util';
+import { uriToPath, mapToTargetMime } from '../util';
 import { Entity, EntityId, toComponentId } from '../../es';
 
 
@@ -16,10 +16,7 @@ export interface DstIndexOptions extends ProcessOptions {
 }
 
 /**
- * Builds an index of dst urls for each entity which has a /dst and a /text
- * component
- * 
- * 
+ * Builds an index of dst urls for each entity which has a /dst
  * 
  * @param site 
  * @param options 
@@ -28,12 +25,14 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
     const es = site.es;
 
     const dstIndex = site.getIndex('/index/dstUrl', true);
-    const eids = await selectDstTextIds(es);
+    const eids = await selectDstEntityIds(es);
 
     for (const eid of eids) {
-        let url = await site.getEntityDstUrl(eid, false);
+        // let url = await site.getEntityDstUrl(eid, false);
+        let url = await getDstUrl(es, eid);
 
         if (url !== undefined) {
+            // log('process', url);
             url = await ensureExtension(site, eid, url);
             // log(url, eid);
             dstIndex.set(uriToPath(url), eid);
@@ -64,27 +63,12 @@ async function ensureExtension(site: Site, eid: EntityId, url: string) {
 
     let com = await es.getComponent(toComponentId(eid, did));
 
+    
     let result = appendExtFromMime(url, com?.mime);
     if (result !== undefined) {
         return result;
     }
 
-    // read from src - either from the mime attr or from the url
-    did = es.resolveComponentDefId('/component/src');
-    com = await es.getComponent(toComponentId(eid, did));
-
-    if (com !== undefined) {
-        result = appendExtFromMime(url, com?.mime);
-        if (result !== undefined) {
-            return result;
-        }
-
-        let ext = Path.extname(com.url);
-        if (ext) {
-            return url + '.' + ext;
-        }
-
-    }
 
     // attempt to read mime from meta
     did = es.resolveComponentDefId('/component/meta');
@@ -97,6 +81,26 @@ async function ensureExtension(site: Site, eid: EntityId, url: string) {
         }
     }
 
+
+    // read from src - either from the mime attr or from the url
+    did = es.resolveComponentDefId('/component/src');
+    com = await es.getComponent(toComponentId(eid, did));
+
+    if (com !== undefined) {
+        // attempt a converseion from src to dst mime
+        let mime = mapToTargetMime( com?.mime );
+
+        result = appendExtFromMime(url, mime);
+        if (result !== undefined) {
+            return result;
+        }
+
+        let ext = Path.extname(com.url);
+        if (ext) {
+            return url + '.' + ext;
+        }
+
+    }
 
     // look for /mdx /scss components
 

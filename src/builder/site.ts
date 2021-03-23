@@ -173,7 +173,11 @@ export class Site {
      * @param e 
      * @param appendRoot 
      */
-    async getEntityDstUrl(eid: EntityId | Entity, appendRoot: boolean = false) {
+    async getEntityDstUrl(eid: EntityId | Entity) {
+        const idx = this.getIndex('/index/dstUrl');
+        if( idx !== undefined ){
+            return idx.getByEid( isEntity(eid) ? (eid as Entity).id : eid as EntityId );
+        }
         return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id : eid as EntityId);
     }
 

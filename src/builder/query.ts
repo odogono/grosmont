@@ -594,7 +594,7 @@ export async function selectSrcByFilename(es: QueryableEntitySet, names: string[
 
 
 
-export async function selectDstTextIds(es: QueryableEntitySet): Promise<EntityId[]> {
+export async function selectDstEntityIds(es: QueryableEntitySet): Promise<EntityId[]> {
 
     const q = `
         [ [ /component/dst ] !bf @eid] select

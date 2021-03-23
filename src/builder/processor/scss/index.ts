@@ -41,21 +41,30 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             let com = es.createComponent( '/component/output', {data:css, mime:'text/css'} );
             addComs.push( setEntityId(com, eid) );
 
-
-
             // alter the target filename
-            // const url = e.Src.url;
-            // let filename = Path.basename(url);
 
             let dstUrl = await getDstUrl(es, eid);
 
+            
             if( dstUrl !== undefined ){
-                let filename = dstUrl.substr(0, dstUrl.lastIndexOf(".")) + ".css";
+                // log('target', dstUrl);
+    
+                let ext = Path.extname(dstUrl);
+    
+                if( ext == '' || ext === '.scss' ){
+                    ext = '.css';
+                }
+                
+                // remove ext
+                dstUrl = dstUrl.replace(/\.[^/.]+$/, "");
+
+                // log('ext removed', dstUrl, ext);
+
+                let filename = dstUrl + ext;
     
                 com = es.createComponent( '/component/dst', {url:filename} );
                 addComs.push( setEntityId(com, eid) );
             }
-
 
             info(reporter, url, { eid: eid });
 

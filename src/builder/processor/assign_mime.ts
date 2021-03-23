@@ -4,7 +4,7 @@ import Mime from 'mime-types';
 
 import { Entity } from "../../es";
 import { Site } from '../site';
-import { applyMeta } from '../util';
+import { applyMeta, mapToTargetMime } from '../util';
 import { ProcessOptions } from '../types';
 import { selectFiles } from '../query';
 import { setLocation, info } from '../reporter';
@@ -67,15 +67,4 @@ function mimeFromExtension(ext: string) {
 
 export function extensionFromMime(mime: string) {
     return Mime.extension(mime);
-}
-
-function mapToTargetMime(mime: string) {
-    switch (mime) {
-        case 'text/x-scss':
-            return 'text/css';
-        case 'text/mdx':
-            return 'text/html';
-        default:
-            return mime;
-    }
 }
