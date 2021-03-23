@@ -217,3 +217,7 @@ export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img' |
 
 // eid, url, mime, specifiers
 export type ImportDescr = [ EntityId, string, string, string[] ];
+
+
+// eid, e url, mime, src url, dst url
+export type EntitySrcDstDescr = [ EntityId, string, string, string, string ];

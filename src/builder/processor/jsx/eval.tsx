@@ -8,9 +8,9 @@ import { selectJsx } from '../../query';
 import { Site } from '../../site';
 
 import { ProcessOptions } from '../../types';
-import { createErrorComponent, isUrlInternal } from '../../util';
+import { createErrorComponent, isUrlInternal, resolveImport } from '../../util';
 
-import { applyImports, resolveImport } from '../js/util';
+import { applyImports } from '../js/util';
 import { setLocation, info, error, debug, warn } from '../../reporter';
 import { generateFromAST, parseJSX, transformJSX } from "../../transpile";
 
@@ -61,7 +61,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         let entry = resolveImport(site, path, base);
         // log('[resolveImportLocal]', path, entry);
         if (entry !== undefined) {
-            const [eid, url, mime, spec] = entry;
+            const [eid, url, mime, srcUrl, dstUrl] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
             imports.push([eid, url, mime, specifiers]);
             // imports.push(entry);
@@ -98,7 +98,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 }
 
 
-function transform(jsx: string, resolveImport: Function) {
+function transform(jsx: string, resolve: Function) {
 
     let ast = parseJSX(jsx);
 
@@ -107,7 +107,7 @@ function transform(jsx: string, resolveImport: Function) {
     traverse(ast, {
         ImportDeclaration(path) {
             // log('[transform]', {path, parent, key, index} );
-            let resolved = resolveImport(path.node.source.value);
+            let resolved = resolve(path.node.source.value);
             if (resolved !== undefined) {
                 const [url, remove] = resolved;
                 path.node.source.value = url;

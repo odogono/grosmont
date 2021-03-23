@@ -6,7 +6,7 @@ import { Site } from '../../site';
 
 import { ProcessOptions } from '../../types';
 
-import { createRenderContext, parseEntityUrl, resolveImport } from './util';
+import { createRenderContext, parseEntityUrl } from './util';
 import { parseEntity } from '../../config';
 import { createErrorComponent } from '../../util';
 import { transformJS } from '../mdx/transform';

@@ -41,7 +41,7 @@ export interface BuildProcessOptions extends ProcessOptions {
 }
 
 
-export type ProcessorEntry = [Function, number, any?];
+export type ProcessorEntry = [Function, number? /*priority*/, any? /*options*/];
 export type RawProcessorEntry = [string | Function, number?, any?];
 
 /**
@@ -59,7 +59,13 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
     let config = site.getConfig('/processors');
 
 
-
+    // function printSrcIndex(site:Site, options:ProcessOptions){
+    //     const srcIndex = site.getIndex('/index/srcUrl');
+    //     for( const key of srcIndex.index.keys() ){
+    //         log('srcidx', key);
+    //     }
+    // }
+    
     let processors: ProcessorEntry[] = [
         [clearUpdates, 1000],
         [clearErrors, 1000],
@@ -69,6 +75,7 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
         [mark, 0, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' }],
         [mark, 0, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' }],
         [buildSrcIndex, 0],
+        // [printSrcIndex, 0],
         [renderScss, 0, { renderScss: true }],
         [evalJsx, 0],
         [evalMdx, 0],

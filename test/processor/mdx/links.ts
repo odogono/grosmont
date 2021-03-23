@@ -1,6 +1,8 @@
+import { printAll } from 'odgn-entity/src/util/print';
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { parseEntity } from '../../../src/builder/config';
+import { addSrc } from '../helpers';
 
 import { addMdx, beforeEach, createSite, process, rootPath } from './helpers';
 
@@ -32,7 +34,7 @@ dst: about.html
 
     await process(site, options);
 
-    
+
     // await printAll(es);
 
     // log( site.getIndex('/index/dstUrl') );
@@ -60,6 +62,43 @@ test('external page link', async ({ es, site, options }) => {
         `<p><a href="https://www.bbc.co.uk/news">News</a></p>`);
 
 });
+
+
+test('links within html', async ({ es, site, options }) => {
+
+    await addSrc(site, 'file:///about.mdx', `
+---
+dst: /about.html
+---
+    # About
+    `);
+
+    await addSrc(site, 'file:///index.mdx', `
+---
+dst: /index
+---
+
+    # Main
+
+    <a href="./about">About</a>
+
+    Something <a href="/index">else</a> here
+
+    [Otherwise](/index)
+    `);
+
+    await process(site, {...options, beautify:true} );
+
+    let e = await site.getEntityBySrc('file:///index.mdx');
+    // log( e.Output.data );
+    assert.equal(e.Output.data,
+`<h1>Main</h1><a href="/about.html">
+    <p>About</p>
+</a>
+<p>Something <a>else</a> here</p>
+<p><a>Otherwise</a></p>`);
+
+})
 
 
 

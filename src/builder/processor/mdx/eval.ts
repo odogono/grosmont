@@ -12,9 +12,9 @@ import { Site } from '../../site';
 
 import { ClientCodeDetails, DependencyType, ProcessOptions, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
 import { transformJSX } from '../../transpile';
-import { applyImports, buildProps, resolveImport } from '../js/util';
+import { applyImports, buildProps } from '../js/util';
 import { parseEntity } from '../../config';
-import { createErrorComponent, isUrlInternal, resolveUrlPath } from '../../util';
+import { createErrorComponent, isUrlInternal, resolveImport, resolveUrlPath } from '../../util';
 import { transformMdx } from './transform';
 
 const Label = '/processor/mdx/eval';
@@ -101,7 +101,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         let entry = resolveImport(site, path, base);
         // log('[resolveImportLocal]', path, specifiers, entry );
         if (entry !== undefined) {
-            const [eid, url, mime, spec] = entry;
+            const [eid, url, mime, srcUrl, dstUrl] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
             imports.push([eid,url,mime, specifiers]);
             
@@ -128,12 +128,12 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         }
 
         let entry = resolveImport(site, url, base);
+        // log('[resolveLink]', url, e.id, entry);
         if (entry !== undefined) {
-            const [eid, url, mime] = entry;
-            // log('[resolveLink]', e.id, [eid,url]);
+            const [eid, lurl, mime, srcUrl, dstUrl] = entry;
             if( eid !== e.id ){
-                links.push(['int', entry[0], url, text]);
-                return url;
+                links.push(['int', entry[0], lurl, text]);
+                return lurl;
             }
             return undefined;
         }

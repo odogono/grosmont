@@ -1,11 +1,11 @@
 import Path from 'path';
-import { 
-    Component, 
+import {
+    Component,
     Entity,
     EntityId,
     isEntity,
-    getComponentEntityId, 
-    setEntityId, 
+    getComponentEntityId,
+    setEntityId,
     toComponentId,
     QueryableEntitySet,
     ComponentDefUrl, getDefId
@@ -16,6 +16,8 @@ import { Site } from './site';
 import { buildQueryString, parseUri, slugify, stringify, toBoolean, toInteger } from "@odgn/utils";
 import { isString } from "@odgn/utils";
 import { FindEntityOptions } from './query';
+import { EntitySrcDstDescr, ImportDescr } from './types';
+import { BitField } from '@odgn/utils/bitfield';
 
 
 const log = (...args) => console.log('[ProcUtils]', ...args);
@@ -92,7 +94,7 @@ export function mergeMeta(metaList: any[]) {
  * @param str 
  * @returns 
  */
- export function ensureQuotes(str: string):string {
+export function ensureQuotes(str: string): string {
     if (str === undefined) {
         return '';
     }
@@ -107,7 +109,7 @@ export function mergeMeta(metaList: any[]) {
  * @param str 
  * @returns 
  */
-export function removeQuotes(str:string):string {
+export function removeQuotes(str: string): string {
     return str !== undefined ? str.trim().replace(/^["']?(.+(?=["']$))["']?$/, '$1') : '';
 }
 
@@ -163,11 +165,11 @@ export async function selectSiteTargetUri(es: QueryableEntitySet, e: Entity) {
  * @returns 
  */
 export function isUrlInternal(url: string) {
-    if( /^(\.|\/|file:).*/.test(url) ){
+    if (/^(\.|\/|file:).*/.test(url)) {
         return true;
     }
 
-    if( /^(http|https).*/.test(url) ){
+    if (/^(http|https).*/.test(url)) {
         return false;
     }
 
@@ -290,8 +292,109 @@ export interface ErrorOptions {
     from?: string;
 }
 
-export function createErrorComponent( es:QueryableEntitySet, e:Entity|EntityId, err:Error, options:ErrorOptions = {} ){
-    const eid:EntityId = isEntity(e) ? (e as Entity).id : e as EntityId;
+export function createErrorComponent(es: QueryableEntitySet, e: Entity | EntityId, err: Error, options: ErrorOptions = {}) {
+    const eid: EntityId = isEntity(e) ? (e as Entity).id : e as EntityId;
     let com = es.createComponent('/component/error', { ...options, message: err.message, stack: err.stack });
     return setEntityId(com, eid);
+}
+
+
+
+/**
+ * 
+ * @param site 
+ * @param url 
+ * @param base 
+ * @returns 
+ */
+export function resolveImport(site: Site, url: string, base: string): EntitySrcDstDescr {
+    
+    const entry = resolveSiteUrl(site, url, base);
+
+    if (entry === undefined) {
+        return undefined;
+    }
+
+    const [src, dst, eid, mime, bf] = entry;
+
+    // log('[resolveImport]', eid, path, url);
+
+
+    // log('[resolveImport]', {eid, path, url, mime});
+    if (mime === 'text/jsx') {
+        return [eid, `e://${eid}/component/jsx`, mime, src, dst];
+    }
+    if (mime === 'text/mdx') {
+        return [eid, `e://${eid}/component/mdx`, mime, src, dst];
+    }
+    if (mime === 'text/scss') {
+        return [eid, `e://${eid}/component/scss`, 'text/css', src, dst];
+    }
+    else {
+        return [eid, `e://${eid}/`, 'application/x.entity', src, dst];
+    }
+
+}
+
+
+// eid, url, mime, specifiers
+export type ResolveSiteUrlResult = [string, string, EntityId, string, BitField];
+
+/**
+ * Attempts to resolves a url coming from base against either a src url or a dst url
+ * 
+ * Returns [ srcUrl, dstUrl, eid, mime, bf ]
+ * 
+ * @param site 
+ * @param url 
+ * @param base 
+ * @returns 
+ */
+export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSiteUrlResult {
+    const srcIdx = site.getIndex('/index/srcUrl');
+    const dstIdx = site.getIndex('/index/dstUrl');
+    let path = resolveUrlPath(url, base);
+
+    let entry = srcIdx.get(path);
+    if (entry !== undefined) {
+        const [eid, mime, bf] = entry;
+        const dst = dstIdx !== undefined ? dstIdx.getByEid(eid) : undefined;
+        return [path, dst, eid, mime, bf];
+    }
+
+    if( dstIdx !== undefined ){
+        entry = dstIdx.get(url);
+        if (entry !== undefined) {
+            const [eid] = entry;
+            const [src, mime, bf] = srcIdx.getByEid(eid, true);
+            return [src, url, eid, mime, bf];
+        }
+    }
+
+
+    let reUrl = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let re = new RegExp(`^${reUrl}\..+`, 'i');
+
+    for (const key of srcIdx.index.keys()) {
+        if (re.test(key)) {
+            const [eid, mime, bf] = srcIdx.get(key);
+            const dst = dstIdx !== undefined ? dstIdx.getByEid(eid) : undefined;
+            return [key, dst, eid, mime, bf];
+        }
+    }
+
+    if( dstIdx !== undefined ){
+        reUrl = reUrl.replace('file://', '');
+        re = new RegExp(`^${reUrl}\..+`, 'i');
+        for (const key of dstIdx.index.keys()) {
+            // log('look at', key, '?', reUrl, dstIdx.get(key));
+            if (re.test(key)) {
+                const [eid] = dstIdx.get(key);
+                const [src, mime, bf] = srcIdx.getByEid(eid, true);
+                // log('look at', key, src );
+                return [src, key, eid, mime, bf];
+            }
+        }
+    }
+    return undefined;
 }

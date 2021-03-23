@@ -24,6 +24,8 @@ import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { Level } from '../../src/builder/reporter';
 import { parseEntity } from '../../src/builder/config';
 
+export { printAll } from 'odgn-entity/src/util/print';
+
 export const rootPath = Path.resolve(__dirname, "../../");
 
 
@@ -79,6 +81,8 @@ export async function process( site:Site, options?:ProcessOptions ){
     await renderJs(site, options );
 
     await assignTitle(site, options);
+
+    
 }
 
 

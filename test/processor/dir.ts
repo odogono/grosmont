@@ -29,17 +29,9 @@ const test = suite('processor/dir');
 test('dir', async () => {
     let id = 1000; let idgen = () => ++id;
     const configPath = `file://${rootPath}/test/fixtures/rootE.yaml`;
-    const site = await Site.create({idgen, configPath, level:Level.INFO});
+    const site = await Site.create({idgen, configPath, level:Level.WARN});
     const options = { siteRef:site.getRef() };
     
-    // await parse( site, `
-    // src: file:///pages/
-    // `);
-
-    // let e = await parse( site, `
-    // src: file:///pages/dir.e.yaml
-    // `);
-
     await build(site);
     
     // await readE(site, options);
@@ -54,18 +46,8 @@ test('dir', async () => {
 
     // log('\n>---\n');
 
-    await printAll( site.es );
+    // await printAll( site.es );
 });
 
 
 test.run();
-
-
-async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
-    await parse( site.es, `
-    /component/dep:
-        src: ${src}
-        dst: ${dst}
-        type: dir
-    `);
-}
