@@ -26,7 +26,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         const eid = getComponentEntityId(com);
         try {
 
-            const dst = await getDstUrl(es, eid);
+            const dst = site.getEntityDstUrl(eid);
 
             if( dst === undefined ){
                 // cant write something which doesnt have a /dst

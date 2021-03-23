@@ -7,13 +7,18 @@ import { Level } from '../src/builder/reporter';
 import { build } from '../src/builder';
 import { parseEntity } from '../src/builder/config';
 import { Entity, EntityId, EntitySetSQL, printAll } from '../src/es';
+import { ProcessOptions } from '../src/builder/types';
 export { Entity, EntityId, EntitySetSQL, printAll } from '../src/es';
 
-export { build as process };
+// export { build as process };
 
 
 export const rootPath = Path.resolve(__dirname, "../");
 
+
+export function process(site:Site, options:ProcessOptions = {} ){
+    return build(site, { onlyUpdated:false, ...options} );
+}
 
 export async function createSite(options:SiteOptions = {}){
     let id = 1000;

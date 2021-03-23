@@ -8,24 +8,24 @@ const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 test.before.each(beforeEach);
 
-
+console.warn('REVISIT');
 
 test('extract target slug from title', async ({ es, site, options }) => {
 
-    let e = await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 # Extracting the Page Title
-    `);
-    e.Dst = { url: '/html/' };
-    await site.update(e);
+    `, {dst: '/html/'} );
 
     await process(site, options);
 
     // await printAll(es);
 
-    e = await site.getEntityBySrc('file:///pages/main.mdx');
+    let e = await site.getEntityBySrc('file:///pages/main.mdx');
 
     assert.equal(e.Dst.url, '/html/extracting-the-page-title.html');
 });
+
+
 
 test('extract target slug from title with dst', async ({ es, site, options }) => {
 

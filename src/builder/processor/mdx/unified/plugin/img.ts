@@ -42,6 +42,7 @@ export function process({ resolveLink }: ImgProcProps) {
             if( resolveLink ){
                 let resultUrl = resolveLink( srcValue, altValue )
                 if( resultUrl !== undefined ){
+                    // console.log('replace url', resultUrl);
                     srcAttr.value.value = ensureQuotes(resultUrl);
                 }
             }

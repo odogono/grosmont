@@ -27,6 +27,8 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
     const dstIndex = site.getIndex('/index/dstUrl', true);
     const eids = await selectDstEntityIds(es);
 
+    // log('building', eids);
+
     for (const eid of eids) {
         // let url = await site.getEntityDstUrl(eid, false);
         let url = await getDstUrl(es, eid);

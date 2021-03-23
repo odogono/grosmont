@@ -97,19 +97,22 @@ async function initialiseSite(path: string) {
         ['/processor/mark#scss'],
 
         ['/processor/build_src_index'],
+        
+        ['/processor/mdx/parse'],
+        ['/processor/apply_tags', 0, { type: 'tag' }],
+        ['/processor/apply_tags', 0, { type: 'layout' }],
+        ['/processor/mdx/resolve_meta'],
+        ['/processor/build_dst_index'],
+
 
         ['/processor/scss', 0, { renderScss: true }],
         ['/processor/jsx/eval'],
         ['/processor/mdx/eval'],
-        ['/processor/apply_tags', 0, { type: 'tag' }],
-        ['/processor/apply_tags', 0, { type: 'layout' }],
 
         ['/processor/js/eval'],
         
         ['/processor/client_code'],
         
-        ['/processor/mdx/resolve_meta'],
-
         ['/processor/build_dst_index'],
 
         ['/processor/js/render', 0, { beautify: true} ],

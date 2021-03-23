@@ -221,13 +221,10 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
  * @param data 
  */
 function replaceEntityUrls(site: Site, data: string) {
-    const idx = site.getIndex('/index/dstUrl');
-
     const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "gi");
     return data.replace(re, (val, eid, path) => {
-        let url = idx.getByEid(toInteger(eid));
-
-        // log('[replaceEntityUrls]', data, url );
+        let url = site.getEntityDstUrl( toInteger(eid) );
+        // log('[replaceEntityUrls]', eid, data, url );
 
         return url === undefined ? '' : url;
     });

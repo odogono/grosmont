@@ -20,7 +20,7 @@ import { configPlugin } from './unified/plugin/config';
 import { removeCommentPlugin } from './unified/plugin/remove_comment';
 import { titlePlugin } from './unified/plugin/title';
 import { clientProc } from './unified/plugin/client';
-import { DependencyType, MDXPluginOptions, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
+import { DependencyType, MDXParseFrontmatterOptions, MDXPluginOptions, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
 import { evalCode, EvalOptions } from '../../eval';
 
 import { mdx as mdxReact, MDXProvider } from '@mdx-js/react'
@@ -107,6 +107,35 @@ export async function transformMdx(content: string, options: MDXPluginOptions): 
         .process(content);
 
     // log('[processMdx]', ast);
+
+    return {
+        jsx: '/* @jsx mdx */\n' + output.toString(),
+        ast
+    };
+}
+
+/**
+ * Parses the frontmatter section of an MDX string
+ * 
+ * @param content 
+ * @param options 
+ * @returns 
+ */
+export async function parseFrontmatter( content: string, options:MDXParseFrontmatterOptions ): Promise<TransformMDXResult> {
+    let { onConfig } = options;
+    let ast;
+
+    // remark-mdx has a really bad time with html comments even
+    // if they are removed with the removeCommentPlugin, so a brute
+    // force replace is neccesary here until i can figure it out
+    content = content.replace(/<!--(.*?)-->/, '');
+
+    let output = await unified()
+        .use(parse)
+        .use(stringify)
+        .use(frontmatter)
+        .use(configPlugin, { onConfig })
+        .process(content);
 
     return {
         jsx: '/* @jsx mdx */\n' + output.toString(),

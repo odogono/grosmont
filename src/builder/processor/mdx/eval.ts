@@ -33,11 +33,6 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     const { reporter } = options;
     setLocation(reporter, Label);
 
-    // options.fileIndex = site.getIndex('/index/srcUrl');
-    // options.srcIndex = site.getIndex('/index/srcUrl');
-    // options.linkIndex = site.getIndex('/index/links', true);
-    // options.imgIndex = site.getIndex('/index/imgs', true);
-
     // select mdx entities
     // let ents = await selectMdx(es, options);
     let ents = await selectEntitiesByMime(es, ['text/mdx'], options);
@@ -74,7 +69,6 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
     const { es } = site;
     const siteRef = site.getRef();
-    const { srcIndex } = options;
     const { url: base } = e.Src;
     const { reporter } = options;
 
@@ -128,11 +122,11 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         }
 
         let entry = resolveImport(site, url, base);
-        // log('[resolveLink]', url, e.id, entry);
         if (entry !== undefined) {
             const [eid, lurl, mime, srcUrl, dstUrl] = entry;
             if( eid !== e.id ){
                 links.push(['int', entry[0], lurl, text]);
+                // log('[resolveLink]', url, e.id, entry);
                 return lurl;
             }
             return undefined;

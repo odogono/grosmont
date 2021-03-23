@@ -2,8 +2,7 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 
 import Day from 'dayjs';
-import { addDirDep, beforeEach } from '../helpers';
-import { createFileEntity } from './helpers';
+import { addDirDep, createFileEntity, beforeEach } from '../../helpers';
 
 import {
     process as scanSrc,

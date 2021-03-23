@@ -22,7 +22,7 @@ test('renders image', async ({site,es, options}) => {
 
     await process(site, options);
     
-    await printAll(es);
+    // await printAll(es);
     
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
 

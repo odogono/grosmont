@@ -112,6 +112,7 @@ export interface ProcessOptions {
     reporter?: Reporter;
     eids?: EntityId[];
     props?: any;
+    beautify?: boolean;
 }
 
 export type EntityUpdate = [EntityId, ChangeSetOp];
@@ -166,6 +167,10 @@ export interface TranspileOptions {
     require: (path:string, fullPath:string) => any;
     context?: any;
     scope?: EvalScope; // vars which will present in the evaluated code
+}
+
+export interface MDXParseFrontmatterOptions {
+    onConfig: (config:any) => void;
 }
 
 export interface MDXPluginOptions extends TranspileOptions {}

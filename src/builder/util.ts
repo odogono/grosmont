@@ -320,14 +320,16 @@ export function mapToTargetMime(mime: string) {
 export function resolveImport(site: Site, url: string, base: string): EntitySrcDstDescr {
     
     const entry = resolveSiteUrl(site, url, base);
-
+    
+    
     if (entry === undefined) {
+        // log('[resolveImport]', 'not found', url );
+        // log('[resolveImport]', site.getIndex('/index/dstUrl') );
         return undefined;
     }
 
     const [src, dst, eid, mime, bf] = entry;
 
-    // log('[resolveImport]', eid, path, url);
 
 
     // log('[resolveImport]', {eid, path, url, mime});

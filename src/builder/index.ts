@@ -20,6 +20,7 @@ import { process as evalJs } from './processor/js/eval';
 import { process as evalClientCode } from './processor/client_code';
 import { process as renderJs } from './processor/js/render';
 import { process as evalMdx } from './processor/mdx/eval';
+import { process as parseMdx } from './processor/mdx/parse';
 import { process as resolveMeta } from './processor/mdx/resolve_meta';
 import { process as mark } from './processor/mark';
 import { process as applyTags } from './processor/apply_tags';
@@ -53,9 +54,8 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
     let reporter = site.reporter;
     const siteRef = site.getRef();
     const updateOptions = { reporter, onlyUpdated: true, ...options, siteRef };
+    const beautify = options.beautify ?? false;
 
-    // let siteE = site.getEntity();
-    // let config = Jsonpointer.get(siteE, '/Meta/meta/processors');
     let config = site.getConfig('/processors');
 
 
@@ -74,19 +74,28 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
         [mark, 0, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' }],
         [mark, 0, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' }],
         [mark, 0, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' }],
+        
         [buildSrcIndex, 0],
-        // [printSrcIndex, 0],
+        
         [renderScss, 0, { renderScss: true }],
-        [evalJsx, 0],
-        [evalMdx, 0],
+
+        [parseMdx],
         [applyTags, 0, { type: 'tag' }],
         [applyTags, 0, { type: 'layout' }],
+        [resolveMeta, 0],
+
+        [buildDstIndex, 0, { url: '/processor/build_dst_index' }],
+
+        [evalJsx, 0],
+        [evalMdx, 0],
         [evalJs, 0],
         [evalClientCode, 0],
-        [resolveMeta, 0],
+        
         [buildDstIndex, 0, { url: '/processor/build_dst_index' }],
-        [renderJs, 0, {beautify:true}],
+        
+        [renderJs, 0, {beautify}],
         [buildDstIndex, -99],
+        
         [write, -100],
         [copyStatic, -101],
     ];
