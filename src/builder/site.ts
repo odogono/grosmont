@@ -387,7 +387,7 @@ export class Site {
      * @param url 
      */
     getEntityIdByDst(url: string): EntityId {
-        const idx = this.getIndex('/index/dstUrl');
+        const idx = this.getDstIndex();
         if (idx === undefined) {
             return undefined;
         }
@@ -404,7 +404,7 @@ export class Site {
      * @returns 
      */
     getEntityDstUrlIndexed( eid:EntityId ): string {
-        const idx = this.getIndex('/index/dstUrl');
+        const idx = this.getDstIndex();
         if( idx === undefined ){
             return undefined;
         }
@@ -491,6 +491,15 @@ export class Site {
             this.indexes.set(name, index);
         }
         return index;
+    }
+
+    getSrcIndex(create:boolean = false): SiteIndex {
+        return this.getIndex('/index/srcUrl', create);
+    }
+
+
+    getDstIndex(create:boolean = false): SiteIndex {
+        return this.getIndex('/index/dstUrl', create);
     }
 
     /**

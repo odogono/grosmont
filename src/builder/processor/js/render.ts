@@ -199,7 +199,8 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     output = await transformComponent(component, props);
 
     // replace any e:// urls with dst url links
-    output = replaceEntityUrls(site, output);
+    // we pass the context.e because this might be a layout render
+    output = replaceEntityUrls(site, context.e, output);
 
     // if( base === 'file:///test/components.jsx' ){
     //     Process.exit(1);
@@ -214,20 +215,34 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 }
 
 
+const hrefRe = /href="e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)"/gi;
+
 /**
  * Looks through the data looking for entity urls and replaces
  * them with associated dst url
  * @param site 
  * @param data 
  */
-function replaceEntityUrls(site: Site, data: string) {
-    const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "gi");
-    return data.replace(re, (val, eid, path) => {
-        let url = site.getEntityDstUrl( toInteger(eid) );
-        // log('[replaceEntityUrls]', eid, data, url );
+function replaceEntityUrls(site: Site, e:Entity, data: string) {
 
-        return url === undefined ? '' : url;
-    });
+    // this could arguably be a processor by itself
+
+    data = data.replace( hrefRe, (val,eid,path) => {
+        eid = toInteger(eid);
+        let url = site.getEntityDstUrl( eid );
+        log('[replaceEntityUrls]', e.id, {url, eid} );
+        return url === undefined || eid === e.id ? '' : `href="${url}"`;
+    })
+
+    return data;
+    // const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "gi");
+    // return data.replace(re, (val, eid, path) => {
+    //     let url = site.getEntityDstUrl( toInteger(eid) );
+
+    //     // log('[replaceEntityUrls]', e.id, {path, eid, data, url} );
+
+    //     return url === undefined ? '' : url;
+    // });
 }
 
 

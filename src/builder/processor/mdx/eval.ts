@@ -126,7 +126,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
             const [eid, lurl, mime, srcUrl, dstUrl] = entry;
             if( eid !== e.id ){
                 links.push(['int', entry[0], lurl, text]);
-                // log('[resolveLink]', url, e.id, entry);
+                // log('[resolveLink]', url, e.id, eid, entry);
                 return lurl;
             }
             return undefined;

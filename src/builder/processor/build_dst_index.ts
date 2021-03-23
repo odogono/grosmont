@@ -24,7 +24,7 @@ export interface DstIndexOptions extends ProcessOptions {
 export async function process(site: Site, options: DstIndexOptions = {}) {
     const es = site.es;
 
-    const dstIndex = site.getIndex('/index/dstUrl', true);
+    const dstIndex = site.getDstIndex(true);
     const eids = await selectDstEntityIds(es);
 
     // log('building', eids);
