@@ -215,7 +215,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 }
 
 
-const hrefRe = /href="e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)"/gi;
+const hrefRe = /(href|src)="e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)"/gi;
 
 /**
  * Looks through the data looking for entity urls and replaces
@@ -227,11 +227,12 @@ function replaceEntityUrls(site: Site, e:Entity, data: string) {
 
     // this could arguably be a processor by itself
 
-    data = data.replace( hrefRe, (val,eid,path) => {
+    data = data.replace( hrefRe, (val,attr,eid,path) => {
+        // log('[replaceEntityUrls]', val, eid, path );
         eid = toInteger(eid);
         let url = site.getEntityDstUrl( eid );
         // log('[replaceEntityUrls]', e.id, {url, eid} );
-        return url === undefined || eid === e.id ? '' : `href="${url}"`;
+        return url === undefined || eid === e.id ? '' : `${attr}="${url}"`;
     })
 
     return data;

@@ -59,18 +59,6 @@ test('process directly from file', async () => {
 
 test('menu', async ({es, site, options}) => {
 
-//     await addSrc(site, 'file:///pages/projects.mdx', `
-// ---
-// dst: /projects
-// ---
-//     # Projects
-//     `);
-//     await addSrc(site, 'file:///pages/about.mdx', `
-// ---
-// dst: /about
-// ---
-//     # About
-//     `);
     await addSrc(site, 'file:///pages/home.mdx', `
 ---
 dst: /index.html
@@ -93,14 +81,17 @@ import Menu from '../components/menu';
     // await printAll( es );
 
     let e = await site.getEntityByDst('/index.html');
+    // log( e.Output.data );
 
-    assert.equal( e.Output.data, `<h1>Home</h1><a href="/index.html">
-    <p>Home</p>
-</a><a href="/projects">
-    <p>Projects</p>
-</a><a href="/about">
-    <p>About</p>
-</a>`)
+    assert.equal( e.Output.data, 
+        `<h1>Home</h1><a>Home</a><a href="/projects">Projects</a><a href="/about">About</a>`);
+//     assert.equal( e.Output.data, `<h1>Home</h1><a>
+//     <p>Home</p>
+// </a><a href="/projects">
+//     <p>Projects</p>
+// </a><a href="/about">
+//     <p>About</p>
+// </a>`)
 
 });
 

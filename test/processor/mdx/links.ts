@@ -89,12 +89,17 @@ dst: /index
 
     let e = await site.getEntityBySrc('file:///index.mdx');
     // log( e.Output.data );
-    assert.equal(e.Output.data,
-`<h1>Main</h1><a href="/about.html">
-    <p>About</p>
-</a>
+
+    assert.equal(e.Output.data, 
+`<h1>Main</h1><a href="/about.html">About</a>
 <p>Something <a>else</a> here</p>
 <p><a>Otherwise</a></p>`);
+//     assert.equal(e.Output.data,
+// `<h1>Main</h1><a href="/about.html">
+//     <p>About</p>
+// </a>
+// <p>Something <a>else</a> here</p>
+// <p><a>Otherwise</a></p>`);
 
 })
 

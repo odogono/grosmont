@@ -99,7 +99,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // be marked as updated
     // if( options.debug ){
     // printAll(site.es as EntitySetMem);
-    await applyUpdatesToDependencies(site, options);
+    await applyUpdatesToDependencies(site, {...options, exclude:['link']});
     // }
 }
 

@@ -1,3 +1,4 @@
+import {Node} from 'unist'
 import unistVisit from 'unist-util-visit';
 import {select} from 'unist-util-select';
 import { removeQuotes } from '../../../../util';
@@ -18,6 +19,11 @@ export function linkProc({ resolveLink }: LinkProcProps) {
         //     log('para', node);
         // });
 
+        // unistVisit(tree, {type:'paragraph'}, (node,index,parent) => {
+        //     log('para', node);
+        // });
+
+
         const test = [
             {type:'mdxBlockElement', name:'a'},
             {type:'mdxSpanElement', name:'a' }
@@ -35,11 +41,19 @@ export function linkProc({ resolveLink }: LinkProcProps) {
             let hrefNode = node.attributes[hrefNodeIdx];
             let url = hrefNode.value;
 
-            // log('href', hrefNode);
             
             const textNode = select('* > text', node);
             let text = textNode?.value;
-
+            
+            
+            // annoyingly, the a elements text is contained within a paragraph
+            // this removes that paragraph
+            if( (node.children as Node[]).length === 1 ){
+                let paraNode:Node = node.children[0];
+                if( paraNode && paraNode.type === 'paragraph' ){
+                    node.children[0] = textNode;
+                }
+            }
 
             if( resolveLink ){
                 let resultUrl = resolveLink( url, text as string );
