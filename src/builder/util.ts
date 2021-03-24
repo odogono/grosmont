@@ -363,8 +363,9 @@ export type ResolveSiteUrlResult = [string, string, EntityId, string, BitField];
  * @returns 
  */
 export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSiteUrlResult {
-    const srcIdx = site.getIndex('/index/srcUrl');
-    const dstIdx = site.getIndex('/index/dstUrl');
+    const srcIdx = site.getSrcIndex();
+    const dstIdx = site.getDstIndex();
+    
     let path = resolveUrlPath(url, base);
 
     let entry = srcIdx.get(path);

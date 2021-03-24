@@ -64,7 +64,7 @@ const start = async () => {
 
         await fastify.listen(port)
 
-        console.log((fastify as any).routes);
+        // console.log((fastify as any).routes);
 
     } catch (err) {
         fastify.log.error(err)

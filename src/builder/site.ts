@@ -174,7 +174,7 @@ export class Site {
      * @param appendRoot 
      */
     getEntityDstUrl(eid: EntityId | Entity) {
-        const idx = this.getIndex('/index/dstUrl');
+        const idx = this.getDstIndex();
         if( idx !== undefined ){
             return idx.getByEid( isEntity(eid) ? (eid as Entity).id : eid as EntityId );
         }

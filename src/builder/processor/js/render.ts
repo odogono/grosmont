@@ -230,7 +230,7 @@ function replaceEntityUrls(site: Site, e:Entity, data: string) {
     data = data.replace( hrefRe, (val,eid,path) => {
         eid = toInteger(eid);
         let url = site.getEntityDstUrl( eid );
-        log('[replaceEntityUrls]', e.id, {url, eid} );
+        // log('[replaceEntityUrls]', e.id, {url, eid} );
         return url === undefined || eid === e.id ? '' : `href="${url}"`;
     })
 

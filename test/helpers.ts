@@ -77,7 +77,7 @@ export async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
 
 
 export function createFileEntity(site: Site, url: string,
-    ctime?: Date | string, mtime?: Date | string) {
+    ctime?: Date | string, mtime?: Date | string): Entity {
     
         const { es } = site;
     let e = es.createEntity();

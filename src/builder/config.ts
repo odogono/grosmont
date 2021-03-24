@@ -14,7 +14,7 @@ import {
  } from "../es";
 
 
-import { slugify, stringify } from '@odgn/utils';
+import { slugify, stringify, toInteger } from '@odgn/utils';
 import { Site } from './site';
 import { findEntityBySrcUrl, FindEntityOptions, insertDependency, selectTagBySlug } from './query';
 import { applyMeta, createTag, uriToPath, resolveUrlPath } from './util';
@@ -127,6 +127,9 @@ export async function parseEntity(from: QueryableEntitySet|Site, input: string|o
             }
             else if( key === 'layout' ){
                 await applyLayout( es, e, value, selectOptions );
+            }
+            else if( key === 'upd' ){
+                e.Upd = { op: toInteger(value) };
             }
             else {
                 meta[key] = value;

@@ -449,6 +449,7 @@ export async function selectErrors(es: QueryableEntitySet, options: FindEntityOp
 }
 
 
+
 /**
  * Returns /component/src components with the given file extensions
  * 
@@ -1222,7 +1223,9 @@ export async function getLayoutFromDependency(es: QueryableEntitySet, eid: Entit
     return await stmt.getEntity({ eid });
 }
 
-
+export interface ApplyDepUpdateOptions extends ProcessOptions {
+    exclude?: DependencyType[];
+}
 
 /**
  * - select entity ids that are marked as updated
@@ -1232,23 +1235,32 @@ export async function getLayoutFromDependency(es: QueryableEntitySet, eid: Entit
  * 
  * @param site 
  */
-export async function applyUpdatesToDependencies(site: Site, options: ProcessOptions = {}) {
-    const es = options.es ?? site.es;
+export async function applyUpdatesToDependencies(site: Site, options: ApplyDepUpdateOptions = {}) {
+    let exclude = options.exclude;
+
+    const regexExt = exclude !== undefined ? exclude.join('|') : undefined;
+    
     const stmt = site.es.prepare(`
 
+        // returns [eid,op] of all entities which have an update
         [
             $es [ /component/upd !bf @c ] select
             [ /@e /op ] pluck!
         ] selectUpdates define
 
+
         // selects /dep which match the eid and returns the src
         // es eid -- es [ eid ]
         [
-            swap [ 
+            // ["eid is" *^%0] to_str! .
+            swap [
                 /component/dep#dst !ca *^$1 ==
-                /component/dep#src @ca 
+                /component/dep#type !ca ~r/^(?!${regexExt}).+/i ==
+                and
+                /component/dep#src @ca
             ] select
-        ] selectDepSrc define
+            // ["result is" *^%0] to_str! .
+        ] selectDepSrcExclude define
 
         // adds the op to each of the eids
         // eids op -- [ eid, op ]
@@ -1265,9 +1277,10 @@ export async function applyUpdatesToDependencies(site: Site, options: ProcessOpt
             [] /component/upd + swap + $es swap !c + drop
         ] addUpdCom define
 
-
         // set the es as a word - makes easier to reference
         es let
+        // 0 count let
+        [] visited let
 
         selectUpdates
         
@@ -1276,19 +1289,36 @@ export async function applyUpdatesToDependencies(site: Site, options: ProcessOpt
         [
             pop?
             spread swap // op eid
+            
+            // have we seen this eid already?
+            $visited *%1 index_of! -1 !=
+            [ @! ] *$1 if
+
+            // add the eid to visited
+            dup $visited swap + visited !
+            
+
             *$3 swap // pull the es to the top
             
-            selectDepSrc
+            
+            // selectDepSrc
+            selectDepSrcExclude
+            // ["result is" *^%0] to_str! .
             rot applyOp
             
             // add upd coms to each e
             dup
             **addUpdCom map drop
             
+            
             // add the result to the list
             rot swap +
             // continue to loop while there are still eids
             size 0 !=
+            
+            // $count 1 + count !
+
+            // $count 3 !=
         ] loop
     `);
 
