@@ -368,6 +368,9 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
     
     let path = resolveUrlPath(url, base);
 
+    // log('[resolveSiteUrl]', {url,base}, path);
+
+    // attempt getting by given value
     let entry = srcIdx.get(path);
     if (entry !== undefined) {
         const [eid, mime, bf] = entry;
@@ -384,11 +387,12 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
         }
     }
 
-
+    // attempt partial path
     let reUrl = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    let re = new RegExp(`^${reUrl}\..+`, 'i');
+    let re = new RegExp(`^${reUrl}(?:\..+)?`, 'i');
 
     for (const key of srcIdx.index.keys()) {
+        // log('[resolveSiteUrl]', 'test', key, reUrl);
         if (re.test(key)) {
             const [eid, mime, bf] = srcIdx.get(key);
             const dst = dstIdx !== undefined ? dstIdx.getByEid(eid) : undefined;
@@ -398,7 +402,7 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
 
     if( dstIdx !== undefined ){
         reUrl = reUrl.replace('file://', '');
-        re = new RegExp(`^${reUrl}\..+`, 'i');
+        re = new RegExp(`^${reUrl}(?:\..+)?`, 'i');
         for (const key of dstIdx.index.keys()) {
             // log('look at', key, '?', reUrl, dstIdx.get(key));
             if (re.test(key)) {

@@ -411,29 +411,27 @@ export async function selectMdxSrc(es: QueryableEntitySet, options: FindEntityOp
 
 
 
-export async function selectScss(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
-    const { ref, onlyUpdated } = parseOptions(options);
+// export async function selectScss(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
+//     const { ref, onlyUpdated } = parseOptions(options);
 
-    let q = onlyUpdated ? `
-        [
-            /component/src#mime !ca "text/scss" ==
-                    /component/upd#op !ca 1 ==
-                    /component/upd#op !ca 2 ==
-                or
-                /component/site_ref#ref !ca $ref ==
-            and
-        and
-        @e 
-        ] select` :
-        `[
-                /component/src#mime !ca "text/scss" ==
-                /component/site_ref#ref !ca $ref ==
-            and
-            @e
-        ] select`;
+//     let q = onlyUpdated ? `
+//         [
+//                 /component/upd#op !ca 1 ==
+//                 /component/upd#op !ca 2 ==
+//             or
+//             /component/site_ref#ref !ca $ref ==
+//         and
+//         [/component/scss /component/src] !bf
+//         @c 
+//         ] select` :
+//         `[
+//             /component/site_ref#ref !ca $ref ==
+//             [/component/scss /component/src] !bf
+//             @c
+//         ] select`;
 
-    return await es.prepare(q).getEntities({ ref });
-}
+//     return await es.prepare(q).getEntities({ ref });
+// }
 
 
 export async function selectErrors(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
