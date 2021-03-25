@@ -53,12 +53,12 @@ test('resolve a url', async ({ site, es, options }) => {
 
     assert.equal(
         resolveSiteUrl(site, '/about.html', 'file:///main.mdx'),
-        ['file:///about.mdx', '/about.html', 1003, 'text/mdx', createBF(589958)]
+        ['file:///about.mdx', '/about.html', 1003, 'text/mdx', createBF(147526)]
     );
 
     assert.equal(
         resolveSiteUrl(site, '/index', 'file:///main.mdx'),
-        ['file:///main.mdx', '/index.html', 1002, 'text/mdx', createBF(589958)]
+        ['file:///main.mdx', '/index.html', 1002, 'text/mdx', createBF(147526)]
     );
 });
 

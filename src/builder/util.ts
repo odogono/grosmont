@@ -120,10 +120,10 @@ export async function getTimestamps(e: Entity) {
     if (e === undefined || e.Ftimes === undefined) {
         return undefined;
     }
-    let { ctime, mtime } = e.Ftimes;
+    let { btime, mtime } = e.Ftimes;
 
     return {
-        ctime: new Date(ctime),
+        btime: new Date(btime),
         mtime: new Date(mtime)
     }
 }
@@ -199,7 +199,7 @@ export function pathToUri(path: string) {
 
 export function createTimes() {
     let time = new Date().toISOString();
-    return { ctime: time, mtime: time };
+    return { btime: time, mtime: time };
 }
 
 

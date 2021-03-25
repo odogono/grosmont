@@ -248,7 +248,7 @@ export async function selectMetaSrc(es: QueryableEntitySet, options: FindEntityO
 
 export async function selectMetaDisabled(es: QueryableEntitySet): Promise<EntityId[]> {
     const stmt = es.prepare(`[
-        /component/enabled#is !ca false ==
+        /component/status#is !ca active !=
         // /component/meta#/meta/isEnabled !ca false ==
         @eid
     ] select`);
@@ -892,9 +892,9 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
         }
         let e = es.createEntity();
         e.Src = { url };
-        let ctime = new Date().toISOString();
-        let mtime = ctime;
-        e.Ftimes = { ctime, mtime };
+        let btime = new Date().toISOString();
+        let mtime = btime;
+        e.Ftimes = { btime, mtime };
         e.SiteRef = { ref };
         return e;
     }

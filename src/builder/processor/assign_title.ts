@@ -70,19 +70,7 @@ export async function process(site: Site, options:AssignDstOptions = {}) {
         // log( url, {title, dst, outputMime} );
         if( outputMime ){
             ext = extensionFromMime( outputMime );
-        } 
-        // else {
-        //     // attempt to lookup from /component/mime
-        //     const did = es.resolveComponentDefId('/component/mime');
-        //     const com = await es.getComponent( toComponentId(e.id, did) );
-        //     if( com !== undefined ){
-        //         ext = extensionFromMime( com['type'] );
-        //     }
-        //     // log(url, 'has ext', ext);
-        //     // const ee = await es.getEntity(e.id);
-        //     // printEntity(es, ee);
-            
-        // }
+        }
 
         if( ext !== undefined && ext !== '' ){
             url = `${url}.${ext}`;

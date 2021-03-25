@@ -336,12 +336,13 @@ async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
 
     for (const file of matches) {
         // for await (const file of Klaw(rootPath)) {
-        // log( 'file', file );
-
-        let relativePath = Path.relative(rootPath, file.path);
-        let url = `file:///${relativePath}`;
-        const { ctime, mtime } = file.stats;
-
+            
+            let relativePath = Path.relative(rootPath, file.path);
+            let url = `file:///${relativePath}`;
+            const { birthtime:btime, mtime } = file.stats;
+            
+            // if( url === 'file:///index.mdx' )
+            // log( 'file', url, file.stats );
 
         let e: Entity;
 
@@ -352,7 +353,7 @@ async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
 
         e = await selectSrcByUrl(es, url, { createIfNotFound: true }) as Entity;
 
-        e.Ftimes = { ctime, mtime };
+        e.Ftimes = { btime, mtime };
         e.SiteRef = { ref: siteEntity.id };
 
         files.push(e);
@@ -470,9 +471,9 @@ export async function selectSrcByUrl(es: QueryableEntitySet, url: string, option
         }
         let e = es.createEntity();
         e.Src = { url };
-        let ctime = new Date().toISOString();
-        let mtime = ctime;
-        e.Ftimes = { ctime, mtime };
+        let btime = new Date().toISOString();
+        let mtime = btime;
+        e.Ftimes = { btime, mtime };
         return e;
     }
 

@@ -77,22 +77,22 @@ export async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
 
 
 export function createFileEntity(site: Site, url: string,
-    ctime?: Date | string, mtime?: Date | string): Entity {
+    btime?: Date | string, mtime?: Date | string): Entity {
     
         const { es } = site;
     let e = es.createEntity();
     e.Src = { url };
     e.SiteRef = { ref: site.getRef() };
-    ctime = ctime ?? new Date();
-    mtime = mtime ?? ctime;
+    btime = btime ?? new Date();
+    mtime = mtime ?? btime;
 
-    if (isDate(ctime)) {
-        ctime = (ctime as Date).toISOString();
+    if (isDate(btime)) {
+        btime = (btime as Date).toISOString();
     }
     if (isDate(mtime)) {
         mtime = (mtime as Date).toISOString();
     }
 
-    e.Ftimes = { ctime, mtime };
+    e.Ftimes = { btime, mtime };
     return e;
 }
