@@ -752,11 +752,11 @@ export async function buildSrcUrlIndex(es: QueryableEntitySet, options: FindEnti
 
     const query = `
     [ 
-        [/component/src /component/times /component/site_ref] !bf 
+        [/component/src /component/ftimes /component/site_ref] !bf 
         @e 
     ] select
 
-    [ /component/src#/url /id /component/times#/mtime /bitField ] pluck!
+    [ /component/src#/url /id /component/ftimes#/mtime /bitField ] pluck!
     `
     const stmt = es.prepare(query);
     let result = await stmt.getResult({ ref });
@@ -894,7 +894,7 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
         e.Src = { url };
         let ctime = new Date().toISOString();
         let mtime = ctime;
-        e.Times = { ctime, mtime };
+        e.Ftimes = { ctime, mtime };
         e.SiteRef = { ref };
         return e;
     }

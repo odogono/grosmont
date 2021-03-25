@@ -26,7 +26,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     // build a excludeList of defs that will be ignored in the loaded entity
     const excludeList: ComponentDefId[] = bfToValues(es.resolveComponentDefIds(
-        ['/component/src', '/component/site_ref', '/component/times']));
+        ['/component/src', '/component/site_ref', '/component/ftimes']));
 
     let addComs = [];
 

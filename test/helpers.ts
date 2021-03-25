@@ -93,6 +93,6 @@ export function createFileEntity(site: Site, url: string,
         mtime = (mtime as Date).toISOString();
     }
 
-    e.Times = { ctime, mtime };
+    e.Ftimes = { ctime, mtime };
     return e;
 }

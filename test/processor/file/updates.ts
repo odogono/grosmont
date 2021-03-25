@@ -45,8 +45,8 @@ test('dependencies are also marked as updated', async ({ es, site }) => {
     
 
     mem = await es.clone({ cloneEntities: false });
-    const { ctime, mtime } = ents[0].Times;
-    ents[0].Times = { ctime, mtime: Day(mtime).add(2, 'hour').toISOString() };
+    const { ctime, mtime } = ents[0].Ftimes;
+    ents[0].Ftimes = { ctime, mtime: Day(mtime).add(2, 'hour').toISOString() };
     
     // await printAll(es);
     

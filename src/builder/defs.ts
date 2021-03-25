@@ -50,7 +50,7 @@ export const defs = [
     },
     // timestamps
     {
-        uri: '/component/times',
+        uri: '/component/ftimes',
         properties: [
             { name: 'ctime', type: 'datetime' },
             { name: 'mtime', type: 'datetime' },

@@ -117,10 +117,10 @@ export function removeQuotes(str: string): string {
 
 
 export async function getTimestamps(e: Entity) {
-    if (e === undefined || e.Times === undefined) {
+    if (e === undefined || e.Ftimes === undefined) {
         return undefined;
     }
-    let { ctime, mtime } = e.Times;
+    let { ctime, mtime } = e.Ftimes;
 
     return {
         ctime: new Date(ctime),
@@ -213,7 +213,7 @@ export async function createTag(es: QueryableEntitySet, name: string, options: F
     if (options.siteRef !== undefined) {
         e.SiteRef = { ref: options.siteRef };
     }
-    e.Times = createTimes();
+    e.Ftimes = createTimes();
 
     await es.add(e);
     let eid = es.getUpdatedEntities()[0];

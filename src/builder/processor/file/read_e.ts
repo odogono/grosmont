@@ -23,7 +23,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     setLocation(reporter, '/processor/read_e');
 
     // build a excludeList of defs that will be ignored in the loaded entity
-    const excludeList = es.resolveComponentDefIds([ '/component/src', '/component/site_ref', '/component/upd', '/component/times'] );
+    const excludeList = es.resolveComponentDefIds([ '/component/src', '/component/site_ref', '/component/upd', '/component/ftimes'] );
 
     // await printAll(es);
 
