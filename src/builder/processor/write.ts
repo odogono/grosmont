@@ -5,8 +5,8 @@ import { getDstUrl, selectOutputWithDst } from '../query';
 import { debug, error, info, setLocation } from "../reporter";
 
 
-const log = (...args) => console.log('[ProcWrite]', ...args);
-
+const Label = '/processor/write';
+const log = (...args) => console.log(`[${Label}]`, ...args);
 
 /**
  * Entities which have a fully qualified /component/dst and 
@@ -17,7 +17,7 @@ const log = (...args) => console.log('[ProcWrite]', ...args);
 export async function process(site: Site, options: ProcessOptions = {}) {
     const es = site.es;
     const { reporter } = options;
-    setLocation(reporter, '/processor/write');
+    setLocation(reporter, Label);
 
     const coms = await selectOutputWithDst(es, options);
     

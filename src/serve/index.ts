@@ -142,9 +142,8 @@ async function startWatcher(site: Site, process:SiteProcessor, emitter:Emitter) 
         // await process(site, { updates: changeQueue });
         // await scanSrc(site, {updates: changeQueue});
 
-
+        setLocation(reporter, '/serve/change');
         const eids = await site.getUpdatedEntityIds();
-        // log('updated:', eids);
         let updates = [];
         for (const eid of eids) {
             let url = await site.getEntityDstUrl(eid);

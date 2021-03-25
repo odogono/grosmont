@@ -18,7 +18,8 @@ export interface ApplyDepsToChildrenOptions extends ProcessOptions {
 }
 
 /**
- * Applies tags to an entity that belong to their parents (dir dependencies)
+ * 
+ * Cascades tags from parents to children using dir dependencies
  * 
  * @param site 
  * @param options 
