@@ -22,7 +22,7 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
 
 export interface MarkOptions extends ProcessOptions {
     exts: string[];
-    comUrl: string;
+    comUrl?: string;
     mime?: string;
     loadData?: boolean;
 }
@@ -53,8 +53,8 @@ export async function process(site: Site, options: MarkOptions) {
     const coms = await selectSrcByExt(site.es, exts, { ...options, siteRef: site.getRef() });
 
     // log( {exts, onlyUpdated}, 'coms', coms);
-    const def = es.getByUri(comUrl);
-    const did = getDefId(def);
+    const def = comUrl !== undefined ? es.getByUri(comUrl) : undefined;
+    const did = def !== undefined ? getDefId(def) : 0;
     const srcDid = es.resolveComponentDefId('/component/src');
 
     let addComs = [];
@@ -63,18 +63,20 @@ export async function process(site: Site, options: MarkOptions) {
         let eid = getComponentEntityId(com);
         const { url } = com;
 
-        let typeCom = await es.getComponent(toComponentId(eid, did));
+        if (did !== 0) {
+            let typeCom = await es.getComponent(toComponentId(eid, did));
 
-        if (typeCom === undefined) {
-            typeCom = es.createComponent(did);
-            typeCom = setEntityId(typeCom, eid);
-            if (!loadData) {
-                addComs.push(typeCom);
+            if (typeCom === undefined) {
+                typeCom = es.createComponent(did);
+                typeCom = setEntityId(typeCom, eid);
+                if (!loadData) {
+                    addComs.push(typeCom);
+                }
+
+                const srcCom = await es.getComponent(toComponentId(eid, srcDid));
+                let src = srcCom !== undefined ? srcCom.url : '';
+                info(reporter, `mark ${comUrl}\t${src}`, { eid });
             }
-
-            const srcCom = await es.getComponent(toComponentId(eid, srcDid));
-            let src = srcCom !== undefined ? srcCom.url : '';
-            info(reporter, `mark ${comUrl}\t${src}`, { eid });
         }
 
         if (mime === undefined) {
@@ -104,16 +106,16 @@ export async function process(site: Site, options: MarkOptions) {
 
 
 
-export async function mdx(site: Site, options: MarkOptions) {
+export async function mdx(site: Site, options?: MarkOptions) {
     return process(site, { ...options, exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' });
 }
-export async function statics(site: Site, options: MarkOptions) {
+export async function statics(site: Site, options?: MarkOptions) {
     return process(site, { ...options, exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' });
 }
-export async function jsx(site: Site, options: MarkOptions) {
+export async function jsx(site: Site, options?: MarkOptions) {
     return process(site, { ...options, exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' });
 }
-export async function scss(site: Site, options: MarkOptions) {
+export async function scss(site: Site, options?: MarkOptions) {
     return process(site, { ...options, exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' });
 }
 
