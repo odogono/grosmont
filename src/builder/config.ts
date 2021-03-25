@@ -107,8 +107,7 @@ export async function parseEntity(from: QueryableEntitySet|Site, input: string|o
                 // e.Src = {url: value };
             }
             else if( key === 'dst'){
-                // applyUrlToCom( e, 'Dst', value );
-                e.Dst = {url: uriToPath(value) };
+                applyToCom( e, 'Dst', {url: uriToPath(value)}, false );
             }
             else if( key === 'data'){    
                 e.Data = {data: value };
@@ -120,6 +119,7 @@ export async function parseEntity(from: QueryableEntitySet|Site, input: string|o
                 e.Output = {data: value };
             }
             else if( key === 'mime'){
+                applyToCom( e, 'Dst', {mime:value}, false );
                 // e.Mime = {type: value };
             }
             else if( key === 'tags' ){
@@ -214,7 +214,6 @@ export async function parseEntity(from: QueryableEntitySet|Site, input: string|o
 }
 
 function applyUrlToCom( e:Entity, name:string, url:string, overwrite:boolean = false ){
-    let com = e[name] ?? {};
     if( /^.*:\/\//.exec(url) === null ){
         // url = pathToFileURL( url ).href;
         if( !url.startsWith(Path.sep) ){
@@ -222,9 +221,8 @@ function applyUrlToCom( e:Entity, name:string, url:string, overwrite:boolean = f
         }
         url = `file://${url}`;
     }
-    com = overwrite ? {url} : {...com,url};
-    e[name] = com;
-    return e;
+
+    return applyToCom( e, name, {url}, overwrite );
 }
 
 function applyToCom( e:Entity, name:string, attrs:any, overwrite:boolean = true ){

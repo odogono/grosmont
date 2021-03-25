@@ -1,7 +1,8 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addSrc, beforeEach } from '../helpers';
+import { printAll, addSrc, beforeEach, process } from '../helpers';
 import { buildProcessors, RawProcessorEntry } from '../../src/builder';
+
 
 const test = suite('/processor/jsx');
 const log = (...args) => console.log(`[${test.name}]`, ...args);
@@ -69,10 +70,10 @@ test.before.each(beforeEach);
 
 // });
 
-test('resolve imports', async ({es, site, options}) => {
+test('resolve imports', async ({ es, site, options }) => {
     // const site = await Site.create({ idgen: idgen() });
     // let options = { siteRef: site.getRef() as EntityId } as FindEntityOptions;
-    
+
     await addSrc(site, 'file:///main.jsx', `
 import Message from 'file:///message.jsx';
 export const dst =  '/main.html';
@@ -82,29 +83,29 @@ export default () => <div>Message: <Message /></div>;
 
     await addSrc(site, 'file:///message.jsx', `export default () => "Hello World";`);
 
-    const spec:RawProcessorEntry[] = [
-        [ '/processor/mark#jsx' ],
-        [ '/processor/build_src_index' ],
-        [ '/processor/jsx/eval'],
-        [ '/processor/js/eval'],
-        [ '/processor/js/render'],
-        [ '/processor/build_dst_index'],
-    ];
+    // const spec:RawProcessorEntry[] = [
+    //     [ '/processor/mark#jsx' ],
+    //     [ '/processor/build_src_index' ],
+    //     [ '/processor/jsx/eval'],
+    //     [ '/processor/js/eval'],
+    //     [ '/processor/js/render'],
+    //     [ '/processor/build_dst_index'],
+    // ];
 
-    const process = await buildProcessors( site, spec );
-    await process(site,options);
+    // const process = await buildProcessors( site, spec );
+    await process(site, options);
 
     // await printAll(site.es);
 
     let e = await site.getEntityByDst('/main.html');
 
-    assert.equal( e.Output.data, '<div>Message: Hello World</div>');
+    assert.equal(e.Output.data, '<div>Message: Hello World</div>');
 });
 
 
 
-test('typescript', async ({es, site, options}) => {
-    await addSrc( site, 'file:///main.tsx', `
+test('typescript', async ({ es, site, options }) => {
+    await addSrc(site, 'file:///main.tsx', `
     export const dst:string = '/main.html';
     
     const noun:string = 'World';
@@ -112,23 +113,44 @@ test('typescript', async ({es, site, options}) => {
     export default () => <div>Hello {noun}</div>;
     `);
 
-    const spec:RawProcessorEntry[] = [
-        [ '/processor/mark#jsx' ],
-        [ '/processor/build_src_index' ],
-        [ '/processor/jsx/eval'],
-        [ '/processor/js/eval'],
-        [ '/processor/js/render'],
-        [ '/processor/build_dst_index'],
-    ];
+    // const spec:RawProcessorEntry[] = [
+    //     [ '/processor/mark#jsx' ],
+    //     [ '/processor/build_src_index' ],
+    //     [ '/processor/jsx/eval'],
+    //     [ '/processor/js/eval'],
+    //     [ '/processor/js/render'],
+    //     [ '/processor/build_dst_index'],
+    // ];
 
-    const process = await buildProcessors( site, spec );
-    await process(site,options);
+    // const process = await buildProcessors( site, spec );
+    await process(site, options);
 
     // await printAll(site.es);
 
     let e = await site.getEntityByDst('/main.html');
 
-    assert.equal( e.Output.data, '<div>Hello World</div>');
+    assert.equal(e.Output.data, '<div>Hello World</div>');
+});
+
+
+test('output svg', async ({ es, site, options }) => {
+    await addSrc(site, 'file:///main.tsx', `
+    export const dst:string = '/main.svg';
+    export const mime = 'image/svg+xml';
+
+    export default () => (
+        <svg viewBox="0 0 128 128" width="64" height="64">
+            <rect x={0} y={0} width={128} height={128} fill='#F00' />
+            <path d="M10,10 h64 v64 h-64z" stroke="#04f" />
+        </svg>
+    );`);
+
+    await process(site, options);
+
+    // await printAll(es);
+    
+    let e = await site.getEntityByDst('/main.svg');
+    assert.equal(e.Output.mime, 'image/svg+xml');
 })
 
 

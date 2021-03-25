@@ -80,6 +80,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     const { data } = e.Js;
     let path = site.getSrcUrl(e);
     let meta = e.Meta?.meta ?? {};
+    const mime = e.Dst?.mime ?? 'text/html';
 
     const { require } = await buildImports(site, e.id, options);
 
@@ -206,10 +207,10 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     //     Process.exit(1);
     // }
 
-    const mime = 'text/html';
-
     if (options.beautify) {
-        output = BeautifyHTML(output);
+        if( mime === 'text/html' ){
+            output = BeautifyHTML(output);
+        }
     }
     return setEntityId(es.createComponent('/component/output', { data: output, mime }), e.id);
 }

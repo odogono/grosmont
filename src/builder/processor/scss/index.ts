@@ -7,7 +7,7 @@ import AtImport from './plugin-import';
 
 import { Site } from '../../site';
 import { ProcessOptions } from '../../types';
-import { selectScss, FindEntityOptions, getDstUrl, selectSrcByMime } from '../../query';
+import { selectSrcByMime } from '../../query';
 import { info, error, setLocation } from '../../reporter';
 import { createErrorComponent, joinPaths, resolveImport } from '../../util';
 import { Component, getComponentEntityId, setEntityId, toComponentId } from '../../../es';

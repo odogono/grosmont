@@ -69,7 +69,7 @@ export default function postcssImportUrl(options: PostCSSImportUrlOptions = {}) 
     }
 
     return {
-        postcssPlugin: 'postcss-import-url',
+        postcssPlugin: 'postcss-import-grosmont-url',
         Once: importUrl,
     };
 }
