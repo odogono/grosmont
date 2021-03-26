@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { Head } from '../../../components/head';
-
+import CodeBlock from './code_block';
 import { TranspileOptions, TranspileProps } from "../../types";
 import { ServerEffectProvider } from '../../processor/jsx/server_effect';
 import { mdx as mdxReact, MDXProvider } from '@mdx-js/react'
@@ -45,6 +45,7 @@ export async function transformComponent(component: any, props: TranspileProps):
         InlineCSS: comProps.InlineCSS,
         CSSLinks: comProps.CSSLinks,
         ScriptLinks: comProps.ScriptLinks,
+        code: CodeBlock,
         // Layout,
         // a: (props) => {
         //     const {href,children} = props;
