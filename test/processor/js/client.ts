@@ -2,7 +2,7 @@ import 'stateful-hooks';
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 
-import { addMdx, addSrc, beforeEach, process} from '../../helpers';
+import { addSrc, beforeEach, process} from '../../helpers';
 
 const test = suite('processor/js/client');
 const log = (...args) => console.log(`[${suite.name}]`, ...args);
@@ -23,7 +23,7 @@ test('use', async ({ es, site, options }) => {
         return <div>Hello <World /></div>
     }`);
 
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 import 'https://unpkg.com/react@17/umd/react.development.js';
 
 <ScriptLinks />

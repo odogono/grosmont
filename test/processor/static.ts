@@ -117,7 +117,7 @@ test('copy changed', async ({site, es, options}) => {
     await addFile( site, 'file:///header.png', {dst:'header.png'} );
     await addFile( site, 'file:///image.jpg', {dst:'image.jpg', upd:ChangeSetOp.Update} );
 
-    setLevel(site.reporter, Level.DEBUG);
+    // setLevel(site.reporter, Level.DEBUG);
 
     const spec:RawProcessorEntry[] = [
         [ '/processor/build_src_index' ],

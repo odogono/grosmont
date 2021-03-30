@@ -1,7 +1,7 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 
-import { addMdx, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, process } from '../../helpers';
 import { buildProcessors, OutputES, RawProcessorEntry, renderToOutput } from '../../../src/builder';
 
 const test = suite('processor/js/render');
@@ -15,7 +15,7 @@ test.before.each(beforeEach);
 
 test('rendering an entity with arguments', async ({es,site,options}) => {
 
-    await addMdx(site, 'file:///pages/main.jsx', `
+    await addSrc(site, 'file:///pages/main.jsx', `
 
     export default ({message}) => {        
         return <div>Message is {message}</div>

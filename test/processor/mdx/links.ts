@@ -2,7 +2,7 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { parseEntity } from '../../../src/builder/config';
 
-import { addMdx, addSrc, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, process } from '../../helpers';
 
 const test = suite('/processor/mdx/links');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -10,7 +10,7 @@ test.before.each(beforeEach);
 
 
 test('internal page link', async ({ es, site, options }) => {
-    // await addMdx( site, 'file:///pages/main.mdx', `# Main Page`);
+    // await addSrc( site, 'file:///pages/main.mdx', `# Main Page`);
 
     let e = await parseEntity(site, `
     /component/src:
@@ -22,7 +22,7 @@ test('internal page link', async ({ es, site, options }) => {
     `);
     await site.update(e);
 
-    await addMdx(site, 'file:///pages/about.mdx', `
+    await addSrc(site, 'file:///pages/about.mdx', `
 ---
 dst: about.html
 ---
@@ -46,7 +46,7 @@ dst: about.html
 
 
 test('external page link', async ({ es, site, options }) => {
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
     [News](https://www.bbc.co.uk/news)
     `);
 

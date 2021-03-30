@@ -1,6 +1,7 @@
+import { printAll } from 'odgn-entity/src/util/print';
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addMdx, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, process } from '../../helpers';
 
 
 const test = suite('/processor/mdx/frontmatter');
@@ -11,7 +12,7 @@ test.before.each(beforeEach);
 
 test('frontmatter', async ({ es, site, options }) => {
 
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 ---
 title: Test Page
 ---
@@ -62,7 +63,7 @@ test('meta is inherited from dir deps', async ({ es, site, options }) => {
     e.Meta = { meta: { isEnabled: false } };
     await site.update(e);
 
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 ---
 isEnabled: true
 ---
@@ -70,7 +71,7 @@ isEnabled: true
 # Main page
     `);
 
-    await addMdx(site, 'file:///pages/disabled.mdx', `
+    await addSrc(site, 'file:///pages/disabled.mdx', `
 # Disabled page
     `);
 
@@ -89,7 +90,7 @@ isEnabled: true
 
 
 test('dst defined in meta is applied to entity', async ({ es, site, options }) => {
-    await addMdx(site, 'file:///index.mdx', `
+    await addSrc(site, 'file:///index.mdx', `
 ---
 dst: intro.html
 tags: [ "one", "two" ]
@@ -102,7 +103,7 @@ tags: [ "one", "two" ]
 
     await process(site, options);
 
-    // await printES(site.es);
+    // await printAll( es );
 
     let e = await site.getEntityByDst('/intro.html');
     assert.equal(e.Title.title, 'Welcome');
@@ -114,7 +115,7 @@ test('master page', async ({ es, site, options }) => {
 
     // if an mdx references a layout, then render the mdx
     // inside of the layout
-    await addMdx(site, 'file:///layout/main.mdx', `
+    await addSrc(site, 'file:///layout/main.mdx', `
 ---
 isRenderable: false
 ---
@@ -124,7 +125,7 @@ isRenderable: false
 </html>`);
 
     
-await addMdx(site, 'file:///pages/main.mdx', `
+await addSrc(site, 'file:///pages/main.mdx', `
 ---
 layout: /layout/main
 ---

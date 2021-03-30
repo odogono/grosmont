@@ -40,16 +40,6 @@ export async function beforeEach(tcx) {
 }
 
 
-export async function addMdx(site: Site, url: string, data: string, meta?: any) {
-    let e = await site.addSrc(url);
-    e.Data = { data };
-    if (meta !== undefined) {
-        e.Meta = { meta };
-    }
-    return await site.update(e);
-}
-
-
 
 export async function addSrc(site: Site, url: string, data: string, additional:any = {}): Promise<Entity> {
     let e = await site.getEntityBySrc(url);

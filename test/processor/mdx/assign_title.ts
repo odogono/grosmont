@@ -1,6 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addMdx, beforeEach, process} from '../../helpers';
+import { addSrc, beforeEach, process} from '../../helpers';
 
 const test = suite('/processor/mdx/assign_title');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -29,7 +29,7 @@ test('extract target slug from title', async ({ es, site, options }) => {
 
 test('extract target slug from title with dst', async ({ es, site, options }) => {
 
-    let e = await addMdx(site, 'file:///pages/main.mdx', `
+    let e = await addSrc(site, 'file:///pages/main.mdx', `
 # Extracting the Page Title
     `);
     e.Dst = { url: '/html/' };
@@ -50,7 +50,7 @@ test('extract target slug from title with dst', async ({ es, site, options }) =>
 
 test('title does not override dst', async ({ es, site, options }) => {
 
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 ---
 dst: index.html
 ---

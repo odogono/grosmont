@@ -3,7 +3,7 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import Path from 'path';
 
-import { addMdx, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, process } from '../../helpers';
 
 const test = suite('/processor/js/use_se');
 const log = (...args) => console.log(`[${suite.name}]`, ...args);
@@ -15,7 +15,7 @@ test.before.each(beforeEach);
 
 test('use', async ({ es, site, options }) => {
 
-    await addMdx(site, 'file:///pages/main.jsx', `
+    await addSrc(site, 'file:///pages/main.jsx', `
 
     export const dst = 'main.html';
     

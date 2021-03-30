@@ -1,6 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addMdx, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, process } from '../../helpers';
 
 
 const test = suite('/processor/mdx/import');
@@ -12,10 +12,10 @@ test.before.each(beforeEach);
 
 test('import jsx', async ({ es, site, options }) => {
 
-    await addMdx(site, 'file:///message.jsx', `export default () => "Hello World";`);
+    await addSrc(site, 'file:///message.jsx', `export default () => "Hello World";`);
 
     // note - important that import has no leading space
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 ---
 comment: nothing much!
 ---
@@ -39,8 +39,8 @@ Message: <Message />
 
 test('import without ext', async ({ es, site, options }) => {
 
-    await addMdx(site, 'file:///message.jsx', `export default () => "Hello World";`);
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///message.jsx', `export default () => "Hello World";`);
+    await addSrc(site, 'file:///pages/main.mdx', `
 import Message from '../message';
 
 Message: <Message />

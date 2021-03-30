@@ -1,6 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addMdx, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, process } from '../../helpers';
 
 const test = suite('/processor/mdx/master');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -16,7 +16,7 @@ test('master page', async ({ es, site, options }) => {
 
     // if an mdx references a layout, then render the mdx
     // inside of the layout
-    await addMdx(site, 'file:///layout/main.mdx', `
+    await addSrc(site, 'file:///layout/main.mdx', `
 ---
 isRenderable: false
 ---
@@ -26,7 +26,7 @@ isRenderable: false
 </html>`);
 
 
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 ---
 layout: /layout/main
 ---
@@ -46,7 +46,7 @@ Hello _world_
 });
 
 test('master page receives childs properties', async ({ es, site, options }) => {
-    await addMdx(site, 'file:///layout/master.mdx', `
+    await addSrc(site, 'file:///layout/master.mdx', `
 ---
 isRenderable: false
 title: Master Page
@@ -58,7 +58,7 @@ import { e } from '@site';
     <body>{children}</body></html>`);
 
 
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
 ---
 layout: /layout/master
 date: 2021/03/10

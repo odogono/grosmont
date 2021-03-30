@@ -1,7 +1,7 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { parseEntity } from '../../../src/builder/config';
-import { addMdx, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, process } from '../../helpers';
 
 const test = suite('/processor/mdx/tags');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -11,7 +11,7 @@ test.before.each(beforeEach);
 
 
 test('tags in mdx', async ({ es, site, options }) => {
-    let e = await addMdx(site, 'file:///pages/main.mdx', `
+    let e = await addSrc(site, 'file:///pages/main.mdx', `
 ---
 tags:
 - weeknotes
@@ -23,7 +23,7 @@ tags:
     e.Meta = { meta: { tags: ['active'] } };
     await site.update(e);
 
-    e = await addMdx(site, 'file:///pages/about.mdx', `## About Me`, { tags: 'blog' });
+    e = await addSrc(site, 'file:///pages/about.mdx', `## About Me`, { tags: 'blog' });
 
     await process(site, options);
 
@@ -54,7 +54,7 @@ test('tags inherited from dir', async ({ es, site, options }) => {
         - 2021
     `);
 
-    await addMdx(site, 'file:///pages/2021/main.mdx', `
+    await addSrc(site, 'file:///pages/2021/main.mdx', `
 ---
 tags:
 - things

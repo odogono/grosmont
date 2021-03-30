@@ -2,9 +2,8 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { FindEntityOptions } from '../../../src/builder/query';
 import { parseEntity } from '../../../src/builder/config';
-import { EntityId } from 'odgn-entity/src/entity';
-import { addMdx, addSrc, beforeEach, createSite, process, rootPath } from '../../helpers';
-import { printAll } from 'odgn-entity/src/util/print';
+import { EntityId } from '../../../src/es';
+import { addSrc, beforeEach, createSite, process, rootPath } from '../../helpers';
 
 const test = suite('/processor/mdx/misc');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -16,7 +15,7 @@ test.before.each(beforeEach);
 test('target path for file', async ({ es, site, options }) => {
 
 
-    await addMdx(site, 'file:///pages/main.mdx', `
+    await addSrc(site, 'file:///pages/main.mdx', `
     # Here's a Heading
     
     I really like using Markdown.
