@@ -2,7 +2,7 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 
 import Day from 'dayjs';
-import { addDirDep, createFileEntity, beforeEach, addSrc } from '../../helpers';
+import { addDep, addDirDep, createFileEntity, beforeEach, addSrc } from '../../helpers';
 
 import {
     process as scanSrc,
@@ -10,15 +10,11 @@ import {
     diffEntitySets,
     applyEntitySetDiffs,
 } from '../../../src/builder/processor/file';
-import { printAll } from 'odgn-entity/src/util/print';
-import { parseEntity } from '../../../src/builder/config';
 import { ChangeSetOp, Entity, EntityId } from '../../../src/es';
 import { applyUpdatesToDependencies } from '../../../src/builder/query';
-import { Site } from '../../../src/builder/site';
-import { DependencyType } from '../../../src/builder/types';
 
 
-const test = suite('/processor/file/deps');
+const test = suite('/processor/file/deps/update');
 test.before.each(beforeEach);
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
@@ -34,8 +30,6 @@ test('dependencies are also marked as updated', async ({ es, site }) => {
         createFileEntity(site, 'file:///pages/readme.md'),
         createFileEntity(site, 'file:///pages/index.mdx')
     ];
-    
-    // log( mem );
     
     await mem.add(ents);
     
@@ -124,10 +118,6 @@ test('ignore certain deps', async ({es,site}) => {
 
 test.run();
 
-async function addDep( site:Site, src:EntityId, dst:EntityId, type:DependencyType = 'import' ){
-    return parseEntity( site, `
-        /component/dep: { "src": ${src}, "dst": ${dst}, "type": "${type}" }`);
-}
 
 // async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
 //     await parseEntity( site, `

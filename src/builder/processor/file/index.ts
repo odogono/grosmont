@@ -30,6 +30,7 @@ import { applyUpdatesToDependencies, buildSrcUrlIndex, selectSrcByFilename } fro
 import { EntityUpdate, ProcessOptions } from '../../types';
 import Day from 'dayjs';
 import { debug, info, warn, setLocation } from '../../reporter';
+import { printAll } from 'odgn-entity/src/util/print';
 
 
 
@@ -73,11 +74,15 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // create an es to put the scan into
     let incoming = await cloneEntitySet(es);
 
+    // log('compare...');
+    
     // read the fs into the incoming es
     await readFileSystem(site, { ...options, es: incoming });
+    
 
     // compare the two es
     let diffs = await diffEntitySets(es, incoming, options);
+
     
     if (diffs.length > 0) {
         info(reporter, `${diffs.length} diffs`);
@@ -133,7 +138,7 @@ export async function cloneEntitySet(es: QueryableEntitySet): Promise<QueryableE
  */
 export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs: SrcUrlDiffResult, addDiff: boolean = true, options: ProcessOptions = {}) {
     const { reporter } = options;
-    let removeEids: EntityId[] = [];
+    // let removeEids: EntityId[] = [];
     let diffComs: Component[] = [];
     let updateEs: Entity[] = [];
     setLocation(reporter, `${Label}#apply_entity_set_diffs`)
@@ -145,9 +150,11 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
     for (const [aEid, op, bEid] of diffs) {
 
         if (op === ChangeSetOp.Remove) {
-            removeEids.push(aEid);
+            // removeEids.push(aEid);
             debug(reporter, 'remove', { eid: aEid });
             // add eid to remove list
+            // log('remove', aEid);
+            diffComs.push(setEntityId(esA.createComponent(diffDefId, { op }), aEid));
             continue;
         }
         if (op === ChangeSetOp.Update || op === ChangeSetOp.Add) {
@@ -310,6 +317,10 @@ async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
         for await ( const com of options.readFSResult.getComponents() ){
             coms.push(com);
         }
+
+        // log('adding from fsresult');
+        // log( coms );
+        // await printAll( coms );
         
         await es.add(coms);
         
