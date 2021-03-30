@@ -318,10 +318,10 @@ export function mapToTargetMime(mime: string) {
  * @returns 
  */
 export function resolveImport(site: Site, url: string, base: string): EntitySrcDstDescr {
-    
+
     const entry = resolveSiteUrl(site, url, base);
-    
-    
+
+
     if (entry === undefined) {
         return undefined;
     }
@@ -363,7 +363,7 @@ export type ResolveSiteUrlResult = [string, string, EntityId, string, BitField];
 export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSiteUrlResult {
     const srcIdx = site.getSrcIndex();
     const dstIdx = site.getDstIndex();
-    
+
     let path = resolveUrlPath(url, base);
 
     // log('[resolveSiteUrl]', {url,base}, path);
@@ -376,7 +376,7 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
         return [path, dst, eid, mime, bf];
     }
 
-    if( dstIdx !== undefined ){
+    if (dstIdx !== undefined) {
         entry = dstIdx.get(url);
         if (entry !== undefined) {
             const [eid] = entry;
@@ -398,18 +398,38 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
         }
     }
 
-    if( dstIdx !== undefined ){
+    if (dstIdx !== undefined) {
         reUrl = reUrl.replace('file://', '');
         re = new RegExp(`^${reUrl}(?:\..+)?`, 'i');
+
+        let possibles = [];
         for (const key of dstIdx.index.keys()) {
-            // log('look at', key, '?', reUrl, dstIdx.get(key));
             if (re.test(key)) {
-                const [eid] = dstIdx.get(key);
-                const [src, mime, bf] = srcIdx.getByEid(eid, true);
-                // log('look at', key, src );
-                return [src, key, eid, mime, bf];
+                possibles.push(key);
             }
         }
+        if (possibles.length === 0) {
+            return undefined;
+        }
+
+        // get the shortest possible url
+        possibles.sort((a, b) => a.length - b.length);
+
+        // log('possibles for', reUrl, ':', possibles);
+        const [eid] = dstIdx.get(possibles[0]);
+        const [src, mime, bf] = srcIdx.getByEid(eid, true);
+        // log('look at', key, src );
+        return [src, possibles[0], eid, mime, bf];
+
+        // for (const key of dstIdx.index.keys()) {
+        //     log('look at', key, '?', reUrl, dstIdx.get(key));
+        //     if (re.test(key)) {
+        //         const [eid] = dstIdx.get(key);
+        //         const [src, mime, bf] = srcIdx.getByEid(eid, true);
+        //         // log('look at', key, src );
+        //         return [src, key, eid, mime, bf];
+        //     }
+        // }
     }
     return undefined;
 }

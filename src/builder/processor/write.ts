@@ -17,7 +17,7 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
  */
 export async function process(site: Site, options: ProcessOptions = {}) {
     const es = site.es;
-    const { reporter } = options;
+    const { reporter, onlyUpdated } = options;
     setLocation(reporter, Label);
 
     const idx = site.getDstIndex();
@@ -25,9 +25,9 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     for( const [path, [eid,op]] of idx ){
 
-        log('path', path, {op} );
-        
-        if( op === ChangeSetOp.Remove ){
+        // log('path', path, {op} );
+
+        if( (op === undefined && onlyUpdated) || op === ChangeSetOp.Remove ){
             continue;
         }
 
@@ -41,7 +41,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         await site.writeToUrl( fullPath, com.data );
 
-        info(reporter, `wrote to ${path}`, { eid });
+        info(reporter, `wrote to ${path} : ${op}`, { eid });
     }
 
     // const coms = await selectOutputWithDst(es, options);

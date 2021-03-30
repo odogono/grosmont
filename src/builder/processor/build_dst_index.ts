@@ -26,12 +26,14 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
     const es = site.es;
 
     const dstIndex = site.getDstIndex(true);
-    const coms = await selectSrc(es, options);
+
+
+    const coms = await selectSrc(es, {...options, onlyUpdated:false});
     
 
     const upDid = es.resolveComponentDefId('/component/upd');
 
-    // log('building', coms);
+    // log('updating', coms);
 
     for (const com of coms) {
         const eid = getComponentEntityId(com);
@@ -45,7 +47,7 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
             }
             const updCom = await es.getComponent( toComponentId(eid,upDid) );
 
-            // log('input', eid, url);
+            // log('input', eid, url, updCom);
             url = await ensureExtension(site, eid, url);
             // log('set', url, eid);
             dstIndex.set(uriToPath(url), eid, updCom?.op);

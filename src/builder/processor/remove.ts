@@ -25,6 +25,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     // log('src', srcComs);
     let paths = [];
+    let removeEids = [];
 
     for( const [path, [eid,op]] of dstIndex ){
 
@@ -33,6 +34,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         }
 
         paths.push( path );
+        removeEids.push( eid );
         // let fullPath = site.getDstUrl(path);
 
         if( !dryRun ){
@@ -44,35 +46,9 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     }
 
     dstIndex.remove( paths );
+    await es.removeEntity( removeEids );
 
-    // for (const src of srcComs) {
-    //     const eid = getComponentEntityId(src);
-    //     try {
-
-    //         // const dst = await getDstUrl(es, eid);
-    //         const [dst,op] = dstIndex.getByEid(eid, true);
-
-    //         if (dst === undefined) {
-    //             debug(reporter, 'no dst found', { eid });
-    //             continue;
-    //         }
-
-    //         let path = site.getDstUrl(dst);
-
-    //         log('copy', path)
-
-    //         if (!dryRun) {
-    //             await site.copyToUrl(path, src.url);
-    //             info(reporter, `copied from ${src.url} to ${path}`, { eid });
-    //         } else {
-    //             info(reporter, `[dryRun] copied from ${src.url} to ${path}`, { eid });
-    //         }
-
-
-    //     } catch (err) {
-    //         error(reporter, err.message, err, { eid });
-    //     }
-    // }
+    // TODO - remove dependencies
 
     return site;
 }

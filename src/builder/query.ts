@@ -1675,6 +1675,9 @@ export async function getDependencyParents(es: QueryableEntitySet, eid: EntityId
     [
         selectParent
 
+        // if we have already seen this, then exit
+        $result *%1 index_of! -1 !=
+        [ @! ] *$1 if
         
         // if no parent, stop execution
         dup [ drop @! ] swap false == if
