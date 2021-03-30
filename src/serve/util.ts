@@ -1,9 +1,11 @@
-import { EntityId } from "../es";
 import { renderToOutput } from "../builder";
 import { getDependencyEntities, getDependencyOfEntities } from "../builder/query";
 import { Site } from "../builder/site";
+import { EntityId, Entity, toComponentId } from "../es";
 import { SiteProcessor } from "../builder/types";
 import { applyMeta } from "../builder/util";
+import { QueryableEntitySet } from "odgn-entity/src/entity_set/queryable";
+
 
 /**
  * 
@@ -31,6 +33,7 @@ export async function buildEntityDisplay(site: Site, process:SiteProcessor, eid:
  * @returns 
  */
  export async function buildEntityDepsDisplay(site: Site, process:SiteProcessor, eid: EntityId) {
+    const { es }= site;
     const e = await site.es.getEntity(eid, true);
 
     if( e === undefined ){
@@ -40,14 +43,8 @@ export async function buildEntityDisplay(site: Site, process:SiteProcessor, eid:
     let deps = await getDependencyEntities(site.es, eid);
 
     // add the src url of the dst to each dep
-    deps = await Promise.all(deps.map(async dep => {
-        let dst = dep.Dep.dst ?? 0;
-        if (dst === 0) {
-            return dep;
-        }
-        let dstSrc = await site.getEntitySrcUrl(dst);
-        return applyMeta(dep, { dstSrc });
-    }));
+    deps = await Promise.all(deps.map(async dep => buildDepData(site,dep) ));
+        
 
     const props = { e, es: site.es, deps };
 
@@ -64,20 +61,32 @@ export async function buildEntityDepsOfDisplay(site: Site, process:SiteProcessor
     let deps = await getDependencyOfEntities(site.es, eid);
 
     // add the src url of the dst to each dep
-    deps = await Promise.all(deps.map(async dep => {
-        let src = dep.Dep.src ?? 0;
-        if (src === 0) {
-            return dep;
-        }
-        let dstSrc = await site.getEntitySrcUrl(src);
-        return applyMeta(dep, { dstSrc });
-    }));
-
+    deps = await Promise.all(deps.map(async dep => buildDepData(site,dep) ));
+    
     const props = { e, es: site.es, deps };
 
     return renderEntityOutput(site, process, 'file:///admin/entity_deps_of.tsx', props);
 }
 
+
+async function buildDepData( site:Site, e:Entity ){
+    const {es} = site;
+    const type = e.Dep.type;
+    let dst = e.Dep.dst ?? 0;
+    if (dst === 0) {
+        return e;
+    }
+    let meta:any = {};
+    if( type === 'tag' ){
+        const did = es.resolveComponentDefId('/component/title');
+        let com = await es.getComponent( toComponentId(dst, did) );
+        meta.label = com.title;
+    }
+    else {
+        meta.label = await site.getEntitySrcUrl(dst);
+    }
+    return applyMeta(e, meta );
+}
 
 export async function renderEntityOutput(site: Site, process:SiteProcessor, src: string, props: any = {}) {
     let displayE = await site.getEntityBySrc(src);
