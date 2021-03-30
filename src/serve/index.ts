@@ -21,6 +21,7 @@ export interface RoutesConfig {
 interface Config {
     site: Site;
     process: SiteProcessor;
+    processOutput: SiteProcessor;
     emitter: Emitter;
 }
 
@@ -47,7 +48,7 @@ const configPath = Path.resolve(config);
 const start = async () => {
     try {
         const emitter = Mitt();
-        let { site, process } = await initialiseSite(configPath);
+        let { site, process, processOutput } = await initialiseSite(configPath);
 
         // console.log( site.getEntity().Meta );
 
@@ -55,7 +56,7 @@ const start = async () => {
 
         fastify.register(FastifyAutoLoad, {
             dir: Path.join(__dirname, 'routes'),
-            options: { config: {emitter, site, process} }
+            options: { config: {emitter, site, process, processOutput} }
         });
 
         // fastify.register(require('./routes/sse'), {options: {config: {site,process,emitter} }} );
@@ -102,7 +103,7 @@ async function initialiseSite(path: string) {
         ['/processor/apply_tags', 0, { type: 'tag' }],
         ['/processor/apply_tags', 0, { type: 'layout' }],
         ['/processor/mdx/resolve_meta'],
-        ['/processor/build_dst_index'],
+        ['/processor/build_dst_index', 0, {onlyUpdated:false}],
 
 
         ['/processor/scss', 0, { renderScss: true }],
@@ -113,10 +114,10 @@ async function initialiseSite(path: string) {
         
         ['/processor/client_code'],
         
-        ['/processor/build_dst_index'],
+        ['/processor/build_dst_index', 0, {onlyUpdated:false}],
 
         ['/processor/js/render', 0, { beautify: true} ],
-        ['/processor/build_dst_index', -99],
+        ['/processor/build_dst_index', -99, {onlyUpdated:false}],
         ['/processor/write', -100],
         ['/processor/static/copy', -101],
         ['/processor/remove', -102],
@@ -124,9 +125,20 @@ async function initialiseSite(path: string) {
 
     let process = await buildProcessors(site, spec, {onlyUpdated:true});
 
-    await process(site);
+    site = await process(site);
 
-    return { site, process };
+
+    const outputSpec: RawProcessorEntry[] = [
+        ['/processor/jsx/eval'],
+        ['/processor/mdx/eval'],
+        ['/processor/js/eval'],
+        ['/processor/client_code'],
+        ['/processor/js/render', 0, { beautify: false} ],
+    ];
+
+    let processOutput = await buildProcessors(site,outputSpec, {onlyUpdated:true});
+
+    return { site, process, processOutput };
 }
 
 

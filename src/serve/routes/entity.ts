@@ -6,10 +6,10 @@ import { buildEntityDepsDisplay, buildEntityDepsOfDisplay, buildEntityDisplay } 
 import { RoutesConfig } from "../index";
 
 
-export default async function routes(app, { config: { site, process } }: RoutesConfig) {
+export default async function routes(app, { config: { site, process, processOutput } }: RoutesConfig) {
 
     app.get('/dst_index', async (req, reply) => {
-        const idx = site.getIndex('/index/dstUrl');
+        const idx = site.getDstIndex();
 
         return idx;
     });
@@ -36,9 +36,9 @@ export default async function routes(app, { config: { site, process } }: RoutesC
 
         // console.info(`!!!! ${path} ${eid} ${type}`);
 
-        output.push(await buildEntityDisplay(site, process, eid));
-        output.push(await buildEntityDepsDisplay(site, process, eid));
-        output.push(await buildEntityDepsOfDisplay(site, process, eid));
+        output.push(await buildEntityDisplay(site, processOutput, eid));
+        output.push(await buildEntityDepsDisplay(site, processOutput, eid));
+        output.push(await buildEntityDepsOfDisplay(site, processOutput, eid));
         output.push(sseClientIdHeader(eid, path));
         output.push(sseClientScript);
 
@@ -67,9 +67,6 @@ export default async function routes(app, { config: { site, process } }: RoutesC
             return reply.code(404).send(`/output not found for ${eid}`);
         }
 
-        // log('found', eid, output);
-        // printEntity(site.es, await site.es.getEntity(eid,true));
-        // if (output !== undefined) {
         let [data, mime] = outputEntry;
 
         req.log.info(`${path} ${eid} ${mime}`);
@@ -77,9 +74,9 @@ export default async function routes(app, { config: { site, process } }: RoutesC
         output.push(data);
 
         if (mime === 'text/html') {
-            output.push(await buildEntityDisplay(site, process, eid));
-            output.push(await buildEntityDepsDisplay(site, process, eid));
-            output.push(await buildEntityDepsOfDisplay(site, process, eid));
+            output.push(await buildEntityDisplay(site, processOutput, eid));
+            output.push(await buildEntityDepsDisplay(site, processOutput, eid));
+            output.push(await buildEntityDepsOfDisplay(site, processOutput, eid));
             output.push(sseClientIdHeader(eid, path));
             output.push(sseClientScript);
         }
