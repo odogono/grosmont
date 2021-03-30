@@ -26,6 +26,7 @@ export interface FindEntityOptions {
     createIfNotFound?: boolean;
     srcUrl?: string;
     eids?: EntityId[];
+    debug?: boolean;
 }
 
 export interface ParseOptionsOptions extends FindEntityOptions {
@@ -945,8 +946,8 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
  * 
  * wont return anything if the entity does not have a filename dst
  */
-export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<string | undefined> {
-
+export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:FindEntityOptions = {}): Promise<string | undefined> {
+    const debug = options.debug;
     // TODO - a complex statement which has many words which should be
     // predefined
 
@@ -979,6 +980,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
     // returns the src url from an entity
     // ( es eid -- es str|false )
     [
+        
         swap [ *^$1 @eid /component/src#url @ca ] select pop? swap drop
         dup [ drop false @! ] swap undefined == if
         @>
@@ -1103,8 +1105,9 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
 
     // ( es eid -- es eid filename|false )
     [
+        // [[ "selectFileNameFromOutput" *^%0 ] to_str! .] $debug if
         selectFilenameFromSrc
-        
+
         *$1 *%2 selectOutputMime
 
         // ( eid filename es mime -- )
@@ -1127,7 +1130,9 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
 
     // ( es eid -- es eid filename|false )
     [
+        
         dup *$2 *$1 selectSrcUrl
+
         
         [ drop swap false @! ] *%1 false == if
         
@@ -1165,17 +1170,22 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
 
     // drop the false result back from handleParent
     [ drop $eid ] %1 false == if
-    
+
+    // the top value will be the last eid - parent
+    drop $eid
+
     // ( es eid --  )
     
     // lookup filename from output
     [ 
+        // [ prints ] $debug if
         selectFilenameFromOutput 
-        
         
         // [ "select fname is" *^%0 ] to_str! .
         setFilename
     ] $filename size! 0 == if
+
+    
     
     // lookup filename from src providing we have a path
     [   
@@ -1203,7 +1213,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
         return [SType.Value, ext];
     });
 
-    const dirCom = await stmt.getResult({ eid });
+    const dirCom = await stmt.getResult({ eid, debug });
     return dirCom && dirCom.length > 0 ? dirCom : undefined;
 }
 

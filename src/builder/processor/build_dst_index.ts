@@ -35,18 +35,22 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
 
     for (const com of coms) {
         const eid = getComponentEntityId(com);
-        // let url = await site.getEntityDstUrl(eid, false);
+        
         // log('process', eid);
         let url = await getDstUrl(es, eid);
         
         if (url !== undefined) {
-
+            if( url.endsWith('dir.e.yaml') ){
+                continue;
+            }
             const updCom = await es.getComponent( toComponentId(eid,upDid) );
 
-            // log('input', url);
+            // log('input', eid, url);
             url = await ensureExtension(site, eid, url);
-            // log(url, eid);
+            // log('set', url, eid);
             dstIndex.set(uriToPath(url), eid, updCom?.op);
+        } else {
+            dstIndex.removeByEid(eid);
         }
     }
 

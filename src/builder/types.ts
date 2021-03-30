@@ -105,6 +105,14 @@ export class SiteIndex {
         }
     }
 
+    removeByEid( eid:EntityId ){
+        let entry = this.eIndex.get(eid);
+        if( entry !== undefined ){
+            this.eIndex.delete( eid );
+            this.index.delete( entry[0] );
+        }
+    }
+
     /**
      * Returns the path associated with this eid
      * or, if full details are required, an array of details
@@ -119,11 +127,13 @@ export class SiteIndex {
             : undefined;
     }
     set( key:any, eid:EntityId, ...args){
+        this.removeByEid(eid);
         this.index.set( key, [eid,...args]);
         this.eIndex.set( eid, [key,...args]);
     }
 
     setByEid( eid:EntityId, key:any, ...args ){
+        this.removeByEid(eid);
         this.eIndex.set(eid, [key, ...args] );
         this.index.set(key, [eid,...args]);
     }

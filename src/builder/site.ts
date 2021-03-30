@@ -413,11 +413,11 @@ export class Site {
         if (idx === undefined) {
             return undefined;
         }
-        const entry = idx.index.get(url);
+        const entry = idx.getEid(url);
         if (entry === undefined) {
             return undefined;
         }
-        return entry[0];
+        return entry;
     }
 
     /**
