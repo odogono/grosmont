@@ -152,6 +152,12 @@ export async function selectTitleAndMeta(es: QueryableEntitySet, options: FindEn
 }
 
 
+/**
+ * Returns Output Components which have a /dst
+ * @param es 
+ * @param options 
+ * @returns 
+ */
 export async function selectOutputWithDst(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
 
@@ -447,7 +453,32 @@ export async function selectErrors(es: QueryableEntitySet, options: FindEntityOp
     return await es.prepare(q).getResult({ ref });
 }
 
+export async function selectSrc(es: QueryableEntitySet, options: FindEntityOptions = {}):Promise<Component[]> {
+    const { ref, onlyUpdated } = parseOptions(options);
+    let q:string;
+    
+    if( onlyUpdated ){
+        q = `
+        [
+                        /component/upd#op !ca 1 ==
+                        /component/upd#op !ca 2 ==
+                    or
+                    /component/site_ref#ref !ca $ref ==
+                and
+            [/component/src /component/dst] !bf !or
+            @c
+        ] select`;
+    } else {
+        q = `
+        [
+            /component/site_ref#ref !ca $ref ==
+            [/component/src /component/dst] !bf !or
+            @c
+        ] select`;
+    }
 
+    return await es.prepare(q).getResult({ ref });
+}
 
 /**
  * Returns /component/src components with the given file extensions

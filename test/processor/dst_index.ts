@@ -6,6 +6,7 @@ import { addDirDep, addSrc, beforeEach, printAll, process } from '../helpers';
 import { Site } from '../../src/builder/site';
 import { resolveSiteUrl } from '../../src/builder/util';
 import { create as createBitField } from '@odgn/utils/bitfield';
+import { getDstUrl } from '../../src/builder/query';
 
 const test = suite('/processor/build_dst_index');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -14,14 +15,14 @@ test.before.each(beforeEach);
 
 
 
-test('build an index', async ({ site, es }) => {
+test('build an index', async ({ site, es, options }) => {
 
     await parseEntity(site, `
     id: 1999
     dst: /styles/
     `);
 
-    let e = await parseEntity(site, `
+    await parseEntity(site, `
     id: 2001
     text: css-data-here
     dst: main.css
@@ -29,15 +30,9 @@ test('build an index', async ({ site, es }) => {
 
     await addDirDep(site, 2001, 1999);
 
-    await buildDstIndex(site);
+    await buildDstIndex(site, options);
 
-    // const dst = await getDstUrl(es, 2001);
-
-    // log( dst );
-
-    // printES(es);
-
-    assert.equal(site.getIndex('/index/dstUrl').index.get('/styles/main.css'), [2001]);
+    assert.equal(site.getDstIndex().index.get('/styles/main.css'), [2001]);
 });
 
 
@@ -74,6 +69,29 @@ test('dst urls with missing extensions', async ({ site, es, options }) => {
 
     assert.equal( await site.getEntityDstUrl(1002), '/index.html' );
     assert.equal( await site.getEntityDstUrl(1003), '/styles.css' );
+})
+
+
+test('files with dst from dir', async ({ site, es, options}) => {
+    await parseEntity( site, `
+    src: file:///dir.e.yaml
+    dst: pages/
+    `);
+
+    await parseEntity( site, `
+    src: file:///about.mdx
+    data: "# About"
+    `);
+
+    await process(site, options);
+
+    // await printAll( es );
+
+    assert.equal( await getDstUrl(es, 1003), '/pages/about.html' );
+
+    assert.equal( await site.getEntityDstUrl(1003), '/pages/about.html' );
+
+    // log( site.getDstIndex() );
 })
 
 

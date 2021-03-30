@@ -1,10 +1,10 @@
 import Mime from 'mime-types';
 import Path from 'path';
-import { getDstUrl, selectDstEntityIds } from '../query';
+import { getDstUrl, selectDstEntityIds, selectSrc } from '../query';
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
 import { uriToPath, mapToTargetMime } from '../util';
-import { Entity, EntityId, toComponentId } from '../../es';
+import { Entity, EntityId, getComponentEntityId, toComponentId } from '../../es';
 
 
 
@@ -16,7 +16,8 @@ export interface DstIndexOptions extends ProcessOptions {
 }
 
 /**
- * Builds an index of dst urls for each entity which has a /dst
+ * Builds an index of dst urls
+ * e are selected by having a /src
  * 
  * @param site 
  * @param options 
@@ -25,16 +26,18 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
     const es = site.es;
 
     const dstIndex = site.getDstIndex(true);
-    const eids = await selectDstEntityIds(es);
+    const coms = await selectSrc(es, options);
 
-    // log('building', eids);
+    // log('building', coms);
 
-    for (const eid of eids) {
+    for (const com of coms) {
+        const eid = getComponentEntityId(com);
         // let url = await site.getEntityDstUrl(eid, false);
+        // log('process', eid);
         let url = await getDstUrl(es, eid);
-
+        
         if (url !== undefined) {
-            // log('process', url);
+            // log('input', url);
             url = await ensureExtension(site, eid, url);
             // log(url, eid);
             dstIndex.set(uriToPath(url), eid);

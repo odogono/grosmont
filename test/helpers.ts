@@ -7,7 +7,7 @@ import { Level } from '../src/builder/reporter';
 import { build } from '../src/builder';
 import { parseEntity } from '../src/builder/config';
 import { Entity, EntityId, EntitySetSQL, printAll } from '../src/es';
-import { ProcessOptions } from '../src/builder/types';
+import { DependencyType, ProcessOptions } from '../src/builder/types';
 export { Entity, EntityId, EntitySetSQL, printAll } from '../src/es';
 
 // export { build as process };
@@ -67,13 +67,14 @@ export async function addSrc(site: Site, url: string, data: string, additional:a
 }
 
 export async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
-    await parseEntity( site, `
-    /component/dep:
-        src: ${src}
-        dst: ${dst}
-        type: dir
-    `);
+    return addDep( site, src, dst, 'dir');
 }
+
+export async function addDep( site:Site, src:EntityId, dst:EntityId, type:DependencyType = 'import' ){
+    return parseEntity( site, `
+        /component/dep: { "src": ${src}, "dst": ${dst}, "type": "${type}" }`);
+}
+
 
 
 export function createFileEntity(site: Site, url: string,
