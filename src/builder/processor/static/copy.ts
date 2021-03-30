@@ -22,6 +22,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     setLocation(reporter, Label);
 
     const srcComs = await selectStaticWithDst(es, options);
+    const dstIndex = site.getDstIndex();
 
     // log('src', srcComs);
 
@@ -29,7 +30,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         const eid = getComponentEntityId(src);
         try {
 
-            const dst = await getDstUrl(es, eid);
+            // const dst = await getDstUrl(es, eid);
+            const [dst,op] = dstIndex.getByEid(eid, true);
 
             if (dst === undefined) {
                 debug(reporter, 'no dst found', { eid });

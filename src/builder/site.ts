@@ -10,8 +10,8 @@ import { defs } from './defs';
 
 import {
     ChangeSetOp,
-    Entity, 
-    EntityId, 
+    Entity,
+    EntityId,
     isEntity,
     EntitySet,
     EntitySetOptions,
@@ -38,7 +38,7 @@ import {
 import { DependencyType, ProcessOptions, SiteIndex } from './types';
 import { isEmpty, isInteger, isString, parseUri } from '@odgn/utils';
 import { createUUID } from '@odgn/utils';
-import { info, Level, Reporter, setLevel, setLocation } from './reporter';
+import { error, info, Level, Reporter, setLevel, setLocation } from './reporter';
 import { uriToPath } from './util';
 import JSONPointer from 'jsonpointer';
 
@@ -84,11 +84,11 @@ export class Site {
 
         let reporter = options.reporter ?? new Reporter();
         setLocation(reporter, '/site');
-        if( options.level !== undefined ){
+        if (options.level !== undefined) {
             setLevel(reporter, options.level);
         }
         site.reporter = reporter;
-        
+
         // attempt to initialise the ES from the configPath
         await initialiseES(site, { ...options, reporter });
 
@@ -175,8 +175,8 @@ export class Site {
      */
     getEntityDstUrl(eid: EntityId | Entity) {
         const idx = this.getDstIndex();
-        if( idx !== undefined ){
-            return idx.getByEid( isEntity(eid) ? (eid as Entity).id : eid as EntityId );
+        if (idx !== undefined) {
+            return idx.getByEid(isEntity(eid) ? (eid as Entity).id : eid as EntityId);
         }
         return undefined;
         // return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id : eid as EntityId);
@@ -198,7 +198,7 @@ export class Site {
      * @param eid 
      * @param appendRoot 
      */
-    async getEntityOutput(eid: EntityId | Entity):Promise<[string,string]> {
+    async getEntityOutput(eid: EntityId | Entity): Promise<[string, string]> {
         return selectOutputByEntity(this.es, eid);
     }
 
@@ -211,8 +211,8 @@ export class Site {
      */
     async getEntityData(ev: Entity | EntityId): Promise<string> {
         let eid = isInteger(ev) ? ev as EntityId : (ev as Entity)?.id;
-        let e:Entity = isInteger(ev) ? await this.es.getEntity(eid) : ev as Entity;
-        
+        let e: Entity = isInteger(ev) ? await this.es.getEntity(eid) : ev as Entity;
+
         // if( e === undefined ){
         //     console.warn('[getEntityData]', `could not find entity ${eid}`);
         // }
@@ -287,6 +287,28 @@ export class Site {
     }
 
     /**
+     * Deletes a path
+     * 
+     * @param path 
+     * @returns 
+     */
+    async removeDstUrl(path: string) {
+        const sitePath = this.getDstUrl();
+        const fullPath = this.getDstUrl(path);
+        if( fullPath === undefined || sitePath === fullPath ){
+            return;
+        }
+
+        try {
+            await Fs.unlink(fullPath);
+        } catch( err ){
+            error(this.reporter, 'removeDstUrl', err );
+        }
+
+        return true;
+    }
+
+    /**
      * Returns the site entity
      */
     // getSite(): Entity {
@@ -333,12 +355,12 @@ export class Site {
      * 
      * @param ptr 
      */
-    getConfig(ptr:string, defaultTo?:any): any {
+    getConfig(ptr: string, defaultTo?: any): any {
         const conf = this.getEntity()?.Meta?.meta ?? {};
         try {
             const value = JSONPointer.get(conf, ptr) ?? defaultTo;
             return value;
-        } catch( err ){
+        } catch (err) {
             return defaultTo;
         }
     }
@@ -403,12 +425,12 @@ export class Site {
      * @param eid 
      * @returns 
      */
-    getEntityDstUrlIndexed( eid:EntityId ): string {
+    getEntityDstUrlIndexed(eid: EntityId): string {
         const idx = this.getDstIndex();
-        if( idx === undefined ){
+        if (idx === undefined) {
             return undefined;
         }
-        return idx.getByEid(eid,false);
+        return idx.getByEid(eid, false);
     }
 
     /**
@@ -493,12 +515,12 @@ export class Site {
         return index;
     }
 
-    getSrcIndex(create:boolean = false): SiteIndex {
+    getSrcIndex(create: boolean = false): SiteIndex {
         return this.getIndex('/index/srcUrl', create);
     }
 
 
-    getDstIndex(create:boolean = false): SiteIndex {
+    getDstIndex(create: boolean = false): SiteIndex {
         return this.getIndex('/index/dstUrl', create);
     }
 

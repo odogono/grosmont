@@ -66,6 +66,20 @@ export async function addSrc(site: Site, url: string, data: string, additional:a
     return e;
 }
 
+export async function addFile(site:Site, url:string, additional:any = {}): Promise<Entity> {
+    let e = await site.getEntityBySrc(url);
+    let add = e === undefined;
+
+    e = await parseEntity( site, {
+        src: url,
+        ...additional}, { add, e } );
+
+    if( !add ){
+        return await site.update(e);
+    }
+    return e;
+}
+
 export async function addDirDep( site:Site, src:EntityId, dst:EntityId ){
     return addDep( site, src, dst, 'dir');
 }

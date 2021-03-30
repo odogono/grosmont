@@ -197,7 +197,7 @@ export async function selectStaticWithDst(es: QueryableEntitySet, options: FindE
 
     const q = onlyUpdated ? `
         [ 
-            [ /component/src /component/dst /component/static ] !bf 
+            [ /component/src /component/static ] !bf 
                         /component/upd#op !ca 1 ==
                         /component/upd#op !ca 2 ==
                     or
@@ -209,7 +209,7 @@ export async function selectStaticWithDst(es: QueryableEntitySet, options: FindE
     `
         : `
     [ 
-        [ /component/src /component/dst /component/static ] !bf
+        [ /component/src /component/static ] !bf
         /component/site_ref#ref !ca $ref ==
         @eid
     ] select

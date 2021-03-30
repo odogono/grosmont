@@ -119,6 +119,7 @@ async function initialiseSite(path: string) {
         ['/processor/build_dst_index', -99],
         ['/processor/write', -100],
         ['/processor/static/copy', -101],
+        ['/processor/remove', -102],
     ]
 
     let process = await buildProcessors(site, spec, {onlyUpdated:true});

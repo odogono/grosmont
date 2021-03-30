@@ -2,13 +2,15 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import Path from 'path';
 import { Site } from '../../src/builder/site';
+import { ChangeSetOp, Entity, EntityId } from '../../src/es';
 import { parseEntity } from '../../src/builder/config';
-import { Entity, EntityId } from 'odgn-entity/src/entity';
 import { statics as markStatic } from '../../src/builder/processor/mark';
 import { process as copyStatic } from '../../src/builder/processor/static/copy';
-import { printAll } from 'odgn-entity/src/util/print';
 import { FindEntityOptions, selectSrcByExt } from '../../src/builder/query';
-import { Level, Reporter } from '../../src/builder/reporter';
+import { Level, Reporter, setLevel } from '../../src/builder/reporter';
+import { addFile, addSrc, printAll } from '../helpers';
+import { buildProcessors, RawProcessorEntry } from '../../src/builder';
+
 
 
 const printES = async (es) => {
@@ -106,6 +108,27 @@ test('ignore non-relevent', async ({site, es, options}) => {
     // options.reporter = new Reporter();
     await markStatic(site, options);
     await copyStatic(site, {...options, dryRun:true});
+
+});
+
+
+test('copy changed', async ({site, es, options}) => {
+    await addFile( site, 'file:///logo.svg', {dst:'logo.svg'} );
+    await addFile( site, 'file:///header.png', {dst:'header.png'} );
+    await addFile( site, 'file:///image.jpg', {dst:'image.jpg', upd:ChangeSetOp.Update} );
+
+    setLevel(site.reporter, Level.DEBUG);
+
+    const spec:RawProcessorEntry[] = [
+        [ '/processor/build_src_index' ],
+        [ '/processor/mark#statics' ],
+        [ '/processor/build_dst_index'],
+        [ '/processor/static/copy'],
+    ];
+    const process = await buildProcessors( site, spec );
+    await process( site, {...options, onlyUpdated:true, dryRun:true} );
+
+    // await printAll(es);
 
 });
 

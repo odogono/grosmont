@@ -7,7 +7,8 @@ import { ProcessOptions } from "../../types";
 import { toValues as bfToValues } from '@odgn/utils/bitfield';
 
 let logActive = true;
-const log = (...args) => logActive && console.log('[ProcApplyDirMeta]', ...args);
+const Label = '/processor/apply_dir_meta';
+const log = (...args) => logActive && console.log(`[${Label}]`, ...args);
 
 
 /**
@@ -19,7 +20,7 @@ const log = (...args) => logActive && console.log('[ProcApplyDirMeta]', ...args)
 export async function process(site: Site, options: ProcessOptions = {}) {
     const es = options.es ?? site.es;
     let { reporter } = options;
-    setLocation(reporter, '/processor/apply_dir_meta');
+    setLocation(reporter, Label);
 
     let coms = await site.getDirectoryMetaComponents(options);
 

@@ -28,6 +28,7 @@ import { process as renderScss } from './processor/scss';
 import { process as assignTitle } from './processor/assign_title';
 import { process as write } from './processor/write';
 import { process as copyStatic } from './processor/static/copy';
+import { process as remove } from './processor/remove';
 import { process as buildDstIndex } from './processor/build_dst_index';
 import { EntityUpdate, ProcessOptions, SiteProcessor } from './types';
 import { buildSrcIndex, clearUpdates, clearErrors } from './query';
@@ -96,8 +97,10 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
         [renderJs, 0, {beautify}],
         [buildDstIndex, -99],
         
-        [write, -100],
+        [write, -100], // TODO - read from dst index
         [copyStatic, -101],
+
+        [remove, -102],
     ];
 
     const loaded = await parseProcessorConfig(config);

@@ -78,6 +78,33 @@ export class SiteIndex {
         }
         return undefined;
     }
+    
+    [Symbol.iterator]() {
+        return this.index.entries();
+    }
+
+    /**
+     * Removes the given keys from the index
+     * 
+     * @param keys 
+     */
+    remove( keys:any[] ){
+        for( const key of keys ){
+            let entry = this.index.get(key);
+            if( entry !== undefined ){
+                this.index.delete(key);
+                this.eIndex.delete( entry[0] );
+            }
+            else {
+                entry = this.eIndex.get(key);
+                if( entry !== undefined ){
+                    this.eIndex.delete(key);
+                    this.index.delete( entry[0] );
+                }
+            }
+        }
+    }
+
     /**
      * Returns the path associated with this eid
      * or, if full details are required, an array of details

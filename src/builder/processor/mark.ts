@@ -45,7 +45,7 @@ export interface ProcessMarkJSXOptions extends ProcessOptions {
 export async function process(site: Site, options: MarkOptions) {
     const es = site.es;
     const { reporter, exts, comUrl } = options;
-    let { mime, onlyUpdated } = options;
+    // let { mime:optMime, onlyUpdated } = options;
     const loadData = options.loadData ?? false;
     setLocation(reporter, Label);
 
@@ -78,6 +78,8 @@ export async function process(site: Site, options: MarkOptions) {
                 info(reporter, `mark ${comUrl}\t${src}`, { eid });
             }
         }
+
+        let mime = options.mime;
 
         if (mime === undefined) {
             const ext = Path.extname(url);

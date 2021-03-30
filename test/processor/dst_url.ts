@@ -7,7 +7,7 @@ import { build, buildProcessors, RawProcessorEntry } from '../../src/builder';
 import { beforeEach } from '../helpers';
 import { printAll } from 'odgn-entity/src/util/print';
 
-const test = suite('processor/dst_url');
+const test = suite('/processor/dst_url');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 test.before.each( beforeEach );
 
