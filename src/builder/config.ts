@@ -4,14 +4,14 @@ import Path from 'path';
 import Jsonpointer from 'jsonpointer';
 
 
-import { 
+import {
     Component,
     ComponentDef,
-    QueryableEntitySet, 
+    QueryableEntitySet,
     Entity, EntityId, getEntityId,
     isEntitySet,
     getEntityAttribute,
- } from "../es";
+} from "../es";
 
 
 import { slugify, stringify, toInteger } from '@odgn/utils';
@@ -45,22 +45,22 @@ export interface ParseOptions {
  * @param type 
  * @param options 
  */
-export async function parseEntity(from: QueryableEntitySet|Site, input: string|object, options:ParseOptions = {}): Promise<Entity> {
-    const es:QueryableEntitySet = isEntitySet(from) ? from as QueryableEntitySet : (from as Site).es;
+export async function parseEntity(from: QueryableEntitySet | Site, input: string | object, options: ParseOptions = {}): Promise<Entity> {
+    const es: QueryableEntitySet = isEntitySet(from) ? from as QueryableEntitySet : (from as Site).es;
     const addToES = options.add ?? true;
-    let {excludeList,siteRef,srcUrl} = options;
+    let { excludeList, siteRef, srcUrl } = options;
     const type = options.type ?? 'yaml';
-    if( !isEntitySet(from) ){
+    if (!isEntitySet(from)) {
         siteRef = (from as Site).getRef();
     }
-    const selectOptions = {siteRef, srcUrl};
-    
-    let data:any = isString(input) ?
-        parseConfigString(input as string,type)
+    const selectOptions = { siteRef, srcUrl };
+
+    let data: any = isString(input) ?
+        parseConfigString(input as string, type)
         : input;
 
-    
-    if( data === undefined || data === null ){
+
+    if (data === undefined || data === null) {
         return undefined;
     }
 
@@ -82,7 +82,7 @@ export async function parseEntity(from: QueryableEntitySet|Site, input: string|o
 
 
     let e = options.e ?? es.createEntity(eid);
-    
+
     for (const [def, com] of coms) {
         e[def.name] = com;
     }
@@ -91,53 +91,58 @@ export async function parseEntity(from: QueryableEntitySet|Site, input: string|o
         let meta = {};
         for (const key of metaKeys) {
             const value = other[key];
-            
-            if( value === undefined ){
+
+            if (value === undefined) {
                 continue;
             }
 
-            if( key === 'title' ){
-                applyToCom( e, 'Title', {title: value } );
+            if (key === 'title') {
+                applyToCom(e, 'Title', { title: value });
             }
-            else if( key === 'summary'){
-                applyToCom( e, 'Title', {summary: value }, false );
+            else if (key === 'summary') {
+                applyToCom(e, 'Title', { summary: value }, false);
             }
-            else if( key === 'src'){
-                applyUrlToCom( e, 'Src', value );
+            else if (key === 'src') {
+                applyUrlToCom(e, 'Src', value);
                 // e.Src = {url: value };
             }
-            else if( key === 'dst'){
-                applyToCom( e, 'Dst', {url: uriToPath(value)}, false );
+            else if (key === 'dst') {
+                applyToCom(e, 'Dst', { url: uriToPath(value) }, false);
             }
-            else if( key === 'data'){    
-                e.Data = {data: value };
+            else if (key === 'data') {
+                e.Data = { data: value };
             }
-            else if( key === 'date' ){
-                e.Date = {date: new Date(value) };
+            else if (key === 'date') {
+                if (Array.isArray(value)) {
+                    let dates = value.map(v => new Date(v));
+                    e.DateRange = { date_start: dates[0], date_end: dates[1] };
+                } else {
+                    e.Date = { date: new Date(value) };
+                }
             }
-            else if( key === 'output'){
-                e.Output = {data: value };
+            else if (key === 'output') {
+                e.Output = { data: value };
             }
-            else if( key === 'mime'){
-                applyToCom( e, 'Dst', {mime:value}, false );
+            else if (key === 'mime') {
+                applyToCom(e, 'Dst', { mime: value }, false);
                 // e.Mime = {type: value };
             }
-            else if( key === 'tags' ){
-                await applyTags( es, e, value, selectOptions );
+            else if (key === 'tags') {
+                await applyTags(es, e, value, selectOptions);
             }
-            else if( key === 'layout' ){
-                await applyLayout( es, e, value, selectOptions );
+            else if (key === 'layout') {
+                await applyLayout(es, e, value, selectOptions);
             }
-            else if( key === 'upd' ){
+            else if (key === 'upd') {
                 e.Upd = { op: toInteger(value) };
             }
             else {
                 meta[key] = value;
             }
         }
-        if( Object.keys(meta).length > 0 ){
+        if (Object.keys(meta).length > 0) {
             // e.Meta = { meta };
-            applyMeta( e, meta );
+            applyMeta(e, meta);
             // applyToCom( e, 'Meta', {meta}, false );
         }
     }
@@ -162,43 +167,43 @@ export async function parseEntity(from: QueryableEntitySet|Site, input: string|o
     }
 
     // remove any excludeListed coms from the entity
-    if( excludeList !== undefined ){
+    if (excludeList !== undefined) {
         const dids = bfToValues(excludeList);
         // console.log('excludeList dids', dids);
         let ce = es.createEntity(e.id);
-        for( const [did,com] of e.components ){
-            if( dids.indexOf(did) === -1 ){
+        for (const [did, com] of e.components) {
+            if (dids.indexOf(did) === -1) {
                 ce.addComponentUnsafe(com);
             }
         }
         e = ce;
     }
 
-    if( addToES ){
-        if( siteRef !== undefined ){
-            e.SiteRef = { ref:siteRef};
+    if (addToES) {
+        if (siteRef !== undefined) {
+            e.SiteRef = { ref: siteRef };
         }
 
         // if we couldn't insert the layout earlier because the e had not
         // yet been created, then read it from meta
-        const {layout, ...meta} = e.Meta?.meta ?? {};
-        if( layout ){
-            e.Meta = Object.keys(meta).length > 0 ? {meta} : undefined;
+        const { layout, ...meta } = e.Meta?.meta ?? {};
+        if (layout) {
+            e.Meta = Object.keys(meta).length > 0 ? { meta } : undefined;
         }
 
         // log('adding', Array.from(e.components.values()));
         // apply, dont replace, to existing e
-        await es.add( Array.from(e.components.values()) );
-        
+        await es.add(Array.from(e.components.values()));
+
         // printEntity(es, e);
         // await es.add( e );
         eid = es.getUpdatedEntities()[0];
 
         // if we couldn't insert the layout earlier because the e had not
         // yet been created, then insert it now
-        if( layout ){
+        if (layout) {
             const layoutEid = await findEntityBySrcUrl(es, layout, selectOptions);
-            if( layoutEid !== undefined ){
+            if (layoutEid !== undefined) {
                 // log('add layout', eid, layoutEid );
                 await insertDependency(es, eid, layoutEid, 'layout');
             } else {
@@ -213,38 +218,38 @@ export async function parseEntity(from: QueryableEntitySet|Site, input: string|o
     return e;
 }
 
-function applyUrlToCom( e:Entity, name:string, url:string, overwrite:boolean = false ){
-    if( /^.*:\/\//.exec(url) === null ){
+function applyUrlToCom(e: Entity, name: string, url: string, overwrite: boolean = false) {
+    if (/^.*:\/\//.exec(url) === null) {
         // url = pathToFileURL( url ).href;
-        if( !url.startsWith(Path.sep) ){
+        if (!url.startsWith(Path.sep)) {
             url = `${Path.sep}${url}`;
         }
         url = `file://${url}`;
     }
 
-    return applyToCom( e, name, {url}, overwrite );
+    return applyToCom(e, name, { url }, overwrite);
 }
 
-function applyToCom( e:Entity, name:string, attrs:any, overwrite:boolean = true ){
+function applyToCom(e: Entity, name: string, attrs: any, overwrite: boolean = true) {
     let com = e[name] ?? {};
-    com = overwrite ? {...attrs} : {...com,...attrs};
+    com = overwrite ? { ...attrs } : { ...com, ...attrs };
     e[name] = com;
     return e;
 }
 
 
-async function applyLayout( es:QueryableEntitySet, e:Entity, url:string, options:FindEntityOptions = {} ) {
+async function applyLayout(es: QueryableEntitySet, e: Entity, url: string, options: FindEntityOptions = {}) {
     let { srcUrl } = options;
     srcUrl = srcUrl ?? e.Src?.url ?? '';
 
-    url = resolveUrlPath( url, srcUrl );
+    url = resolveUrlPath(url, srcUrl);
 
     // find the entity matching the layout
     const layoutEid = await findEntityBySrcUrl(es, url, options);
-    
-    if( e.id === 0 ){
+
+    if (e.id === 0) {
         // log('[applyLayout]', url, 'e not yet present', layoutEid);
-        applyMeta( e, {layout:url});
+        applyMeta(e, { layout: url });
         return e;
     }
 
@@ -252,27 +257,27 @@ async function applyLayout( es:QueryableEntitySet, e:Entity, url:string, options
         await insertDependency(es, e.id, layoutEid, 'layout');
     } else {
         log('[applyLayout]', 'could not find layout for', url);
-        log('[applyLayout]', 'reading from', srcUrl );
-        
+        log('[applyLayout]', 'reading from', srcUrl);
+
         throw new Error('layout path not found');
     }
     return e;
 }
 
 
-async function applyTags( es:QueryableEntitySet, e:Entity, tags:string|string[], options:FindEntityOptions = {}){
-    let names:string[] = isString(tags) ? [ tags as string ] : tags as string[];
-    
+async function applyTags(es: QueryableEntitySet, e: Entity, tags: string | string[], options: FindEntityOptions = {}) {
+    let names: string[] = isString(tags) ? [tags as string] : tags as string[];
+
     // get rid of duplicates
-    names = Object.values( names.reduce( (r,tag) => {
+    names = Object.values(names.reduce((r, tag) => {
         r[slugify(tag)] = tag;
         return r;
-    }, {}) );
+    }, {}));
 
-    for( const tag of names ){
+    for (const tag of names) {
         let etag = await selectTagBySlug(es, tag, options);
-        if( etag === undefined ){
-            etag = await createTag(es,tag, options);
+        if (etag === undefined) {
+            etag = await createTag(es, tag, options);
         }
 
         await insertDependency(es, e.id, etag.id, 'tag');
@@ -296,14 +301,14 @@ async function applyTags( es:QueryableEntitySet, e:Entity, tags:string|string[],
 // }
 
 
-export type ParseType = 'yaml'|'toml'|'text/yaml'|'text/toml';
+export type ParseType = 'yaml' | 'toml' | 'text/yaml' | 'text/toml';
 
 /**
  * 
  * @param data 
  * @param type 
  */
-export function parseConfigString( data:string, type:ParseType = 'yaml' ){
+export function parseConfigString(data: string, type: ParseType = 'yaml') {
     if (type == 'toml' || type == 'text/toml') {
         try {
             return Toml.parse(data);
@@ -323,7 +328,7 @@ export function parseConfigString( data:string, type:ParseType = 'yaml' ){
     }
 }
 
-export function getPtr(data:any, path:string){
+export function getPtr(data: any, path: string) {
     return Jsonpointer.get(data, path);
 }
 
