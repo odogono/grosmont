@@ -78,6 +78,13 @@ export class SiteIndex {
         }
         return undefined;
     }
+    /**
+     * Returns the path associated with this eid
+     * or, if full details are required, an array of details
+     * @param eid 
+     * @param full 
+     * @returns 
+     */
     getByEid( eid:EntityId, full:boolean = false ) {
         let entry = this.eIndex.get(eid);
         return entry !== undefined ? 

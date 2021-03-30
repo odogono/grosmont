@@ -12,7 +12,7 @@ const log = (...args) => console.log('[/processor/build_dst_index]', ...args);
 
 
 export interface DstIndexOptions extends ProcessOptions {
-    loadData?: boolean;
+    
 }
 
 /**
@@ -27,6 +27,9 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
 
     const dstIndex = site.getDstIndex(true);
     const coms = await selectSrc(es, options);
+    
+
+    const upDid = es.resolveComponentDefId('/component/upd');
 
     // log('building', coms);
 
@@ -37,10 +40,13 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
         let url = await getDstUrl(es, eid);
         
         if (url !== undefined) {
+
+            const updCom = await es.getComponent( toComponentId(eid,upDid) );
+
             // log('input', url);
             url = await ensureExtension(site, eid, url);
             // log(url, eid);
-            dstIndex.set(uriToPath(url), eid);
+            dstIndex.set(uriToPath(url), eid, updCom?.op);
         }
     }
 

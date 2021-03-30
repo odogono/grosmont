@@ -87,6 +87,8 @@ export async function parseEntity(from: QueryableEntitySet | Site, input: string
         e[def.name] = com;
     }
 
+    
+
     if (metaKeys.length > 0) {
         let meta = {};
         for (const key of metaKeys) {
@@ -191,7 +193,6 @@ export async function parseEntity(from: QueryableEntitySet | Site, input: string
             e.Meta = Object.keys(meta).length > 0 ? { meta } : undefined;
         }
 
-        // log('adding', Array.from(e.components.values()));
         // apply, dont replace, to existing e
         await es.add(Array.from(e.components.values()));
 
