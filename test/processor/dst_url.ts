@@ -3,7 +3,7 @@ import assert from 'uvu/assert';
 
 import { parseEntity } from '../../src/builder/config';
 import { getDstUrl } from '../../src/builder/query';
-import { build } from '../../src/builder';
+import { build, buildProcessors, RawProcessorEntry } from '../../src/builder';
 import { beforeEach } from '../helpers';
 import { printAll } from 'odgn-entity/src/util/print';
 
@@ -176,13 +176,59 @@ test('dir meta dst', async ({es, site,options}) => {
 
     // printEntity(es, e);
 
-    let path = await getDstUrl(es, e.id);
+    // let path = await getDstUrl(es, e.id);
 
-    assert.equal( path, "/pages/index.html" );
+    // assert.equal( path, "/pages/index.html" );
 
     // log( site.getIndex('/index/dstUrl') );
 
 });
+
+
+test('dst dir filename', async ({es, site, options}) => {
+    await parseEntity( site, `
+    src: file:///projects.mdx
+    dst: /pages/
+    data: "# Projects"
+    `);
+
+    const spec:RawProcessorEntry[] = [
+        [ '/processor/build_src_index' ],
+        [ '/processor/mark#mdx' ],
+        [ '/processor/mdx/eval'],
+        [ '/processor/js/eval'],
+        [ '/processor/js/render'],
+    ];
+    const process = await buildProcessors( site, spec );
+
+    await process( site );
+
+    // await printAll( es );
+
+    let e = await site.getEntityBySrc('file:///projects.mdx');
+    let path = await getDstUrl(es, e.id);
+    assert.equal( path, "/pages/projects.html" );
+});
+
+
+test('filename from src', async ({es, site}) => {
+    await parseEntity( site, `
+    src: file:///images/house.png
+    dst: /static/
+    `);
+
+    const spec:RawProcessorEntry[] = [
+        [ '/processor/build_src_index' ],
+    ];
+    const process = await buildProcessors( site, spec );
+    await process( site );
+
+    // await printAll( es );
+
+    let e = await site.getEntityBySrc('file:///images/house.png');
+    let path = await getDstUrl(es, e.id);
+    assert.equal( path, "/static/house.png" );
+})
 
 
 

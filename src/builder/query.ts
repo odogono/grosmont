@@ -1,5 +1,5 @@
 import Path from 'path';
-
+import Mime from 'mime-types';
 
 import {
     Component, getComponentEntityId, setEntityId,
@@ -12,6 +12,7 @@ import { uriToPath } from './util';
 import { DependencyType, ProcessOptions } from './types';
 import { BitField } from "@odgn/utils/bitfield";
 import { parseUri, slugify, toBoolean } from '@odgn/utils';
+import { SType } from 'odgn-entity/src/query/types';
 
 
 
@@ -882,7 +883,6 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
     let com = await stmt.getResult({ url, ref });
     com = com.length === 0 ? undefined : com[0];
 
-    // console.log('[selectSiteSrcByUrl]', url, com );
 
     if (com === undefined) {
         if (!options.createIfNotFound) {
@@ -934,24 +934,37 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
 
     [ "" swap ~r/\\/$/ replace ] removeTrailingSlash define
 
+    [ $paths "" join ] pathsToStr define
+
+    // (str -- str)
     [
         dup isAbsPath
-        // dup ~r/^\\// eval
         [["/" *^^$0] "" join ] swap false == if
-
     ] ensureLeadingSlash define
 
 
     [ $paths + paths ! ] addToPaths define
     
-
+    // returns the src url from an entity
     // ( es eid -- es str|false )
-    // returns the target uri from an entity
     [
-        
+        swap [ *^$1 @eid /component/src#url @ca ] select pop? swap drop
+        dup [ drop false @! ] swap undefined == if
+        @>
+    ] selectSrcUrl define
+
+    // returns the mime from /component/output
+    // ( es eid -- es str|false )
+    [
+        swap [ *^$1 @eid /component/output#mime @ca ] select pop? swap drop
+        dup [ drop false @! ] swap undefined == if
+        @>
+    ] selectOutputMime define
+
+    // returns the target uri from an entity
+    // ( es eid -- es str|false )
+    [
         swap [ *^$1 @eid /component/dst#url @ca ] select pop? swap drop
-        
-        // swap [ *^$1 @eid /component/dst !bf @c ] select
         
         // if no /dst component exists, return undefined
         // taking care to drop the empty result
@@ -959,7 +972,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
 
         @> // restart exec after @!
         
-    ] selectDst define
+    ] selectDstUrl define
 
 
     // selects the parent entity, or false if none is found
@@ -990,7 +1003,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
         // to order eid es eid
         dup rot rot
 
-        selectDst
+        selectDstUrl
         
         dup
         
@@ -1014,26 +1027,36 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
 
 
     // es eid -- es eid|false
-    [   
-        
+    [           
         selectParent
 
         // if no parent, stop execution
-        dup [ @! ] swap false == if
+        [ @! ] *%1 false == if
 
     ] handleParent define
 
+    // ( str|false -- )
     [
+        [ drop @! ] *%1 false == if
+        // if we already have a filename, return
         [ drop @!] $filename size! 0 != if
         filename !
         @>
     ] setFilename define
 
+    // ( str -- str|false )
+    [
+        ~r/(?!\/$)(?:.*\/)?(.*)/ eval
+        dup [ drop @! ] swap false == if
+        pop!
+        size [ drop false @! ] swap 0 == if
+        @>
+    ] filenameFromPath define
+
     // takes a path, extracts the filename and sets it if exists
     // returns the path without filename
-    // str
+    // ( str -- str )
     [
-        
         ~r/(.*\\/)?(.*)/ eval
         dup [ drop @! ] swap false == if
         
@@ -1044,8 +1067,42 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
         dup [ drop "" @! ] swap undefined == if
         
         @>
-        
     ] selectFilenameAndPath define
+
+
+    // ( es eid -- es eid filename|false )
+    [
+        selectFilenameFromSrc
+        
+        *$1 *%2 selectOutputMime
+
+        // ( eid filename es mime -- )
+        // return if false
+        [ drop swap drop swap false @! ] *%1 false == if
+        
+        lookupMimeExt
+        // -- eid fname es ext
+        
+        *$2 ~r/(.+?)(\.[^.]*$|$)/ eval spread drop *$1 drop 
+        // note the ugly double escape to prevent
+        [] + swap +  **. join
+        
+        // clear eid so result is -- es filename
+        *$2 drop
+        
+        @>
+    ] selectFilenameFromOutput define
+    
+
+    // ( es eid -- es eid filename|false )
+    [
+        dup *$2 *$1 selectSrcUrl
+        
+        [ drop swap false @! ] *%1 false == if
+        
+        filenameFromPath
+
+    ] selectFilenameFromSrc define
     
 
     // iterate up the dir dependency tree
@@ -1056,41 +1113,64 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId): Promise<
         // if it exists
         handleDst
 
+        // ( es eid "abs"|"rel"|false -- )
+
         // if the dst exists and is absolute, then we have
         // finished
-        dup [ drop drop @! ] swap "abs" == if
+        [ drop @! ] *%1 "abs" == if
         
-        // es eid false
+        // ( es eid false --  )
         
-        
-        drop // drop the false result
-        
-        
-        // swap // so we have es eid
-        
+        // drop the false result
+        [ drop ] *%1 false == if
+        [ drop ] *%1 rel == if
         
         // find the parent dir using deps
+        
         handleParent
-
-         
-
+        
         true // loop only continues while true
     ] loop
 
+    // drop the false result back from handleParent
+    [ drop $eid ] %1 false == if
+    
+    // ( es eid --  )
+    
+    // lookup filename from output
+    [ 
+        selectFilenameFromOutput 
+        
+        
+        // [ "select fname is" *^%0 ] to_str! .
+        setFilename
+    ] $filename size! 0 == if
+    
+    // lookup filename from src providing we have a path
+    [   
+        selectFilenameFromSrc
+        setFilename
+        // $paths "" join [ "path is" *^$1 ] to_str! .
+    ] $filename size! 0 == pathsToStr size! 0 swap > and if
+
+    
     // if no filename is found, then quit
     [ undefined @! ] $filename size! 0 == if
-
-
-    $paths "" join 
-    $filename swap +
-
     
-    
+    pathsToStr $filename swap +
+
     dup [ drop undefined @! ] swap size! 0 == if
     ensureLeadingSlash
     
     @>
+    // [ "ok done" $eid *^%0 ] to_str! .
     `);
+
+    stmt.stack.addWord('lookupMimeExt', (stack) => {
+        const mime = stack.popValue();
+        const ext = Mime.extension( mime );
+        return [SType.Value, ext];
+    });
 
     const dirCom = await stmt.getResult({ eid });
     return dirCom && dirCom.length > 0 ? dirCom : undefined;
