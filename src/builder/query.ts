@@ -461,8 +461,10 @@ export async function selectSrc(es: QueryableEntitySet, options: FindEntityOptio
     if( onlyUpdated ){
         q = `
         [
-                        /component/upd#op !ca 1 ==
-                        /component/upd#op !ca 2 ==
+                            /component/upd#op !ca 1 ==
+                            /component/upd#op !ca 2 ==
+                        or
+                        /component/upd#op !ca 4 ==
                     or
                     /component/site_ref#ref !ca $ref ==
                 and
@@ -1176,15 +1178,22 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
 
     // ( es eid --  )
     
+    pathsToStr size! 0 swap > hasPath let
+
+    // [ prints ] $debug if
+    
     // lookup filename from output
     [ 
-        // [ prints ] $debug if
+        // [ [ "WTF!" $hasPath . ] $debug if
+
         selectFilenameFromOutput 
         
         // [ "select fname is" *^%0 ] to_str! .
         setFilename
-    ] $filename size! 0 == if
-
+    ] $filename size! 0 == $hasPath and if
+    
+    
+    // [ $filename size! 0 == hasPath and ] $debug if
     
     
     // lookup filename from src providing we have a path
@@ -1192,7 +1201,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         selectFilenameFromSrc
         setFilename
         // $paths "" join [ "path is" *^$1 ] to_str! .
-    ] $filename size! 0 == pathsToStr size! 0 swap > and if
+    ] $filename size! 0 == $hasPath and if
 
     
     // if no filename is found, then quit

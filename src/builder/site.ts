@@ -38,7 +38,7 @@ import {
 import { DependencyType, ProcessOptions, SiteIndex } from './types';
 import { isEmpty, isInteger, isString, parseUri } from '@odgn/utils';
 import { createUUID } from '@odgn/utils';
-import { error, info, Level, Reporter, setLevel, setLocation } from './reporter';
+import { error, info, Level, Reporter, setLevel, setLocation, warn } from './reporter';
 import { uriToPath } from './util';
 import JSONPointer from 'jsonpointer';
 
@@ -300,7 +300,13 @@ export class Site {
         }
 
         try {
-            await Fs.unlink(fullPath);
+            let exists = await Fs.pathExists(fullPath);
+            if( exists ) {
+                await Fs.unlink(fullPath);
+            } else {
+                warn(this.reporter, `removeDstUrl ${path} not found`);
+            }
+
         } catch( err ){
             error(this.reporter, 'removeDstUrl', err );
         }

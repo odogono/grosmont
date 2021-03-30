@@ -323,8 +323,6 @@ export function resolveImport(site: Site, url: string, base: string): EntitySrcD
     
     
     if (entry === undefined) {
-        // log('[resolveImport]', 'not found', url );
-        // log('[resolveImport]', site.getIndex('/index/dstUrl') );
         return undefined;
     }
 

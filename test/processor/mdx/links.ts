@@ -33,10 +33,6 @@ dst: about.html
     await process(site, options);
 
 
-    // await printAll(es);
-
-    // log( site.getIndex('/index/dstUrl') );
-
     e = await site.getEntityBySrc('file:///pages/about.mdx');
 
     assert.equal(e.Output.data,

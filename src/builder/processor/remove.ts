@@ -28,8 +28,6 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     for( const [path, [eid,op]] of dstIndex ){
 
-        log('src', path, op);
-
         if( op !== ChangeSetOp.Remove ){
             continue;
         }

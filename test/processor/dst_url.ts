@@ -174,13 +174,9 @@ test('dir meta dst', async ({es, site,options}) => {
 
     let e = await site.getEntityBySrc('file:///index.mdx');
 
-    // printEntity(es, e);
-
     // let path = await getDstUrl(es, e.id);
 
     // assert.equal( path, "/pages/index.html" );
-
-    // log( site.getIndex('/index/dstUrl') );
 
 });
 
