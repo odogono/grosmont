@@ -1178,19 +1178,19 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
 
     // ( es eid --  )
     
-    pathsToStr size! 0 swap > hasPath let
+    pathsToStr size! 0 > hasPath let
 
-    // [ prints ] $debug if
+    
     
     // lookup filename from output
     [ 
-        // [ [ "WTF!" $hasPath . ] $debug if
-
+    
         selectFilenameFromOutput 
         
         // [ "select fname is" *^%0 ] to_str! .
         setFilename
     ] $filename size! 0 == $hasPath and if
+    
     
     
     // [ $filename size! 0 == hasPath and ] $debug if
@@ -1199,6 +1199,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
     // lookup filename from src providing we have a path
     [   
         selectFilenameFromSrc
+
         setFilename
         // $paths "" join [ "path is" *^$1 ] to_str! .
     ] $filename size! 0 == $hasPath and if
@@ -1207,7 +1208,8 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
     // if no filename is found, then quit
     [ undefined @! ] $filename size! 0 == if
     
-    pathsToStr $filename swap +
+    
+    pathsToStr $filename +
 
     dup [ drop undefined @! ] swap size! 0 == if
     ensureLeadingSlash
