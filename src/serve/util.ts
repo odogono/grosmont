@@ -61,7 +61,7 @@ export async function buildEntityDepsOfDisplay(site: Site, process:SiteProcessor
     let deps = await getDependencyOfEntities(site.es, eid);
 
     // add the src url of the dst to each dep
-    deps = await Promise.all(deps.map(async dep => buildDepData(site,dep) ));
+    deps = await Promise.all(deps.map(async dep => buildDepData(site,dep, 'src') ));
     
     const props = { e, es: site.es, deps };
 
@@ -69,21 +69,21 @@ export async function buildEntityDepsOfDisplay(site: Site, process:SiteProcessor
 }
 
 
-async function buildDepData( site:Site, e:Entity ){
+async function buildDepData( site:Site, e:Entity, field:string = 'dst' ){
     const {es} = site;
     const type = e.Dep.type;
-    let dst = e.Dep.dst ?? 0;
-    if (dst === 0) {
+    let linkEid = e.Dep[field] ?? 0;
+    if (linkEid === 0) {
         return e;
     }
     let meta:any = {};
     if( type === 'tag' ){
         const did = es.resolveComponentDefId('/component/title');
-        let com = await es.getComponent( toComponentId(dst, did) );
+        let com = await es.getComponent( toComponentId(linkEid, did) );
         meta.label = com.title;
     }
     else {
-        meta.label = await site.getEntitySrcUrl(dst);
+        meta.label = await site.getEntitySrcUrl(linkEid);
     }
     return applyMeta(e, meta );
 }
