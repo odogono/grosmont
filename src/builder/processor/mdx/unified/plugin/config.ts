@@ -5,14 +5,14 @@ import unistRemove from 'unist-util-remove';
 
 
 export interface ConfigProps {
-    onConfig: (config:any) => any;
+    onConfig?: (config: any, override: boolean) => any;
 }
 
 /**
  * 
  * @param options 
  */
-export function configPlugin( {onConfig}:ConfigProps ) {
+export function configPlugin({ onConfig }: ConfigProps) {
     return (tree, vFile) => {
 
         unistVisit(tree, { type: 'yaml' }, (node, index, parent) => {
@@ -22,7 +22,9 @@ export function configPlugin( {onConfig}:ConfigProps ) {
             try {
                 let parsed = Yaml.parse(config);
 
-                onConfig(parsed);
+                if( onConfig ){
+                    onConfig(parsed, true);
+                }
 
             } catch (e) {
                 console.error("Parsing error on line " + e.line + ", column " + e.column +

@@ -12,3 +12,4 @@ yarn.lock
 *.sqlite-wal
 *.sqlite-shm
 test/fixtures/odgn*
+test/fixtures/ccode

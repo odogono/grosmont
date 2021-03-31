@@ -1,4 +1,4 @@
-// import './assign_title';
+import './assign_title';
 import './css';
 import './frontmatter';
 import './image';

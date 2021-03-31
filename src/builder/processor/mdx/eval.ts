@@ -1,5 +1,5 @@
 import Path from 'path';
-import { 
+import {
     ChangeSetOp,
     Entity, EntityId,
     Component, setEntityId,
@@ -50,7 +50,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             info(reporter, `${e.Src?.url}`, { eid: e.id });
 
         } catch (err) {
-            output.push( createErrorComponent(es, e, err, {from:Label}) );
+            output.push(createErrorComponent(es, e, err, { from: Label }));
             error(reporter, `error ${srcUrl}`, err, { eid: e.id });
             // log(`error: ${srcUrl}`, err);
         }
@@ -73,21 +73,21 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const { reporter } = options;
 
     let imports = [];
-    let links:LinkDescr[] = [];
+    let links: LinkDescr[] = [];
     let meta = e.Meta?.meta ?? {};
     let config = {};
 
     // function passed into the mdx parser and called whenever
     // an import is found
-    function resolveImportLocal(path: string, specifiers?: string[]): [string,boolean]|undefined {
+    function resolveImportLocal(path: string, specifiers?: string[]): [string, boolean] | undefined {
 
         // if the path starts with http(s), then this is an import to the page,
         // most likely js
-        if( !isUrlInternal(path) ){
+        if (!isUrlInternal(path)) {
             // log('[resolveImportLocal]', 'ext', path);
             let remove = path === '@site' ? false : true;
-            if( remove ){
-                links.push(['ext', undefined, path, undefined, 'script' ]);
+            if (remove) {
+                links.push(['ext', undefined, path, undefined, 'script']);
             }
             return [path, remove];
         }
@@ -97,16 +97,16 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         if (entry !== undefined) {
             const [eid, url, mime, srcUrl, dstUrl] = entry;
             let remove = (mime === 'text/css' || mime === 'text/scss');
-            imports.push([eid,url,mime, specifiers]);
-            
+            imports.push([eid, url, mime, specifiers]);
+
             return [url, remove];
         } else {
             warn(reporter, `import ${path} not resolved`, { eid: e.id });
         }
     }
 
-    function onConfig( incoming: any ){
-        config = {...config, ...incoming };
+    function onConfig(incoming: any, override: boolean = true) {
+        config = override ? { ...config, ...incoming } : { ...incoming, ...config };
     }
 
     const require = (path: string, fullPath) => {
@@ -114,8 +114,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return false;
     };
 
-    function resolveLink(url: string, text: string){
-        
+    function resolveLink(url: string, text: string) {
+
         if (!isUrlInternal(url)) {
             links.push(['ext', undefined, url, text]);
             return url;
@@ -124,7 +124,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         let entry = resolveImport(site, url, base);
         if (entry !== undefined) {
             const [eid, lurl, mime, srcUrl, dstUrl] = entry;
-            if( eid !== e.id ){
+            if (eid !== e.id) {
                 links.push(['int', entry[0], lurl, text]);
                 // log('[resolveLink]', url, e.id, eid, entry);
                 return lurl;
@@ -135,7 +135,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return url;
     }
 
-    async function resolveData( srcUrl:string, text?:string, type:DependencyType = 'img' ){
+    async function resolveData(srcUrl: string, text?: string, type: DependencyType = 'img') {
         if (!isUrlInternal(srcUrl)) {
             links.push(['ext', undefined, srcUrl, text, type]);
             warn(reporter, `[resolveData] ${srcUrl} not resolved`, { eid: e.id });
@@ -148,53 +148,53 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
             warn(reporter, `[resolveData] ${srcUrl} not resolved`, { eid: e.id });
             return undefined;
         }
-        
+
         let eid = entry[0];
         links.push(['int', entry[0], srcUrl, text, type]);
-        
-        
-        return e !== undefined ? site.getEntityData( eid ) : undefined;
+
+
+        return e !== undefined ? site.getEntityData(eid) : undefined;
     }
 
 
     // deals with the client code plugin which will extract code designated to
     // be executed client side.
-    async function registerClientCode( details:ClientCodeDetails ){
-        
+    async function registerClientCode(details: ClientCodeDetails) {
+
         // log('[registerClientCode]', details );
 
         const codeName = `code.${e.id}.js`;
         let codeUrl = Path.dirname(base) + Path.sep + codeName;
         codeUrl = codeUrl.replace('file://', 'src://');
-        let codeE = await site.addSrc( codeUrl );
-        codeE.Upd = {op: codeE.id === 0 ? ChangeSetOp.Add : ChangeSetOp.Update };
-        codeE.Dst = {url:`file:///${codeName}`};
+        let codeE = await site.addSrc(codeUrl);
+        codeE.Upd = { op: codeE.id === 0 ? ChangeSetOp.Add : ChangeSetOp.Update };
+        codeE.Dst = { url: `file:///${codeName}` };
 
-        let {imports:clientImports,components} = codeE.ClientCode ?? {imports:[], components:{}};
+        let { imports: clientImports, components } = codeE.ClientCode ?? { imports: [], components: {} };
 
-        for( let [code,path,spec] of details.imports ){
-            let [url] = resolveImportLocal( path, spec as any );
-            code = code.replace(path,url);
+        for (let [code, path, spec] of details.imports) {
+            let [url] = resolveImportLocal(path, spec as any);
+            code = code.replace(path, url);
 
             // ensure we are not re-adding the same import
-            const notFound = clientImports.findIndex( imp => imp[0] === code ) === -1;
-            
-            if( notFound ){
-                clientImports.push( [code,url,spec] );
+            const notFound = clientImports.findIndex(imp => imp[0] === code) === -1;
+
+            if (notFound) {
+                clientImports.push([code, url, spec]);
             }
             // log('[registerClientCode]', 'import', [code, url, undefined,spec]);
         }
 
         // imports = imports.concat( details.imports );
-        components = {...components, ...details.components };
-        codeE.ClientCode = {imports:clientImports, components};
-        
+        components = { ...components, ...details.components };
+        codeE.ClientCode = { imports: clientImports, components };
+
         // log('[registerClientCode]', codeE.ClientCode );
         codeE = await site.update(codeE);
         // log('[registerClientCode]', '<');
 
         // log('[registerClientCode]', e.id, codeUrl, codeE.id );
-        links.push(['int', codeE.id, codeUrl, undefined, 'script' ]);
+        links.push(['int', codeE.id, codeUrl, undefined, 'script']);
     }
 
 
@@ -208,17 +208,17 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         return [];
     }
 
-    const { js, jsx } = await mdxToJs(data, props, { 
-        onConfig, 
+    const { js, jsx } = await mdxToJs(data, props, {
+        onConfig,
         registerClientCode,
         resolveLink, resolveData, resolveImport: resolveImportLocal,
-        require, context 
+        require, context
     });
 
     const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
     // const jsxCom = setEntityId(es.createComponent('/component/jsx', { data: jsx }), e.id);
 
-    meta = {...meta, ...config};
+    meta = { ...meta, ...config };
     await parseEntity(es, meta, { add: true, e, siteRef });
 
     // creates link dependencies and adds to the link
@@ -232,10 +232,10 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
 
 
 
-type LinkDescr = [ 'ext'|'int', EntityId, string /*url*/, string? /*text*/, DependencyType? ];
+type LinkDescr = ['ext' | 'int', EntityId, string /*url*/, string? /*text*/, DependencyType?];
 
 
-async function applyLinks(site: Site, e: Entity, links:LinkDescr[], options: EvalMdxOptions) {
+async function applyLinks(site: Site, e: Entity, links: LinkDescr[], options: EvalMdxOptions) {
     const { es } = site;
     const existingIds = new Set(await getDependencyEntityIds(es, e.id, ['link', 'script']));
 
@@ -277,7 +277,7 @@ async function getUrlEntityId(es: QueryableEntitySet, url: string, options: Eval
  * @param path 
  * @param options 
  */
- async function mdxToJs(mdxData: string, props: TranspileProps, options: TranspileOptions): Promise<TranspileResult> {
+async function mdxToJs(mdxData: string, props: TranspileProps, options: TranspileOptions): Promise<TranspileResult> {
     let meta = props.meta ?? {};
     let { css, cssLinks: inputCssLinks, children } = props;
     const inPageProps = { ...meta, css, cssLinks: inputCssLinks };
@@ -285,7 +285,7 @@ async function getUrlEntityId(es: QueryableEntitySet, url: string, options: Eval
 
     // convert the mdx to jsx
     let { jsx, ast } = await transformMdx(mdxData, processOpts);
-    
+
 
     // log('[mdxToJs]', jsx);
     // convert from jsx to js

@@ -1,5 +1,5 @@
 import Path from 'path';
-import { 
+import {
     ChangeSetOp,
     Entity, EntityId,
     Component, setEntityId,
@@ -25,7 +25,7 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
 /**
  * Parses the frontmatter of MDX
  */
- export async function process(site: Site, options: ProcessOptions = {}) {
+export async function process(site: Site, options: ProcessOptions = {}) {
     const es = site.es;
     const { reporter } = options;
     setLocation(reporter, Label);
@@ -40,11 +40,11 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
 
         try {
             await processEntity(site, e, options);
-            
+
             info(reporter, `${e.Src?.url}`, { eid: e.id });
 
         } catch (err) {
-            output.push( createErrorComponent(es, e, err, {from:Label}) );
+            output.push(createErrorComponent(es, e, err, { from: Label }));
             error(reporter, `error ${srcUrl}`, err, { eid: e.id });
         }
 
@@ -71,13 +71,13 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     let meta = e.Meta?.meta ?? {};
     let config = {};
 
-    function onConfig( incoming: any ){
-        config = {...config, ...incoming };
+    function onConfig(incoming: any, override: boolean = true) {
+        config = override ? { ...config, ...incoming } : { ...incoming, ...config };
     }
 
-    await parseFrontmatter(data, {onConfig} );
+    await parseFrontmatter(data, { onConfig });
 
-    meta = {...meta, ...config};
+    meta = { ...meta, ...config };
 
     // log('parsed', meta);
 

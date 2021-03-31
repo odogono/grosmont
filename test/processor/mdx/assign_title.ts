@@ -1,6 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addSrc, beforeEach, process} from '../../helpers';
+import { addSrc, beforeEach, printAll, process} from '../../helpers';
 
 const test = suite('/processor/mdx/assign_title');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -8,9 +8,7 @@ const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 
 test.before.each(beforeEach);
 
-console.warn('REVISIT');
-
-test('extract target slug from title', async ({ es, site, options }) => {
+test.skip('extract target slug from title', async ({ es, site, options }) => {
 
     await addSrc(site, 'file:///pages/main.mdx', `
 # Extracting the Page Title
@@ -27,7 +25,7 @@ test('extract target slug from title', async ({ es, site, options }) => {
 
 
 
-test('extract target slug from title with dst', async ({ es, site, options }) => {
+test.skip('extract target slug from title with dst', async ({ es, site, options }) => {
 
     let e = await addSrc(site, 'file:///pages/main.mdx', `
 # Extracting the Page Title
@@ -69,7 +67,20 @@ dst: index.html
     // printES(es);
 });
 
+test('extracted title does not override frontmatter', async ({es,site,options}) => {
+    await addSrc(site, 'file:///pages/main.mdx', `
+---
+title: Main
+---
+# Front Page
+    `);
 
+    await process(site, options);
+
+    let e = await site.getEntityBySrc('file:///pages/main.mdx');
+
+    assert.equal(e.Title.title, 'Main');
+})
 
 
 test.run();

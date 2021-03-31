@@ -17,64 +17,36 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
  */
 export async function process(site: Site, options: ProcessOptions = {}) {
     const es = site.es;
-    const { reporter, onlyUpdated } = options;
+    const { reporter, onlyUpdated, dryRun } = options;
     setLocation(reporter, Label);
 
     const idx = site.getDstIndex();
     const did = es.resolveComponentDefId('/component/output');
 
-    for( const [path, [eid,op]] of idx ){
+    for (const [path, [eid, op]] of idx) {
 
         // log('path', path, {op} );
 
-        if( (op === undefined && onlyUpdated) || op === ChangeSetOp.Remove ){
+        if ((op === undefined && onlyUpdated) || op === ChangeSetOp.Remove) {
             continue;
         }
 
-        let com = await es.getComponent( toComponentId(eid,did) );
+        let com = await es.getComponent(toComponentId(eid, did));
 
-        if( com === undefined ){
+        if (com === undefined) {
             continue;
         }
 
         let fullPath = site.getDstUrl(path);
 
-        await site.writeToUrl( fullPath, com.data );
+        if (dryRun) {
+            info(reporter, `[dryRun] wrote to ${path} : ${op}`, { eid });
+        } else {
+            await site.writeToUrl(fullPath, com.data);
+            info(reporter, `wrote to ${path} : ${op}`, { eid });
+        }
 
-        info(reporter, `wrote to ${path} : ${op}`, { eid });
     }
-
-    // const coms = await selectOutputWithDst(es, options);
-    
-    // for (const com of coms) {
-    //     const eid = getComponentEntityId(com);
-    //     try {
-
-    //         const dst = site.getEntityDstUrl(eid);
-
-    //         if( dst === undefined ){
-    //             // cant write something which doesnt have a /dst
-    //             // log('undefined dst',);
-    //             // const e = await es.getEntity(eid);
-    //             // printEntity(es, e);
-    //             continue;
-    //         }
-
-    //         let path = site.getDstUrl(dst);
-
-
-    //         // debug(reporter, `dst ${dst} path ${path}`, {eid});
-
-    //         await site.writeToUrl(path, com.data);
-
-    //         info(reporter, `wrote to ${path}`, { eid });
-
-    //     } catch (err) {
-    //         error(reporter, err.message, err, {eid});
-    //     }
-    // }
-
-    // info(reporter, `wrote ${coms.length}`);
 
     return site;
 }

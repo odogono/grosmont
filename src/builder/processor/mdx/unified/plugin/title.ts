@@ -2,7 +2,7 @@ import {select} from 'unist-util-select';
 
 
 export interface ConfigProps {
-    onConfig: (config:any) => any;
+    onConfig?: (config:any, override:boolean) => any;
 }
 
 /**
@@ -27,8 +27,8 @@ export function titlePlugin( { onConfig }: ConfigProps ) {
 
         }
 
-        if( Object.keys(config).length > 0 ){
-            onConfig( config );
+        if( onConfig && Object.keys(config).length > 0 ){
+            onConfig( config, false );
         }
     }
 };

@@ -84,9 +84,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     const { require } = await buildImports(site, e.id, options);
 
-    function onConfig(config: any) { }
-
-
+    
     if (meta.isEnabled === false) {
         return undefined;
     }
@@ -142,7 +140,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     // log('[processEntity]', base, {data} );
 
-    let result: any = transformJS(data, props, { context, onConfig, require, scope });
+    let result: any = transformJS(data, props, { context, require, scope });
 
     if (result.component === undefined) {
         // no default component found, so no render possible

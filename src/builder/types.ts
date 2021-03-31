@@ -207,14 +207,14 @@ export interface TranspileOptions {
     // given a srcUrl, returns the data that belongs to the matching entity
     resolveData?: (srcUrl: string, text?:string, type?:DependencyType) => Promise<any>;
     registerClientCode?: ( details:ClientCodeDetails ) => Promise<any>;
-    onConfig: (config:any) => void;
+    onConfig?: (config:any, override:boolean) => void;
     require: (path:string, fullPath:string) => any;
     context?: any;
     scope?: EvalScope; // vars which will present in the evaluated code
 }
 
 export interface MDXParseFrontmatterOptions {
-    onConfig: (config:any) => void;
+    onConfig?: (config:any) => void;
 }
 
 export interface MDXPluginOptions extends TranspileOptions {}

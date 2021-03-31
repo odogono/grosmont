@@ -73,8 +73,8 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     const { require } = await buildImports(site, e.id, options);
 
     const resolveImportLocal = (path: string, mimes?: string[]) => undefined;
-    function onConfig(incoming: any) {
-        config = { ...config, ...incoming };
+    function onConfig(incoming: any, override:boolean = true) {
+        config = override ? { ...config, ...incoming } : {...incoming, ...config};
     }
 
     let result = transformJS(data, { path, url: base },
