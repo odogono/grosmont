@@ -6,7 +6,14 @@ import {
     QueryableEntitySet,
     StatementArgs
 } from "../../../es";
-import { applyMeta, buildUrl, resolveUrlPath, resolveSiteUrl, uriToPath } from "../../util";
+import { 
+    applyMeta, 
+    buildUrl, 
+    formatDate,
+    resolveUrlPath, 
+    resolveSiteUrl, 
+    uriToPath 
+} from "../../util";
 import { PageLink, 
     PageLinks, 
     SiteIndex, 
@@ -67,6 +74,7 @@ export function createRenderContext(site: Site, e: Entity, options: ProcessOptio
         runQuery: runQuery(site, e, options),
         processEntities: processEntities(site, e, options),
         resolveUrl: resolveUrl(site, e),
+        formatDate,
     };
 
     return context;

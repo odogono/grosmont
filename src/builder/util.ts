@@ -433,3 +433,50 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
     }
     return undefined;
 }
+
+
+
+
+export enum FormatDateType {
+    MonthYear = 0,
+    DayMonthYear = 1
+}
+
+export function formatDate( obj:any, formatType:FormatDateType = FormatDateType.MonthYear ){
+    if( obj === undefined ){ return ''; }
+
+    let result = '';
+    let format = 'MMM YYYY';
+
+    if( formatType === FormatDateType.DayMonthYear ){
+        format = 'D MMMM, YYYY';
+    }
+
+    if(obj.date_start ){
+        let { date_start:start, date_end:end } = obj;
+        let isSameYear = false;
+
+        if( start !== undefined && end !== undefined ){
+            isSameYear = Day(start).year() === Day(end).year();
+        }
+
+        if( start !== undefined ){
+            start = Day(start);
+            result += Day(start).format( isSameYear ? format.replace(/Y/gi, '').trim() : format);
+        }
+
+        result += ' -';
+        
+        if( end !== undefined ){
+            end = Day(end);
+            result += ' ' + Day(end).format(format);
+        }
+
+    }
+
+    else if( obj.date ){
+        result = Day(obj.date).format(format);
+    }
+
+    return result;
+}
