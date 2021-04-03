@@ -2,13 +2,26 @@ import Util from 'util';
 import Path from 'path';
 import {
     getComponentDefId, getComponentEntityId, toComponentId,
-    Entity, EntityId,
+    Entity, EntityId, isEntityId,
     QueryableEntitySet,
     StatementArgs
 } from "../../../es";
 import { applyMeta, buildUrl, resolveUrlPath, resolveSiteUrl, uriToPath } from "../../util";
-import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions, DependencyType, EvalContext, ImportDescr } from "../../types";
-import { getDependencyEntities, getDependencyEntityIds, getDepenendencyDst, getDstUrl, insertDependency } from "../../query";
+import { PageLink, 
+    PageLinks, 
+    SiteIndex, 
+    TranspileProps, 
+    ProcessOptions, 
+    DependencyType, 
+    EvalContext, 
+    ImportDescr 
+} from "../../types";
+import { getDependencyEntities, 
+    getDependencyEntityIds, 
+    getDepenendencyDst, 
+    getDstUrl, 
+    insertDependency 
+} from "../../query";
 import { Site } from "../../site";
 import { toInteger } from '@odgn/utils';
 import { useServerEffect } from '../jsx/server_effect';
@@ -53,18 +66,25 @@ export function createRenderContext(site: Site, e: Entity, options: ProcessOptio
         processEntity: processEntityOutput(site, e, options),
         runQuery: runQuery(site, e, options),
         processEntities: processEntities(site, e, options),
+        resolveUrl: resolveUrl(site, e),
+    };
 
-        resolveUrl: (url) => {
-            let entry = resolveSiteUrl(site, url, url);
+    return context;
+}
+
+
+function resolveUrl( site: Site, e:Entity ){
+    return ( q:EntityId|string ) => {
+        if( isEntityId(q) ){
+            return site.getEntityDstUrl( q as EntityId );
+        }
+        let entry = resolveSiteUrl(site, q as string, q as string );
             if( entry === undefined ){
                 return '';
             }
             let [src, dst, eid, mime, bf] = entry;
             return dst;
-        }
-    };
-
-    return context;
+    }
 }
 
 

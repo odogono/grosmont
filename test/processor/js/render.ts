@@ -81,12 +81,11 @@ test('resolving dst urls', async ({ es, site, options }) => {
             [
                 [/component/src /component/mdx] !bf @eid
                 /component/src !bf
-                @c
-            ] select 
-            /url pluck! \`;
+                @eid
+            ] select \`;
 
             let urls = (await runQuery(q))
-                .map( u => resolveUrl(u) )
+                .map( eid => resolveUrl(eid) )
                 .map( (url,i) => <a key={'l'+i} href={url}>url</a> );
 
             setData( urls );
