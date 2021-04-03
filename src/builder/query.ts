@@ -992,6 +992,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
     // ( es eid -- es str|false )
     [
         swap [ *^$1 @eid /component/output#mime @ca ] select pop? swap drop
+        
         dup [ drop false @! ] swap undefined == if
         @>
     ] selectOutputMime define
@@ -1012,21 +1013,33 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
 
     // selects the parent entity, or false if none is found
     // ( es eid -- es eid|false )
-    [        
+    [
         swap
         [
-            /component/dep#src !ca *^$1 ==
+            /component/dep#src !ca *^%1 ==
             /component/dep#type !ca dir ==
             and
             /component/dep !bf
             @c
         ] select
-
-
+        rot swap 
+        // -- es eid [coms]
+        
         // if the size of the select result is 0, then return false
-        size 0 == [ drop false @! ] swap if
+        size 0 == [ drop drop false @! ] swap if
         pop!
         /dst pluck!
+
+        // "select dep".
+        // prints
+        // "halt right there" throw
+
+        [ ["src === dst error" *^%1 ] to_str! throw ] *%2 *%2 == if
+        
+        *$1 drop // rid of the original eid
+
+        
+
         @>
     ] selectParent define
 
@@ -1109,8 +1122,11 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
     [
         // [[ "selectFileNameFromOutput" *^%0 ] to_str! .] $debug if
         selectFilenameFromSrc
+        
 
         *$1 *%2 selectOutputMime
+
+        
 
         // ( eid filename es mime -- )
         // return if false
@@ -1181,7 +1197,6 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
     pathsToStr size! 0 > hasPath let
 
     
-    
     // lookup filename from output
     [ 
     
@@ -1190,7 +1205,6 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         // [ "select fname is" *^%0 ] to_str! .
         setFilename
     ] $filename size! 0 == $hasPath and if
-    
     
     
     // [ $filename size! 0 == hasPath and ] $debug if
@@ -1275,49 +1289,6 @@ export async function removeDependency(es: QueryableEntitySet, eid: EntityId, ty
     await es.removeEntity(dstEid);
     return true;
 }
-
-
-
-
-/**
- * Selects a dependency entity
- */
-// export async function selectDependency(es: QueryableEntitySet, src?: EntityId, dst?: EntityId, type?: DependencyType, asEntity: boolean = false) {
-//     // const did:ComponentDefId = es.resolveComponentDefId('/component/dep');
-
-//     let conds = [];
-//     if (src !== undefined) {
-//         conds.push(`/component/dep#src !ca ${src} ==`);
-//     }
-//     if (dst !== undefined) {
-//         conds.push(`/component/dep#dst !ca ${dst} ==`);
-//     }
-//     if (conds.length === 2) { conds.push('and'); }
-//     if (type !== undefined) {
-//         conds.push(`/component/dep#type !ca ${type} ==`);
-//     }
-//     if (conds.length >= 2) { conds.push('and'); }
-
-//     if (asEntity) {
-//         let query = `[
-//             /component/dep !bf
-//             ${conds.join('\n')}
-//             @c
-//         ] select`;
-//         let stack = await es.query(query);
-//         return stack.popValue() as unknown as Component[];
-//     }
-
-//     let query = `[
-//         /component/dep !bf
-//         ${conds.join('\n')}
-//         @c
-//     ] select`;
-
-//     let out = await es.queryEntities(query);
-
-//     return out;
-// }
 
 
 

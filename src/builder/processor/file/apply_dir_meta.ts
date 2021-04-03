@@ -61,6 +61,10 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         for (const dep of deps) {
             dep.src = parentEid;
+            if( dep.src === dep.dst ){
+                warn(reporter, `dep src matches dst ${parentEid}: ${parentUrl}`, { eid });
+                continue;
+            }
             addComs.push(dep);
         }
 

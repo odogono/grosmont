@@ -6,6 +6,7 @@ import { TranspileOptions, TranspileProps } from "../../types";
 import { ServerEffectProvider } from '../../processor/jsx/server_effect';
 import { mdx as mdxReact, MDXProvider } from '@mdx-js/react'
 import { isUrlInternal } from '../../util';
+import { error } from '../../reporter';
 
 
 

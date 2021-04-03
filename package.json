@@ -70,7 +70,8 @@
     "unist-util-filter": "^2.0.3",
     "unist-util-select": "^3.0.4",
     "vfile-reporter": "^6.0.2",
-    "yaml": "^1.10.0"
+    "yaml": "^1.10.0",
+    "yargs": "^16.2.0"
   },
   "devDependencies": {
     "@paperist/types-remark": "^0.1.3",

@@ -1,6 +1,7 @@
 import 'stateful-hooks';
 import Util from 'util';
 import Path from 'path';
+import Yargs from 'yargs';
 import { Site, SiteOptions } from './builder/site';
 import { build } from './builder';
 import { Level } from './builder/reporter';
@@ -10,10 +11,39 @@ import { getComponentEntityId } from './es';
 const log = (...args) => console.log('[odgn-ssg]', ...args);
 
 
-const [config] = process.argv.slice(2);
+const argv = Yargs
+    // .example([
+    //     ['$0 --config "~/config.json"', 'Use custom config'],
+    //     ['$0 --safe', 'Start in safe mode']
+    // ])
+    .usage('Usage: $0 [configPath]')
+    .check((argv, options) => {
+        if (argv._.length > 1) {
+            throw new Error("path to config required.")
+        }
+        return true;
+    })
+    .option('reset', {
+        alias: 'r',
+        description: 'ignore update only flag when building',
+        type: 'boolean'
+    })
+    .option('clear', {
+        alias: 'c',
+        description: 'clears existing data',
+        type: 'boolean'
+    })
+    .help()
+    .alias('help', 'h')
+    .argv;
+
+
+const [config] = argv._;
 const configPath = Path.resolve(config);
 
+const onlyUpdated = argv.reset === undefined ? true : false;
 
+log('args', argv);
 
 (async () => {
     log('config', Path.resolve(config));
@@ -21,9 +51,19 @@ const configPath = Path.resolve(config);
 
     const site = await Site.create({ configPath, level: Level.INFO });
 
-    await build(site);
+    await build(site, { onlyUpdated });
 
     const errors = await selectErrors(site.es, { siteRef: site.getRef() });
+
+    log('src index:');
+    for (const [key, [eid]] of site.getSrcIndex()) {
+        log(eid, key);
+    }
+
+    log('dst index:');
+    for (const [key, [eid]] of site.getDstIndex()) {
+        log(eid, key);
+    }
 
     if (errors.length > 0) {
         for (const err of errors) {
@@ -38,6 +78,8 @@ const configPath = Path.resolve(config);
     } else {
         // await printAll(site.es);
     }
+
+
 
 })();
 
