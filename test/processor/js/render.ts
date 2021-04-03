@@ -9,6 +9,16 @@ import { printAll } from 'odgn-entity/src/util/print';
 const test = suite('processor/js/render');
 const log = (...args) => console.log(`[${test.name}]`, ...args);
 
+const spec: RawProcessorEntry[] = [
+    ['/processor/build_src_index'],
+    ['/processor/mark#jsx'],
+    ['/processor/mark#mdx'],
+    ['/processor/mdx/eval'],
+    ['/processor/jsx/eval'],
+    ['/processor/js/eval'],
+    ['/processor/build_dst_index'],
+    ['/processor/js/render'],
+];
 
 
 test.before.each(beforeEach);
@@ -23,14 +33,6 @@ test('rendering an entity with arguments', async ({ es, site, options }) => {
         return <div>Message is {message}</div>
     }
     `);
-
-    const spec: RawProcessorEntry[] = [
-        ['/processor/build_src_index'],
-        ['/processor/mark#jsx'],
-        ['/processor/jsx/eval'],
-        ['/processor/js/eval'],
-        ['/processor/js/render'],
-    ];
 
     let e = await site.getEntityBySrc('file:///pages/main.jsx');
 
@@ -52,17 +54,6 @@ test('rendering an entity with arguments', async ({ es, site, options }) => {
 
 
 test('resolving dst urls', async ({ es, site, options }) => {
-
-    const spec: RawProcessorEntry[] = [
-        ['/processor/build_src_index'],
-        ['/processor/mark#jsx'],
-        ['/processor/mark#mdx'],
-        ['/processor/mdx/eval'],
-        ['/processor/jsx/eval'],
-        ['/processor/js/eval'],
-        ['/processor/build_dst_index'],
-        ['/processor/js/render'],
-    ];
 
     const process = await buildProcessors(site, spec);
 
@@ -107,6 +98,65 @@ test('resolving dst urls', async ({ es, site, options }) => {
     let e = await site.getEntityBySrc('file:///pages/main.tsx');
     assert.equal( e.Output.data,
         `<div>Links are: <a href="/alpha.html">url</a><a href="/beta.html">url</a></div>` );
+})
+
+
+test('direct render entities', async ({ es, site, options }) => {
+
+    const process = await buildProcessors(site, spec);
+
+    await addSrc( site, 'file:///pages/main.tsx', `
+
+    import { useState } from 'react';
+    import { site, log, processEntities, useServerEffect, resolveUrl, runQuery } from '@site';
+
+    export default () => {
+        const [data, setData] = useState('hi there');
+        let result = [];
+
+        useServerEffect( async () => {
+
+            const q = \`
+            [
+                [/component/src /component/mdx] !bf @eid
+                /component/src !bf
+                @eid
+            ] select \`;
+
+            const eids = await runQuery(q);
+
+            const dids = ['/component/output', '/component/title'];
+            const ents = await processEntities( eids, dids, {applyLayout:false} );
+
+            let links = ents.map( (e,i) => {
+                let title = e.Title?.title;
+                let url = resolveUrl( e.id );
+                return <a key={'l'+i} href={url}>{title}</a>
+            });
+                
+            setData( links );
+        });
+
+        return <div>Links are: {data}</div>;
+    }`);
+
+    await addSrc( site, 'file:///pages/alpha.mdx', `
+    # Alpha
+    `, {dst:'/alpha.html'})
+    await addSrc( site, 'file:///pages/beta.mdx', `
+    # Beta
+    `, {dst:'/beta.html'});
+
+    
+    await process(site, options);
+
+    // await printAll(es);
+
+    let e = await site.getEntityBySrc('file:///pages/main.tsx');
+
+    // log( e.Output.data );
+    assert.equal( e.Output.data,
+        `<div>Links are: <a href="/alpha.html">Alpha</a><a href="/beta.html">Beta</a></div>` );
 })
 
 

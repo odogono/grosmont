@@ -27,6 +27,7 @@ export {
 export { 
     Entity,
     EntityId, 
+    isEntityId,
     isEntity,
     getEntityId
  } from "odgn-entity/src/entity";
