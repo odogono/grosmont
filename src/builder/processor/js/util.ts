@@ -6,7 +6,7 @@ import {
     QueryableEntitySet,
     StatementArgs
 } from "../../../es";
-import { applyMeta, buildUrl, resolveUrlPath, uriToPath } from "../../util";
+import { applyMeta, buildUrl, resolveUrlPath, resolveSiteUrl, uriToPath } from "../../util";
 import { PageLink, PageLinks, SiteIndex, TranspileProps, ProcessOptions, DependencyType, EvalContext, ImportDescr } from "../../types";
 import { getDependencyEntities, getDependencyEntityIds, getDepenendencyDst, getDstUrl, insertDependency } from "../../query";
 import { Site } from "../../site";
@@ -40,7 +40,8 @@ export function createRenderContext(site: Site, e: Entity, options: ProcessOptio
     const { url: base } = e.Src;
     const { reporter } = site;
 
-    const log = (...args) => info(reporter, Util.format(`[${base}]`, ...args));
+    // const log = (...args) => info(reporter, Util.format(`[${base}]`, ...args));
+    const log = (...args) => console.log(Util.format(`[${base}]`, ...args));
 
     const context = {
         e,
@@ -52,6 +53,15 @@ export function createRenderContext(site: Site, e: Entity, options: ProcessOptio
         processEntity: processEntityOutput(site, e, options),
         runQuery: runQuery(site, e, options),
         processEntities: processEntities(site, e, options),
+
+        resolveUrl: (url) => {
+            let entry = resolveSiteUrl(site, url, url);
+            if( entry === undefined ){
+                return '';
+            }
+            let [src, dst, eid, mime, bf] = entry;
+            return dst;
+        }
     };
 
     return context;
@@ -83,6 +93,7 @@ function processEntities(site: Site, e: Entity, options: ProcessOptions) {
 
         let result: Map<EntityId, Entity> = new Map<EntityId, Entity>();
 
+        // add dependencies on the rendered entities
         for (const eid of eids) {
             await insertDependency(es, srcId, eid, 'import');
             let e = await es.getEntity(eid, bf);
