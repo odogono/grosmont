@@ -23,8 +23,8 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
 
 
 export interface GraphOptions {
-    // type?: 'svg' | 'png';
-    // filename?: string;
+    type?: 'svg' | 'png';
+    filename?: string;
     showDeps?: boolean;
     srcOnly?: boolean;
     dstOnly?: boolean;

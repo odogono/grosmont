@@ -12,10 +12,6 @@ const log = (...args) => console.log('[odgn-ssg]', ...args);
 
 
 const argv = Yargs
-    // .example([
-    //     ['$0 --config "~/config.json"', 'Use custom config'],
-    //     ['$0 --safe', 'Start in safe mode']
-    // ])
     .usage('Usage: $0 [configPath]')
     .check((argv, options) => {
         if (argv._.length > 1) {
@@ -26,6 +22,11 @@ const argv = Yargs
     .option('reset', {
         alias: 'r',
         description: 'ignore update only flag when building',
+        type: 'boolean'
+    })
+    .option('graph', {
+        alias: 'g',
+        description: 'outputs graphviz dot file',
         type: 'boolean'
     })
     .option('clear', {
@@ -51,7 +52,21 @@ log('args', argv);
 
     const site = await Site.create({ configPath, level: Level.INFO });
 
-    await build(site, { onlyUpdated });
+    let options:any = {onlyUpdated};
+
+    if( argv.graph ){
+        let path = Path.dirname(configPath);
+        let filename = Path.basename(configPath, Path.extname(configPath));
+        options = {
+            ...options,
+            // '/processor/graph_gen': {
+                type:'png',
+                path: Path.join(path, filename + '.png')
+            // }
+        }
+    }
+
+    await build(site, options);
 
     const errors = await selectErrors(site.es, { siteRef: site.getRef() });
 

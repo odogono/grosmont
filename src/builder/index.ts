@@ -34,6 +34,7 @@ import { EntityUpdate, ProcessOptions, SiteProcessor } from './types';
 import { buildSrcIndex, clearUpdates, clearErrors } from './query';
 import { warn } from './reporter';
 import { isFunction, isObject, isString, parseUri } from '@odgn/utils';
+import { process as generateGraph } from './processor/graph_gen';
 
 const Label = '/build';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -59,6 +60,7 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
 
     let config = site.getConfig('/processors');
 
+    const doGG = options['/processor/graph_gen'] !== undefined;
 
     // function printSrcIndex(site:Site, options:ProcessOptions){
     //     const srcIndex = site.getIndex('/index/srcUrl');
@@ -101,6 +103,8 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
         [copyStatic, -101],
 
         [remove, -102],
+
+        doGG && [generateGraph, -200 ],
     ];
 
     const loaded = await parseProcessorConfig(config);

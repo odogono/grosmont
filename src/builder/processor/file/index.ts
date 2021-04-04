@@ -11,7 +11,7 @@ import Through2 from 'through2';
 import Globalyzer from 'globalyzer';
 import Micromatch from 'micromatch';
 
-import { 
+import {
     getDefId,
     Component, getComponentEntityId, setEntityId,
     ChangeSetOp,
@@ -75,15 +75,15 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     let incoming = await cloneEntitySet(es);
 
     // log('compare...');
-    
+
     // read the fs into the incoming es
     await readFileSystem(site, { ...options, es: incoming });
-    
+
 
     // compare the two es
     let diffs = await diffEntitySets(es, incoming, options);
 
-    
+
     if (diffs.length > 0) {
         info(reporter, `${diffs.length} diffs`);
     }
@@ -104,7 +104,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
     // be marked as updated
     // if( options.debug ){
     // printAll(site.es as EntitySetMem);
-    await applyUpdatesToDependencies(site, {...options, exclude:['link']});
+    await applyUpdatesToDependencies(site, { ...options, exclude: ['link'] });
     // }
 }
 
@@ -190,7 +190,10 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
     // the retain flag means the changeset wont be cleared,
     // which in effect batches the remove and add together
     await esA.add(diffComs, { retain: true, debug: false });
-    info(reporter, `updated ${diffComs.length} coms`);
+
+    if (diffComs.length > 0) {
+        info(reporter, `updated ${diffComs.length} coms`);
+    }
     // log( diffComs );
     // log('updated ents', esA.getUpdatedEntities() );
     // await esA.add( updateEs, {retain:true} );
@@ -235,7 +238,7 @@ export async function diffEntitySets(esA: QueryableEntitySet, esB: QueryableEnti
     for (let [url, eid, mtime, bf] of idxA) {
 
         // log('consider', url);
-        if( !url.startsWith('file://') ){
+        if (!url.startsWith('file://')) {
             continue;
         }
 
@@ -310,20 +313,20 @@ async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
     const siteEntity = site.getEntity();
 
     setLocation(reporter, `${Label}#read_file_system`);
-    
+
 
     if (options.readFSResult) {
         let coms = [];
-        for await ( const com of options.readFSResult.getComponents() ){
+        for await (const com of options.readFSResult.getComponents()) {
             coms.push(com);
         }
 
         // log('adding from fsresult');
         // log( coms );
         // await printAll( coms );
-        
+
         await es.add(coms);
-        
+
         return es;
     }
 
@@ -347,13 +350,13 @@ async function readFileSystem(site: Site, options: ProcessFileOptions = {}) {
 
     for (const file of matches) {
         // for await (const file of Klaw(rootPath)) {
-            
-            let relativePath = Path.relative(rootPath, file.path);
-            let url = `file:///${relativePath}`;
-            const { birthtime:btime, mtime } = file.stats;
-            
-            // if( url === 'file:///index.mdx' )
-            // log( 'file', url, file.stats );
+
+        let relativePath = Path.relative(rootPath, file.path);
+        let url = `file:///${relativePath}`;
+        const { birthtime: btime, mtime } = file.stats;
+
+        // if( url === 'file:///index.mdx' )
+        // log( 'file', url, file.stats );
 
         let e: Entity;
 
@@ -465,9 +468,9 @@ export async function selectSrcByUrl(es: QueryableEntitySet, url: string, option
     let com: Component;
 
     // try {
-        const stmt = es.prepare(`[ /component/src#url !ca $url == @c] select`);
-        com = await stmt.getResult({ url });
-        com = com !== undefined ? com[0] : undefined;
+    const stmt = es.prepare(`[ /component/src#url !ca $url == @c] select`);
+    com = await stmt.getResult({ url });
+    com = com !== undefined ? com[0] : undefined;
     // } catch (err) {
     //     log('[selectSrcByUrl]', es.getUrl(), err.message );
     // }
