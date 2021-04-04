@@ -8,6 +8,7 @@ export {
     ComponentId,
     getComponentDefId,
     isComponent,
+    toObject as componentToObject,
 } from "odgn-entity/src/component";
 
 export { 
