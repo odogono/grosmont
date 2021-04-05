@@ -225,7 +225,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     // index for use at the point of rendering
     await applyLinks(site, e, links, options);
 
-    await applyImports(site, e, imports, options);
+    await applyImports(site, e.id, imports, options);
 
     return [jsCom];
 }

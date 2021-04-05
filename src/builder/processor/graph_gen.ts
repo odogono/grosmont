@@ -367,10 +367,11 @@ function componentToTable(e: Entity, def: ComponentDef, com: Component) {
         if (isNumeric(val)) {
             val = val + '';
         }
-        val = truncateStart(val, 30, '...');
+        // val = truncateStart(val, 40, '...');
+        val = truncate(val, 40, '...');
         val = escapeHtml(val);
 
-        buffer.push(`<tr><td align="left" width="1">${key}</td><td align="left">${val}</td></tr>`);
+        buffer.push(`<tr><td align="left" width="60" height="20" fixedsize="true" border="1" sides="R">${key}</td><td align="left">${val}</td></tr>`);
 
     }
 

@@ -83,7 +83,7 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         const jsCom = setEntityId(es.createComponent('/component/js', { data: js }), e.id);
         // const jsxCom = setEntityId(es.createComponent('/component/jsx', { data: jsx }), e.id);
 
-        await applyImports(site, e, imports, options);
+        await applyImports(site, e.id, imports, options);
 
         return [jsCom];
 

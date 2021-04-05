@@ -276,11 +276,11 @@ export async function getEntityCSSDependencies(es: QueryableEntitySet, e: Entity
  * @param options 
  * @returns 
  */
-export async function applyImports(site: Site, e: Entity, imports: ImportDescr[], options: ProcessOptions): Promise<Entity> {
+export async function applyImports(site: Site, eid: EntityId, imports: ImportDescr[], options: ProcessOptions): Promise<EntityId> {
     const { es } = site;
 
     // gather existing import and css dependencies
-    const existingIds = new Set(await getDependencyEntityIds(es, e.id, ['import', 'css']));
+    const existingIds = new Set(await getDependencyEntityIds(es, eid, ['import', 'css']));
 
     for (let [importEid, url, mime, specifiers] of imports) {
         let type: DependencyType = 'import';
@@ -288,13 +288,13 @@ export async function applyImports(site: Site, e: Entity, imports: ImportDescr[]
         const match = parseEntityUrl(url);
 
         if (match !== undefined) {
-            const { eid, did } = match;
+            const { did } = match;
             if (did === '/component/scss') {
                 type = 'css';
             }
         }
 
-        // log('[applyImports]', url, specifiers );
+        
 
         let coms = [];
         coms.push(es.createComponent('/component/url', { url }));
@@ -302,7 +302,10 @@ export async function applyImports(site: Site, e: Entity, imports: ImportDescr[]
             // for now stuff into meta
             coms.push(es.createComponent('/component/meta', { meta: { specifiers } }));
         }
-        let depId = await insertDependency(es, e.id, importEid, type, coms);
+
+        log('[applyImports]', url, {importEid, type} );
+
+        let depId = await insertDependency(es, eid, importEid, type, coms);
 
         if (existingIds.has(depId)) {
             existingIds.delete(depId);
@@ -312,7 +315,7 @@ export async function applyImports(site: Site, e: Entity, imports: ImportDescr[]
     // remove dependencies that don't exist anymore
     await es.removeEntity(Array.from(existingIds));
 
-    return e;
+    return eid;
 }
 
 
