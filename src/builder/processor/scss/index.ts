@@ -1,6 +1,5 @@
 import PostCSS from 'postcss';
 import PreCSS from 'precss';
-import GridKISS from 'postcss-grid-kiss';
 import CSSNano from 'cssnano';
 import AtImport from './plugin-import';
 
@@ -92,7 +91,6 @@ export async function renderScss(site: Site, srcUrl: string, scss: string, optio
     const plugins = [
         AtImport({ resolveSrc }),
         PreCSS,
-        GridKISS,
         minify ? CSSNano : undefined
     ].filter(Boolean);
 

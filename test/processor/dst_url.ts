@@ -7,6 +7,7 @@ import { build, buildProcessors, RawProcessorEntry } from '../../src/builder';
 import { beforeEach } from '../helpers';
 import { printAll } from 'odgn-entity/src/util/print';
 
+
 const test = suite('/processor/dst_url');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 test.before.each( beforeEach );
@@ -176,7 +177,7 @@ test('dir meta dst', async ({es, site,options}) => {
 
     // let path = await getDstUrl(es, e.id);
 
-    // assert.equal( path, "/pages/index.html" );
+    // assert.equal( e.Output.url, "/pages/index.html" );
 
 });
 

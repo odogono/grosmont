@@ -66,8 +66,8 @@ export async function process(site: Site, options: GraphGenOptions) {
         // dot -Tpng es.graph.dot -o es.graph.png
         await execute(path, type, dot, reporter);
 
-    } catch( err ){
-        error(reporter, 'error executing dot', err );
+    } catch (err) {
+        error(reporter, 'error executing dot', err);
     }
 
     return site;
@@ -286,11 +286,11 @@ function entityToNode(g: Digraph, es: EntitySet, e: Entity, options: GraphGenOpt
 
         if (def.uri === '/component/dep') {
             if (showDeps) {
-                deps.push([com.src, e.id, com.type]);
-                deps.push([e.id, com.dst, com.type]);
+                deps.push([e.id, com.src, com.type]);
+                deps.push([com.dst, e.id, com.type]);
             }
             else {
-                deps.push([com.src, com.dst, `<${com.type}<br/>(${e.id})>`]);
+                deps.push([com.dst, com.src, `<${com.type}<br/>(${e.id})>`]);
                 return { node: undefined, deps };
             }
         }
