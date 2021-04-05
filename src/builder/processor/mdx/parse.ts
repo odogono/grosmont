@@ -41,7 +41,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         try {
             await processEntity(site, e, options);
 
-            info(reporter, `${e.Src?.url}`, { eid: e.id });
+            debug(reporter, `${e.Src?.url}`, { eid: e.id });
 
         } catch (err) {
             output.push(createErrorComponent(es, e, err, { from: Label }));
@@ -52,6 +52,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     await es.add(output);
 
+    info(reporter, `processed ${ents.length}`);
 
     return site;
 }

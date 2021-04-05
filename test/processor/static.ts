@@ -125,7 +125,7 @@ test('copy changed', async ({site, es, options}) => {
         [ '/processor/build_dst_index'],
         [ '/processor/static/copy'],
     ];
-    const process = await buildProcessors( site, spec );
+    const process = await buildProcessors( site, '/test', spec );
     await process( site, {...options, onlyUpdated:true, dryRun:true} );
 
     // await printAll(es);

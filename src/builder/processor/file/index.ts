@@ -85,7 +85,7 @@ export async function process(site: Site, options: ProcessFileOptions = {}) {
 
 
     if (diffs.length > 0) {
-        info(reporter, `${diffs.length} diffs`);
+        debug(reporter, `${diffs.length} diffs found`);
     }
 
     await applyEntitySetDiffs(es, incoming, diffs, true, options);
@@ -192,7 +192,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
     await esA.add(diffComs, { retain: true, debug: false });
 
     if (diffComs.length > 0) {
-        info(reporter, `updated ${diffComs.length} coms`);
+        info(reporter, `processed ${diffComs.length}`);
     }
     // log( diffComs );
     // log('updated ents', esA.getUpdatedEntities() );

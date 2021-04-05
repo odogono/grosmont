@@ -104,7 +104,7 @@ test('keeps track of removed files', async ({site,es,options}) => {
         [ '/processor/build_src_index' ],
         [ '/processor/build_dst_index'],
     ];
-    const process = await buildProcessors( site, spec );
+    const process = await buildProcessors( site, '/test', spec );
     await process( site );
 
     // await process(site, options);

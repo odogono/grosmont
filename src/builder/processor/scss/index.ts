@@ -52,6 +52,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     await es.add(addComs);
 
+    info(reporter, `processed ${srcComs.length}`);
+
     return site;
 }
 

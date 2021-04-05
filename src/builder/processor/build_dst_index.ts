@@ -5,10 +5,11 @@ import { Site } from "../site";
 import { ProcessOptions } from "../types";
 import { uriToPath, mapToTargetMime } from '../util';
 import { Entity, EntityId, getComponentEntityId, toComponentId } from '../../es';
+import { info, setLocation } from '../reporter';
 
 
-
-const log = (...args) => console.log('[/processor/build_dst_index]', ...args);
+const Label = '/processor/build_dst_index';
+const log = (...args) => console.log(`[${Label}]`, ...args);
 
 
 export interface DstIndexOptions extends ProcessOptions {
@@ -24,13 +25,13 @@ export interface DstIndexOptions extends ProcessOptions {
  */
 export async function process(site: Site, options: DstIndexOptions = {}) {
     const es = site.es;
-
+    const {reporter} = options;
+    setLocation(reporter, Label);
     const dstIndex = site.getDstIndex(true);
 
 
     const coms = await selectSrc(es, {...options, onlyUpdated:false});
     
-
     const upDid = es.resolveComponentDefId('/component/upd');
 
     // log('updating', coms);
@@ -55,6 +56,8 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
             dstIndex.removeByEid(eid);
         }
     }
+
+    info(reporter, `processed ${coms.length}`);
 
     // return await site.addQueryIndex('/index/srcUrl', query, { ref: siteEntity.id });
 

@@ -5,7 +5,7 @@ import {
     Component, setEntityId,
     QueryableEntitySet
 } from '../../../es';
-import { getDependencyEntityIds, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
+import { getDependencyEntityIds, getDstUrl, getUrlComponent, insertDependency, selectEntitiesByMime } from '../../query';
 import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
@@ -47,7 +47,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             let coms = await processEntity(site, e, options);
             output = output.concat(coms);
 
-            info(reporter, `${e.Src?.url}`, { eid: e.id });
+            debug(reporter, `${e.Src?.url}`, { eid: e.id });
 
         } catch (err) {
             output.push(createErrorComponent(es, e, err, { from: Label }));
@@ -58,7 +58,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     }
 
     await es.add(output);
-
+    
+    info(reporter, `processed ${ents.length}`);
 
     return site;
 }
@@ -226,6 +227,18 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     await applyLinks(site, e, links, options);
 
     await applyImports(site, e.id, imports, options);
+
+    // set the mime type of the output
+    // this is also done in /js/render, but its done
+    // here so that dst paths can be resolved correctly
+    // during the render
+    // let dstUrl = await getDstUrl(es, e.id);
+    let dstUrl = site.getDstIndex().getByEid(e.id)
+    if( dstUrl !== undefined ){
+        const mime = e.Dst?.mime ?? 'text/html';
+        let outputCom = setEntityId(es.createComponent('/component/output', { mime }), e.id);
+        return [jsCom, outputCom];
+    }
 
     return [jsCom];
 }

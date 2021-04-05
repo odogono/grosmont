@@ -68,11 +68,12 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             addComs.push(dep);
         }
 
-        info(reporter, `moved ${com.url} coms to ${parentEid}`, { eid });
+        debug(reporter, `moved ${com.url} coms to ${parentEid}`, { eid });
     }
 
     await es.add(addComs);
 
+    info(reporter, `processed ${coms.length}`);
     // debug(reporter, `added ${addComs.length} coms to ${es.getUrl()}`);
 
     return site;

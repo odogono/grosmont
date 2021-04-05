@@ -41,6 +41,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     await es.add(updates.filter(Boolean));
 
+    info(reporter, `processed ${ents.length}`);
+
     return site;
 }
 

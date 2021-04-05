@@ -196,7 +196,7 @@ test('dst dir filename', async ({es, site, options}) => {
         [ '/processor/js/eval'],
         [ '/processor/js/render'],
     ];
-    const process = await buildProcessors( site, spec );
+    const process = await buildProcessors( site, '/test', spec );
 
     await process( site );
 
@@ -217,7 +217,7 @@ test('filename from src', async ({es, site}) => {
     const spec:RawProcessorEntry[] = [
         [ '/processor/build_src_index' ],
     ];
-    const process = await buildProcessors( site, spec );
+    const process = await buildProcessors( site, '/test', spec );
     await process( site );
 
     // await printAll( es );

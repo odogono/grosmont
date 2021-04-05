@@ -45,7 +45,7 @@ test('layout', async ({ es, site, options }) => {
         [ '/processor/js/render', 0, {applyLayout:false}],
     ];
 
-    const process = await buildProcessors( site, spec );
+    const process = await buildProcessors( site, '/test', spec );
 
     await process(site);
 

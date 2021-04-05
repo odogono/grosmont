@@ -3,7 +3,7 @@ import Path from 'path';
 import { Site } from "../site";
 import { ProcessOptions } from '../types';
 import { insertDependency, selectFileSrc, selectSrcByUrl } from '../query';
-import { setLocation, info, warn } from '../reporter';
+import { setLocation, info, warn, debug } from '../reporter';
 
 import { 
     ChangeSetOp ,
@@ -67,9 +67,11 @@ export async function process(site: Site, options: BuildDepsOptions = {}) {
         // insert or update
         const depId = await insertDependency(es, eid, parentEid, 'dir');
 
-        info(reporter, `dir from ${url} to ${parentUrl}`, { eid: depId });
+        debug(reporter, `dir from ${url} to ${parentUrl}`, { eid: depId });
         // info(reporter, `dir from ${url}(${eid}) to ${parentUrl}(${parentEid})`, { eid: depId });
     }
+
+    info(reporter, `processed ${coms.length}`);
 
     return es;
 }

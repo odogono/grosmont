@@ -38,7 +38,7 @@ test('rendering an entity with arguments', async ({ es, site, options }) => {
 
     // await printAll(es);
 
-    const process = await buildProcessors(site, spec);
+    const process = await buildProcessors(site, '/test', spec);
 
     const props = {
         message: 'Hello World'
@@ -55,7 +55,7 @@ test('rendering an entity with arguments', async ({ es, site, options }) => {
 
 test('resolving dst urls', async ({ es, site, options }) => {
 
-    const process = await buildProcessors(site, spec);
+    const process = await buildProcessors(site, '/test', spec);
 
     await addSrc( site, 'file:///pages/main.tsx', `
 
@@ -103,7 +103,7 @@ test('resolving dst urls', async ({ es, site, options }) => {
 
 test('direct render entities', async ({ es, site, options }) => {
 
-    const process = await buildProcessors(site, spec);
+    const process = await buildProcessors(site, '/test', spec);
 
     await addSrc( site, 'file:///pages/main.tsx', `
 

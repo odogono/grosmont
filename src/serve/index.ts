@@ -88,7 +88,7 @@ async function initialiseSite(path: string) {
     info(reporter, `root: ${site.getSrcUrl()}`);
 
     const spec = getProcessorSpec(site, {});
-    let process = await buildProcessors(site, spec, {onlyUpdated:true});
+    let process = await buildProcessors(site, '/server/main', spec, {onlyUpdated:true});
 
     site = await process(site);
 
@@ -101,7 +101,7 @@ async function initialiseSite(path: string) {
         ['/processor/js/render', 0, { beautify: false} ],
     ];
 
-    let processOutput = await buildProcessors(site,outputSpec, {onlyUpdated:true});
+    let processOutput = await buildProcessors(site, '/server/output', outputSpec, {onlyUpdated:true});
 
     return { site, process, processOutput };
 }

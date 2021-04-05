@@ -34,7 +34,7 @@ test('process', async ({ es, site, options }) => {
     const bf = es.resolveComponentDefIds('/component/output');
     const pes = new OutputES( es, bf );
 
-    const process = await buildProcessors( site, spec );
+    const process = await buildProcessors( site, '/test', spec );
 
     await process(site, {es:pes});
 

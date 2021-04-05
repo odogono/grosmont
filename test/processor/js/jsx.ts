@@ -38,7 +38,7 @@ test('imports scss', async ({es,site,options}) => {
         [ '/processor/js/render'],
     ];
 
-    const process = await buildProcessors( site, spec );
+    const process = await buildProcessors( site, '/test', spec );
     await process(site,options);
     
     let e = await site.getEntityBySrc('file:///pages/main.jsx');

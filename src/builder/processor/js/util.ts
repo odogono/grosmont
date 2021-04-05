@@ -6,28 +6,30 @@ import {
     QueryableEntitySet,
     StatementArgs
 } from "../../../es";
-import { 
-    applyMeta, 
-    buildUrl, 
+import {
+    applyMeta,
+    buildUrl,
     formatDate,
-    resolveUrlPath, 
-    resolveSiteUrl, 
-    uriToPath 
+    resolveUrlPath,
+    resolveSiteUrl,
+    uriToPath
 } from "../../util";
-import { PageLink, 
-    PageLinks, 
-    SiteIndex, 
-    TranspileProps, 
-    ProcessOptions, 
-    DependencyType, 
-    EvalContext, 
-    ImportDescr 
+import {
+    PageLink,
+    PageLinks,
+    SiteIndex,
+    TranspileProps,
+    ProcessOptions,
+    DependencyType,
+    EvalContext,
+    ImportDescr
 } from "../../types";
-import { getDependencyEntities, 
-    getDependencyEntityIds, 
-    getDepenendencyDst, 
-    getDstUrl, 
-    insertDependency 
+import {
+    getDependencyEntities,
+    getDependencyEntityIds,
+    getDepenendencyDst,
+    getDstUrl,
+    insertDependency
 } from "../../query";
 import { Site } from "../../site";
 import { toInteger } from '@odgn/utils';
@@ -81,17 +83,18 @@ export function createRenderContext(site: Site, e: Entity, options: ProcessOptio
 }
 
 
-function resolveUrl( site: Site, e:Entity ){
-    return ( q:EntityId|string ) => {
-        if( isEntityId(q) ){
-            return site.getEntityDstUrl( q as EntityId );
+function resolveUrl(site: Site, e: Entity) {
+    return (q: EntityId | string) => {
+        if (isEntityId(q)) {
+            return site.getEntityDstUrl(q as EntityId);
         }
-        let entry = resolveSiteUrl(site, q as string, q as string );
-            if( entry === undefined ){
-                return '';
-            }
-            let [src, dst, eid, mime, bf] = entry;
-            return dst;
+        let entry = resolveSiteUrl(site, q as string, q as string);
+        // log('[resolveUrl]', q, {entry});
+        if (entry === undefined) {
+            return '';
+        }
+        let [src, dst, eid, mime, bf] = entry;
+        return dst;
     }
 }
 
@@ -112,7 +115,7 @@ function processEntities(site: Site, e: Entity, options: ProcessOptions) {
         const bf = es.resolveComponentDefIds(dids);
         let pes = new OutputES(es, bf);
 
-        const process = await buildProcessors(site, [
+        const process = await buildProcessors(site, '/js/util/processEntities', [
             ['/processor/js/render', 0, renderOptions]
         ]);
 
@@ -150,7 +153,7 @@ function processEntityOutput(site: Site, e: Entity, options: ProcessOptions) {
         const bf = es.resolveComponentDefIds('/component/output');
         let pes = new OutputES(es, bf);
 
-        const process = await buildProcessors(site, [
+        const process = await buildProcessors(site, '/js/util/processEntityOutput', [
             ['/processor/js/render', 0, renderOptions]
         ]);
         const eids = [pe.id];
@@ -294,7 +297,7 @@ export async function applyImports(site: Site, eid: EntityId, imports: ImportDes
             }
         }
 
-        
+
 
         let coms = [];
         coms.push(es.createComponent('/component/url', { url }));
@@ -303,7 +306,7 @@ export async function applyImports(site: Site, eid: EntityId, imports: ImportDes
             coms.push(es.createComponent('/component/meta', { meta: { specifiers } }));
         }
 
-        log('[applyImports]', url, {importEid, type} );
+        // log('[applyImports]', url, { importEid, type });
 
         let depId = await insertDependency(es, eid, importEid, type, coms);
 

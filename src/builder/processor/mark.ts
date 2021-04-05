@@ -13,7 +13,7 @@ import { selectSrcByExt } from '../query';
 
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
-import { info, setLocation } from '../reporter';
+import { debug, info, setLocation } from '../reporter';
 
 
 const Label = '/processor/mark';
@@ -75,7 +75,7 @@ export async function process(site: Site, options: MarkOptions) {
 
                 const srcCom = await es.getComponent(toComponentId(eid, srcDid));
                 let src = srcCom !== undefined ? srcCom.url : '';
-                info(reporter, `mark ${comUrl}\t${src}`, { eid });
+                debug(reporter, `mark ${comUrl}\t${src}`, { eid });
             }
         }
 
@@ -102,6 +102,8 @@ export async function process(site: Site, options: MarkOptions) {
     }
 
     await es.add(addComs);
+
+    info(reporter, `processed ${coms.length} - ${exts}`);
 
     return site;
 }

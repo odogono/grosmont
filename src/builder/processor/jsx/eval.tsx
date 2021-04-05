@@ -45,6 +45,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
     await es.add(output);
 
+    info(reporter, `processed ${ents.length}`);
+
     return site;
 }
 

@@ -92,7 +92,7 @@ export default () => <div>Message: <Message /></div>;
     //     [ '/processor/build_dst_index'],
     // ];
 
-    // const process = await buildProcessors( site, spec );
+    // const process = await buildProcessors( site, '/test',  spec );
     await process(site, options);
 
     // await printAll(site.es);
@@ -122,7 +122,7 @@ test('typescript', async ({ es, site, options }) => {
     //     [ '/processor/build_dst_index'],
     // ];
 
-    // const process = await buildProcessors( site, spec );
+    // const process = await buildProcessors( site, '/test', spec );
     await process(site, options);
 
     // await printAll(site.es);

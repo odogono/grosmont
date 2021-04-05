@@ -1,7 +1,7 @@
 import Path from 'path';
 import { getComponentEntityId } from "../../../es";
 import { selectSrcByExt } from "../../query";
-import { setLocation, info } from "../../reporter";
+import { setLocation, info, debug } from "../../reporter";
 import { Site } from "../../site";
 import { ProcessOptions } from "../../types";
 import { parseEntity, ParseType } from '../../config';
@@ -41,8 +41,11 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         await parseEntity(es, content, 
             { add: true, e, type:ext as ParseType, excludeList, es, siteRef, srcUrl:com.url });
 
-        info(reporter, `read e from ${com.url} into ${e.id}`, {eid});
+        debug(reporter, `read e from ${com.url} into ${e.id}`, {eid});
     }
+
+    info(reporter, `processed ${coms.length}`);
     // log( Array.from( (es as EntitySetMem).components.values()) );
     
+    return site;
 }

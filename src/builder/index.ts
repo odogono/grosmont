@@ -32,7 +32,7 @@ import { process as remove } from './processor/remove';
 import { process as buildDstIndex } from './processor/build_dst_index';
 import { EntityUpdate, ProcessOptions, SiteProcessor } from './types';
 import { buildSrcIndex, clearUpdates, clearErrors } from './query';
-import { warn } from './reporter';
+import { debug, info, setLocation, warn } from './reporter';
 import { isFunction, isObject, isString, parseUri } from '@odgn/utils';
 import { process as generateGraph } from './processor/graph_gen';
 
@@ -44,16 +44,17 @@ export interface BuildProcessOptions extends ProcessOptions {
 }
 
 
-export type ProcessorEntry = [Function, number? /*priority*/, any? /*options*/];
+export type ProcessorEntry = [Function, number? /*priority*/, any? /*options*/, string? /*url*/];
 export type RawProcessorEntry = [string | Function, number?, any?];
 
 /**
  * 
  * @param site 
  */
-export async function build(site: Site, options: BuildProcessOptions = {}): Promise<Site> {
+export async function build(site: Site, label:string = '/build', options: BuildProcessOptions = {}): Promise<Site> {
 
     let reporter = site.reporter;
+    setLocation(reporter, Label);
     const siteRef = site.getRef();
     const updateOptions = { reporter, onlyUpdated: true, ...options, siteRef };
 
@@ -61,7 +62,7 @@ export async function build(site: Site, options: BuildProcessOptions = {}): Prom
     const spec = getProcessorSpec(site, options);
 
 
-    let process = await buildProcessors(site, spec, { onlyUpdated: true });
+    let process = await buildProcessors(site, label, spec, { onlyUpdated: true });
 
 
     site = await process(site, { ...updateOptions, ...options });
@@ -128,7 +129,7 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
  * @param spec 
  * @param options 
  */
-export async function buildProcessors(site: Site, spec: RawProcessorEntry[], options: BuildProcessOptions = {}): Promise<SiteProcessor> {
+export async function buildProcessors(site: Site, label:string, spec: RawProcessorEntry[], options: BuildProcessOptions = {}): Promise<SiteProcessor> {
     let reporter = site.reporter;
     const siteRef = site.getRef();
     const updateOptions = { reporter, onlyUpdated: false, ...options, siteRef };
@@ -144,7 +145,7 @@ export async function buildProcessors(site: Site, spec: RawProcessorEntry[], opt
             continue;
         }
 
-        result.push([p, priority ?? 0, options ?? {}]);
+        result.push([p, priority ?? 0, options ?? {}, isString(url) ? url as string : undefined]);
     }
 
     // sort according to priority descending
@@ -154,12 +155,21 @@ export async function buildProcessors(site: Site, spec: RawProcessorEntry[], opt
         return 0;
     });
 
+
     // log('[buildProcessors]', result);
+    // for (let [prc, priority, pOptions, url] of result) {
+    //     setLocation(reporter, Label);
+    //     info(reporter, `[buildProcessors] ${url}`);
+    // }
+    
 
     return async (site: Site, options: BuildProcessOptions = {}) => {
-        for (let [prc, priority, pOptions] of result) {
-            // log('[buildProcessors]', 'run', prc);
+        
+        for (let [prc, priority, pOptions, url] of result) {
+            setLocation(reporter, Label);
+            debug(reporter, `[buildProcessors][${label}] run ${url}`);
             await prc(site, { ...pOptions, ...updateOptions, ...options });
+            debug(reporter, `[buildProcessors][${label}] end ${url}`);
         }
         return site;
     }

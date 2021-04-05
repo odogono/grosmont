@@ -2,7 +2,7 @@ import Process from 'process';
 import React from 'react';
 import { html as BeautifyHTML } from 'js-beautify';
 
-import { getDependencyEntities, getDependencyComponents, getLayoutFromDependency, insertDependency, selectJs } from '../../query';
+import { getDependencyEntities, getDependencyComponents, getLayoutFromDependency, insertDependency, selectJs, getDstUrl } from '../../query';
 import { setLocation, info, debug, error } from '../../reporter';
 import { Site } from '../../site';
 
@@ -65,7 +65,11 @@ export async function process(site: Site, options: RenderJsOptions = {}) {
         }
     }
 
-    await es.add(updates.filter(Boolean));
+    updates = updates.filter(Boolean);
+
+    await es.add(updates);
+    
+    info(reporter, `processed ${ents.length}`);
 
     return site;
 }

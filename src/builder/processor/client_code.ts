@@ -7,7 +7,7 @@ import { terser } from 'rollup-plugin-terser';
 
 import { Component, getComponentEntityId, setEntityId } from "../../es";
 import { selectClientCode } from "../query";
-import { setLocation } from "../reporter";
+import { info, setLocation } from "../reporter";
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
 import { transformJSX } from '../transpile';
@@ -76,6 +76,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     }
 
     await es.add(add);
+
+    info(reporter, `processed ${coms.length}`);
 
     return site;
 }

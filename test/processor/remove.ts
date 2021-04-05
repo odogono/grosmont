@@ -32,7 +32,7 @@ test('remove from deps', async ({es, site, options}) => {
     ];
 
     // setLevel(site.reporter, Level.DEBUG );
-    const process = await buildProcessors( site, spec );
+    const process = await buildProcessors( site, '/test', spec );
 
     await process( site, {...options, dryRun:true} );
 

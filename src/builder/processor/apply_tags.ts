@@ -68,5 +68,7 @@ export async function process(site: Site, options: ApplyDepsToChildrenOptions = 
 
     }
 
+    info(reporter, `processed ${eids.length} - ${depType}`);
+
     return site;
 }
