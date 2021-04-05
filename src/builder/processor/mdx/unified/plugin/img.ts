@@ -27,14 +27,12 @@ export function process({ resolveLink }: ImgProcProps) {
                 return;
             }
 
-            let srcValue = srcAttr.value?.value;
+            let srcValue = srcAttr.value?.value ?? srcAttr.value;
             let altValue = altAttr?.value;
 
             if( srcValue === undefined ){
                 return;
             }
-
-            // console.log('src', srcValue, node);
 
             // clean the src
             srcValue = removeQuotes(srcValue);
@@ -42,10 +40,31 @@ export function process({ resolveLink }: ImgProcProps) {
             if( resolveLink ){
                 let resultUrl = resolveLink( srcValue, altValue )
                 if( resultUrl !== undefined ){
-                    // console.log('replace url', resultUrl);
-                    srcAttr.value.value = ensureQuotes(resultUrl);
+                    srcAttr.value = resultUrl;// ensureQuotes(resultUrl);
                 }
             }
         }
     }
 }
+
+/**
+ * 
+ * srcAttr: {
+    type: 'mdxAttribute',
+    name: 'src',
+    value: 'file:///media/grosmont.jpg',
+    position: { start: [Object], end: [Object] }
+  },
+
+  srcAttr: {
+    type: 'mdxAttribute',
+    name: 'src',
+    value: {
+      type: 'mdxValueExpression',
+      value: "'file:///static/image.jpg'",
+      position: [Object]
+    },
+    position: { start: [Object], end: [Object] }
+  },
+ * 
+ */
