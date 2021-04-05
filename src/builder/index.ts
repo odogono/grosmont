@@ -1,9 +1,9 @@
 import { BitField, get as bfGet } from '@odgn/utils/bitfield';
-import { 
-    Component, 
-    ComponentId, 
-    getComponentDefId, 
-    getComponentEntityId, 
+import {
+    Component,
+    ComponentId,
+    getComponentDefId,
+    getComponentEntityId,
     isComponent,
     EntityId,
     AddOptions, AddType, EntitySet, EntitySetOptions,
@@ -51,15 +51,26 @@ export type RawProcessorEntry = [string | Function, number?, any?];
  * 
  * @param site 
  */
-export async function build(site: Site, options: BuildProcessOptions = {}):Promise<Site> {
+export async function build(site: Site, options: BuildProcessOptions = {}): Promise<Site> {
 
     let reporter = site.reporter;
     const siteRef = site.getRef();
     const updateOptions = { reporter, onlyUpdated: true, ...options, siteRef };
-    const beautify = options.beautify ?? false;
 
-    let config = site.getConfig('/processors');
 
+    const spec = getProcessorSpec(site, options);
+
+
+    let process = await buildProcessors(site, spec, { onlyUpdated: true });
+
+
+    site = await process(site, { ...updateOptions, ...options });
+
+    return site;
+}
+
+
+export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}): RawProcessorEntry[] {
     const doGG = options['/processor/graph_gen'] !== undefined;
 
     // function printSrcIndex(site:Site, options:ProcessOptions){
@@ -68,64 +79,48 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
     //         log('srcidx', key);
     //     }
     // }
-    
-    let processors: ProcessorEntry[] = [
-        [clearUpdates, 1000],
-        [clearErrors, 1000],
-        [scanSrc, 0],
-        [mark, 0, { exts: ['html', 'jpeg', 'jpg', 'png', 'svg', 'txt'], comUrl: '/component/static' }],
-        [mark, 0, { exts: ['jsx', 'tsx'], comUrl: '/component/jsx', mime: 'text/jsx' }],
-        [mark, 0, { exts: ['mdx'], comUrl: '/component/mdx', mime: 'text/mdx' }],
-        [mark, 0, { exts: ['scss'], comUrl: '/component/scss', mime: 'text/scss' }],
-        
-        [buildSrcIndex, 0],
-        
-        [renderScss, 0, { renderScss: true }],
 
-        [parseMdx],
-        [applyTags, 0, { type: 'tag' }],
-        [applyTags, 0, { type: 'layout' }],
-        [resolveMeta, 0],
+    const beautify = options.beautify ?? false;
 
-        [buildDstIndex, 0, { url: '/processor/build_dst_index' }],
+    let config = site.getConfig('/processors');
 
-        [evalJsx, 0],
-        [evalMdx, 0],
-        [evalJs, 0],
-        [evalClientCode, 0],
-        
-        [buildDstIndex, 0, { url: '/processor/build_dst_index' }],
-        
-        [renderJs, 0, {beautify}],
-        [buildDstIndex, -99],
-        
-        [write, -100], // TODO - read from dst index
-        [copyStatic, -101],
+    return [
+        ['/query#clearUpdates', 1000],
+        ['/query#clearErrors', 1000],
+        ['/processor/file'],
 
-        [remove, -102],
+        ['/processor/mark#statics'],
+        ['/processor/mark#jsx'],
+        ['/processor/mark#mdx'],
+        ['/processor/mark#scss'],
 
-        doGG && [generateGraph, -200 ],
+        ['/processor/build_src_index'],
+
+        ['/processor/mdx/parse'],
+        ['/processor/apply_tags', 0, { type: 'tag' }],
+        ['/processor/apply_tags', 0, { type: 'layout' }],
+        ['/processor/mdx/resolve_meta'],
+        ['/processor/build_dst_index', 0, { onlyUpdated: false }],
+
+
+        ['/processor/scss', 0, { renderScss: true }],
+        ['/processor/jsx/eval'],
+        ['/processor/mdx/eval'],
+
+        ['/processor/js/eval'],
+
+        ['/processor/client_code'],
+
+        ['/processor/build_dst_index', 0, { onlyUpdated: false }],
+
+        ['/processor/js/render', 0, { beautify: true }],
+        ['/processor/build_dst_index', -99, { onlyUpdated: false }],
+        ['/processor/write', -100],
+        ['/processor/static/copy', -101],
+        ['/processor/remove', -102],
+        doGG && ['/processor/graph_gen', -200],
     ];
-
-    const loaded = await parseProcessorConfig(config);
-    processors = processors.concat(loaded).filter(Boolean);
-
-    // sort according to priority descending
-    processors.sort(([a, ap], [b, bp]) => {
-        if (ap < bp) { return 1; }
-        if (ap > bp) { return -1; }
-        return 0;
-    });
-
-
-    for (let [prc, priority, options] of processors) {
-        options = options ?? {};
-        await prc(site, { ...updateOptions, ...options });
-    }
-
-    return site;
 }
-
 
 /**
  * 
@@ -137,6 +132,8 @@ export async function buildProcessors(site: Site, spec: RawProcessorEntry[], opt
     let reporter = site.reporter;
     const siteRef = site.getRef();
     const updateOptions = { reporter, onlyUpdated: false, ...options, siteRef };
+
+    spec = spec.filter(Boolean);
 
     let result: ProcessorEntry[] = [];
     for (let [url, priority, options] of spec) {
@@ -290,13 +287,13 @@ export class OutputES extends ProxyEntitySet {
  * @param props 
  * @returns 
  */
-export async function renderToOutput( site:Site, process:SiteProcessor, eid:EntityId, props:any = {} ){
-    const {es} = site;
+export async function renderToOutput(site: Site, process: SiteProcessor, eid: EntityId, props: any = {}) {
+    const { es } = site;
     const bf = es.resolveComponentDefIds('/component/output');
-    const pes = new OutputES( es, bf );
+    const pes = new OutputES(es, bf);
     // log('[renderToOutput]', 'render output', pes.getUrl(), 'to', es.getUrl() );
 
-    await process(site, {es:pes as any, eids:[eid], props});
+    await process(site, { es: pes as any, eids: [eid], props });
 
-    return pes.components.find( com => getComponentEntityId(com) === eid );
+    return pes.components.find(com => getComponentEntityId(com) === eid);
 }

@@ -7,7 +7,7 @@ import Path from 'path';
 import Mitt, { Emitter } from 'mitt'
 import Chokidar from 'chokidar';
 import { Site } from '../builder/site';
-import { buildProcessors, RawProcessorEntry, renderToOutput } from '../builder';
+import { buildProcessors, getProcessorSpec, RawProcessorEntry, renderToOutput } from '../builder';
 import { Reporter, setLocation, info, error, Level, setLevel } from '../builder/reporter';
 import { EntityUpdate, SiteProcessor } from '../builder/types';
 import { debounce } from '@odgn/utils';
@@ -87,47 +87,12 @@ async function initialiseSite(path: string) {
     info(reporter, `config: ${path}`);
     info(reporter, `root: ${site.getSrcUrl()}`);
 
-    const spec: RawProcessorEntry[] = [
-        ['/query#clearUpdates', 1000],
-        ['/query#clearErrors', 1000],
-        ['/processor/file'],
-
-        ['/processor/mark#statics'],
-        ['/processor/mark#jsx'],
-        ['/processor/mark#mdx'],
-        ['/processor/mark#scss'],
-
-        ['/processor/build_src_index'],
-        
-        ['/processor/mdx/parse'],
-        ['/processor/apply_tags', 0, { type: 'tag' }],
-        ['/processor/apply_tags', 0, { type: 'layout' }],
-        ['/processor/mdx/resolve_meta'],
-        ['/processor/build_dst_index', 0, {onlyUpdated:false}],
-
-
-        ['/processor/scss', 0, { renderScss: true }],
-        ['/processor/jsx/eval'],
-        ['/processor/mdx/eval'],
-
-        ['/processor/js/eval'],
-        
-        ['/processor/client_code'],
-        
-        ['/processor/build_dst_index', 0, {onlyUpdated:false}],
-
-        ['/processor/js/render', 0, { beautify: true} ],
-        ['/processor/build_dst_index', -99, {onlyUpdated:false}],
-        ['/processor/write', -100],
-        ['/processor/static/copy', -101],
-        ['/processor/remove', -102],
-    ]
-
+    const spec = getProcessorSpec(site, {});
     let process = await buildProcessors(site, spec, {onlyUpdated:true});
 
     site = await process(site);
 
-
+    // a processor list for re-rendering output
     const outputSpec: RawProcessorEntry[] = [
         ['/processor/jsx/eval'],
         ['/processor/mdx/eval'],
