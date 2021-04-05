@@ -108,7 +108,7 @@ export async function build(site: Site, options: BuildProcessOptions = {}):Promi
     ];
 
     const loaded = await parseProcessorConfig(config);
-    processors = processors.concat(loaded);
+    processors = processors.concat(loaded).filter(Boolean);
 
     // sort according to priority descending
     processors.sort(([a, ap], [b, bp]) => {

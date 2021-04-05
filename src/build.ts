@@ -59,10 +59,10 @@ log('args', argv);
         let filename = Path.basename(configPath, Path.extname(configPath));
         options = {
             ...options,
-            // '/processor/graph_gen': {
+            
+            '/processor/graph_gen': {},
                 type:'png',
                 path: Path.join(path, filename + '.png')
-            // }
         }
     }
 
