@@ -1,3 +1,4 @@
+import Fs from 'fs-extra';
 import { toInteger } from "@odgn/utils";
 import { Site } from "../../builder/site";
 import { SiteProcessor } from "../../builder/types";
@@ -25,7 +26,7 @@ export default async function routes(app, { config: { site, process, processOutp
 
         let output = [];
         let outputEntry = await site.getEntityOutput(eid);
-        let path = await site.getEntityDstUrl(eid);
+        let path = site.getEntityDstUrl(eid);
         let type = 'text/html';
 
         if (outputEntry !== undefined) {
@@ -49,27 +50,39 @@ export default async function routes(app, { config: { site, process, processOutp
         let path = req.url;
 
         let eid = site.getEntityIdByDst(path);
-
+        
         if (eid === undefined && path.endsWith('/')) {
             path = path + 'index.html';
             eid = site.getEntityIdByDst(path);
         }
-
+        
+        
         if (eid === undefined) {
+            req.log.warn(`${path} ${eid} not found`);
             return reply.code(404).send('not found');
         }
-
+        
         let output = [];
-
+        
         let outputEntry = await site.getEntityOutput(eid);
-
+        
         if (outputEntry === undefined) {
+            // let [srcPath, srcMime] = site.getSrcIndex().getByEid(eid, true);
+
             return reply.code(404).send(`/output not found for ${eid}`);
         }
 
         let [data, mime] = outputEntry;
-
+        
         req.log.info(`${path} ${eid} ${mime}`);
+
+        if( isBinary(mime) ){
+            let path = site.getEntityDstUrl(eid);
+            path = site.getDstUrl( path );
+
+            const stream = Fs.createReadStream( path );
+            return reply.type(mime).send(stream);
+        }
 
         output.push(data);
 
@@ -85,4 +98,13 @@ export default async function routes(app, { config: { site, process, processOutp
         return reply.type(mime).send(output.join('\n'));
 
     })
+}
+
+
+function isBinary( mime:string ){
+    // todo - improve this...
+    if( mime.startsWith('image/') || mime.startsWith('application/') ){
+        return true;
+    }
+    return false;
 }

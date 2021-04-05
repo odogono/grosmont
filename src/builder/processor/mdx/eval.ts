@@ -58,7 +58,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     }
 
     await es.add(output);
-    
+
     info(reporter, `processed ${ents.length}`);
 
     return site;
@@ -232,12 +232,13 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
     // this is also done in /js/render, but its done
     // here so that dst paths can be resolved correctly
     // during the render
-    // let dstUrl = await getDstUrl(es, e.id);
-    let dstUrl = site.getDstIndex().getByEid(e.id)
-    if( dstUrl !== undefined ){
-        const mime = e.Dst?.mime ?? 'text/html';
-        let outputCom = setEntityId(es.createComponent('/component/output', { mime }), e.id);
-        return [jsCom, outputCom];
+    if (e.Output === undefined) {
+        let dstUrl = site.getDstIndex().getByEid(e.id)
+        if (dstUrl !== undefined) {
+            const mime = e.Dst?.mime ?? 'text/html';
+            let outputCom = setEntityId(es.createComponent('/component/output', { mime }), e.id);
+            return [jsCom, outputCom];
+        }
     }
 
     return [jsCom];

@@ -198,8 +198,22 @@ export class Site {
      * @param eid 
      * @param appendRoot 
      */
-    async getEntityOutput(eid: EntityId | Entity): Promise<[string, string]> {
-        return selectOutputByEntity(this.es, eid);
+    async getEntityOutput(e: EntityId | Entity): Promise<[string, string]> {
+        const eid:EntityId = isEntity(e) ? (e as Entity).id : e as EntityId;
+        let result = await selectOutputByEntity(this.es, eid);
+        if( result ){
+            log('[getEntityOutput]', 'found', eid, result);
+            return result;
+        }
+        // no output, so try getting the mime from the dst index
+        result = this.getDstIndex().getByEid(eid, true);
+
+        if( result ){
+            log('[getEntityOutput]', 'no output', eid, result);
+            return [undefined, (result as any[])[2] ];
+        }
+
+        return undefined;
     }
 
 
@@ -411,16 +425,16 @@ export class Site {
      * 
      * @param url 
      */
-    getEntityIdByDst(url: string): EntityId {
+    getEntityIdByDst(url: string, includeDetails:boolean = false): EntityId {
         const idx = this.getDstIndex();
         if (idx === undefined) {
             return undefined;
         }
-        const entry = idx.getEid(url);
+        const entry = includeDetails ? idx.getEid(url) : idx.get(url);
         if (entry === undefined) {
             return undefined;
         }
-        return entry;
+        return includeDetails ? entry : entry[0];
     }
 
     /**

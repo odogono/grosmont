@@ -49,9 +49,10 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
             const updCom = await es.getComponent( toComponentId(eid,upDid) );
 
             // log('input', eid, url, updCom);
-            url = await ensureExtension(site, eid, url);
+            let mime = undefined;
+            [url, mime] = await ensureExtension(site, eid, url);
             // log('set', url, eid);
-            dstIndex.set(uriToPath(url), eid, updCom?.op);
+            dstIndex.set(uriToPath(url), eid, updCom?.op, mime );
         } else {
             dstIndex.removeByEid(eid);
         }
@@ -73,21 +74,33 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
  * @param url 
  * @returns 
  */
-async function ensureExtension(site: Site, eid: EntityId, url: string) {
+async function ensureExtension(site: Site, eid: EntityId, url: string): Promise<[string, string]> {
     const { es } = site;
-    if (Path.extname(url) !== '') {
-        return url;
+    const ext = Path.extname(url);
+    if (ext !== '') {
+        return [url, Mime.lookup(ext)];
     }
 
     let did = es.resolveComponentDefId('/component/output');
-
     let com = await es.getComponent(toComponentId(eid, did));
 
     
     let result = appendExtFromMime(url, com?.mime);
     if (result !== undefined) {
-        return result;
+        return [result, com?.mime];
     }
+
+    // read from dst
+    did = es.resolveComponentDefId('/component/dst');
+    com = await es.getComponent(toComponentId(eid, did));
+
+    if (com !== undefined) {
+        result = appendExtFromMime(url, com?.mime);
+        if( result !== undefined ){
+            return [result, com?.mime];
+        }
+    }
+
 
 
     // attempt to read mime from meta
@@ -97,7 +110,7 @@ async function ensureExtension(site: Site, eid: EntityId, url: string) {
     if (com !== undefined) {
         result = appendExtFromMime(url, com?.meta?.mime);
         if( result !== undefined ){
-            return result;
+            return [result, com?.meta?.mime];;
         }
     }
 
@@ -112,12 +125,12 @@ async function ensureExtension(site: Site, eid: EntityId, url: string) {
 
         result = appendExtFromMime(url, mime);
         if (result !== undefined) {
-            return result;
+            return [result, mime];
         }
 
         let ext = Path.extname(com.url);
         if (ext) {
-            return url + '.' + ext;
+            return [url + '.' + ext, Mime.lookup(ext)];
         }
 
     }
@@ -125,7 +138,7 @@ async function ensureExtension(site: Site, eid: EntityId, url: string) {
     // look for /mdx /scss components
 
 
-    return url;
+    return [url, undefined];
 }
 
 function appendExtFromMime(url: string, mime: string) {

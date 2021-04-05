@@ -23,6 +23,8 @@ export function process({ resolveLink }: ImgProcProps) {
             const srcAttr = node.attributes.find( attr => attr.name === 'src');
             const altAttr = node.attributes.find( attr => attr.name === 'alt');
 
+            // console.log('replace url', {srcAttr, altAttr});
+
             if( srcAttr === undefined ){
                 return;
             }
@@ -36,14 +38,39 @@ export function process({ resolveLink }: ImgProcProps) {
 
             // clean the src
             srcValue = removeQuotes(srcValue);
+
+            // console.log('replace url', {srcValue, altValue});
             
             if( resolveLink ){
                 let resultUrl = resolveLink( srcValue, altValue )
                 if( resultUrl !== undefined ){
+                    // console.log('replace url', resultUrl);
                     srcAttr.value = resultUrl;// ensureQuotes(resultUrl);
                 }
             }
         }
+
+        const test = [
+            {type:'image'}
+        ]
+        unistVisit(tree, test, (node, index,parent) => {
+            
+            let srcValue:string = node.url as string;
+            let altValue:string = node.alt as string;
+
+            if( !srcValue ){
+                return;
+            }
+
+            if( resolveLink ){
+                let resultUrl = resolveLink( srcValue, altValue )
+                if( resultUrl !== undefined ){
+                    // console.log('replace url', resultUrl);
+                    node.url = resultUrl;// ensureQuotes(resultUrl);
+                }
+            }
+
+        });
     }
 }
 
