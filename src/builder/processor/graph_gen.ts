@@ -45,6 +45,7 @@ export interface GraphGenOptions extends ProcessOptions {
     srcOnly?: boolean;
     dstOnly?: boolean;
     include?: BitField;
+    exclude?: BitField;
 }
 
 /**
@@ -240,12 +241,20 @@ function buildEdges(g: Digraph, nodes, edges) {
     }
 }
 
-// 140087530674553 [label="e123 | {/component/src|file\:image.png}|{/component/dst|/media/image.png}"];
-
+/**
+ * Generates a GraphViz Node from an Entity, and returns any dependencies
+ * 
+ * @param g 
+ * @param es 
+ * @param e 
+ * @param options 
+ * @returns 
+ */
 function entityToNode(g: Digraph, es: EntitySet, e: Entity, options: GraphGenOptions) {
 
     const showDeps = options.showDeps ?? true;
     const includeBf = options.include;
+    const excludeBf = options.exclude;
     const srcOnly = options.srcOnly ?? false;
 
     const isDep = e.Dep !== undefined;
@@ -289,10 +298,12 @@ function entityToNode(g: Digraph, es: EntitySet, e: Entity, options: GraphGenOpt
         if (includeBf && bfGet(includeBf, did) === false) {
             continue;
         }
+        if (excludeBf && bfGet(excludeBf, did) === true) {
+            continue;
+        }
+
 
         buffer.push(`<tr><td align="left" valign="top">${def.name}</td><td align="left">${attr}</td></tr>`)
-
-        // buffer.push(`{ ${def.name}|${attr}}`)
     }
 
     let node: EntityNode;

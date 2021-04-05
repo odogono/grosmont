@@ -275,13 +275,13 @@ export class Site {
      * @param path 
      * @param src 
      */
-    async copyToUrl(path: string, src: string) {
-        path = uriToPath(path);
+    async copyToUrl( src: string, dst: string) {
         src = uriToPath(src);
+        dst = uriToPath(dst);
 
-        // log('writing', path);
-        await Fs.ensureDir(Path.dirname(path));
-        await Fs.copyFile(src, path);
+        // log('[copyToUrl]', src, 'to', dst);
+        await Fs.ensureDir(Path.dirname(dst));
+        await Fs.copyFile(src, dst);
 
         return true;
     }
@@ -317,9 +317,6 @@ export class Site {
     /**
      * Returns the site entity
      */
-    // getSite(): Entity {
-    //     return this.e;
-    // }
     getEntity(): Entity {
         return this.e;
     }

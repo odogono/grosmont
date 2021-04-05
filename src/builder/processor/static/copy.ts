@@ -38,13 +38,16 @@ export async function process(site: Site, options: ProcessOptions = {}) {
                 continue;
             }
 
-            let path = site.getDstUrl(dst);
+            let srcUrl = site.getSrcUrl(src.url);
+            let dstUrl = site.getDstUrl(dst);
+
+            // log('copying from', srcUrl, 'to', dstUrl );
 
             if (!dryRun) {
-                await site.copyToUrl(path, src.url);
-                info(reporter, `copied from ${src.url} to ${path}`, { eid });
+                await site.copyToUrl(srcUrl, dstUrl);
+                info(reporter, `copied from ${src.url} to ${dst}`, { eid });
             } else {
-                info(reporter, `[dryRun] copied from ${src.url} to ${path}`, { eid });
+                info(reporter, `[dryRun] copied from ${src.url} to ${dst}`, { eid });
             }
 
 
