@@ -114,7 +114,7 @@ test('keeps track of removed files', async ({site,es,options}) => {
     // log( site.getDstIndex() );
 
     assert.equal( site.getDstIndex().getByEid(1002, true), 
-        ['/main.html', ChangeSetOp.Remove] );
+        ['/main.html', ChangeSetOp.Remove, 'text/html'] );
 
 });
 

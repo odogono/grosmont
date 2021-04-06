@@ -17,7 +17,7 @@ export const rootPath = Path.resolve(__dirname, "../");
 
 
 export function process(site:Site, options:ProcessOptions = {} ){
-    return build(site, '/test', { onlyUpdated:false, ...options, dryRun:true} );
+    return build(site, '/test', { onlyUpdated:false, dryRun:true, beautify:false, ...options} );
 }
 
 export async function createSite(options:SiteOptions = {}){

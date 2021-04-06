@@ -192,6 +192,7 @@ test('dst dir filename', async ({es, site, options}) => {
     const spec:RawProcessorEntry[] = [
         [ '/processor/build_src_index' ],
         [ '/processor/mark#mdx' ],
+        [ '/processor/build_dst_index'],
         [ '/processor/mdx/eval'],
         [ '/processor/js/eval'],
         [ '/processor/js/render'],

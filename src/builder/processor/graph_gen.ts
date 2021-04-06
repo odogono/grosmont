@@ -59,11 +59,13 @@ export async function process(site: Site, options: GraphGenOptions) {
     const { reporter, type, path } = options;
     setLocation(reporter, Label);
 
-    let dot = await generateGraph(site, { showDeps: false, ...options });
-
-
+    
+    
     try {
-        // dot -Tpng es.graph.dot -o es.graph.png
+        // build the dot description
+        let dot = await generateGraph(site, { showDeps: false, ...options });
+
+        // execute the dot binary to produce the output image
         await execute(path, type, dot, reporter);
 
     } catch (err) {

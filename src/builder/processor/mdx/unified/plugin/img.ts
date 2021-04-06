@@ -55,6 +55,8 @@ export function process({ resolveLink }: ImgProcProps) {
         ]
         unistVisit(tree, test, (node, index,parent) => {
             
+            // console.log( node );
+
             let srcValue:string = node.url as string;
             let altValue:string = node.alt as string;
 
@@ -64,8 +66,8 @@ export function process({ resolveLink }: ImgProcProps) {
 
             if( resolveLink ){
                 let resultUrl = resolveLink( srcValue, altValue )
+                // console.log('replace url', resultUrl);
                 if( resultUrl !== undefined ){
-                    // console.log('replace url', resultUrl);
                     node.url = resultUrl;// ensureQuotes(resultUrl);
                 }
             }

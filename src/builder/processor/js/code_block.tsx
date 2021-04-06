@@ -1,7 +1,7 @@
 /* eslint react/jsx-key: 0 */
 
 import React from 'react'
-import Highlight, {defaultProps} from 'prism-react-renderer'
+import Highlight, { defaultProps } from 'prism-react-renderer'
 // import {LiveProvider, LiveEditor, LiveError, LivePreview} from 'react-live'
 // import {mdx} from '@mdx-js/react'
 
@@ -11,8 +11,8 @@ import Highlight, {defaultProps} from 'prism-react-renderer'
  * https://github.com/FormidableLabs/prism-react-renderer#advanced-props
  * 
  */
-export default ({children, className, live, render}) => {
-  const language = className.replace(/language-/, '')
+export default ({ children, className, live, render }) => {
+  const language = className?.replace(/language-/, '');
 
   // if (live) {
   //   return (
@@ -42,12 +42,12 @@ export default ({children, className, live, render}) => {
 
   return (
     <Highlight {...defaultProps} code={children.trim()} language={language}>
-      {({className, style, tokens, getLineProps, getTokenProps}) => (
-        <pre className={className} style={{...style, padding: '20px'}}>
+      {({ className, style, tokens, getLineProps, getTokenProps }) => (
+        <pre className={className} style={{ ...style, padding: '20px' }}>
           {tokens.map((line, i) => (
-            <div key={i} {...getLineProps({line, key: i})}>
+            <div key={i} {...getLineProps({ line, key: i })}>
               {line.map((token, key) => (
-                <span key={key} {...getTokenProps({token, key})} />
+                <span key={key} {...getTokenProps({ token, key })} />
               ))}
             </div>
           ))}

@@ -202,14 +202,14 @@ export class Site {
         const eid:EntityId = isEntity(e) ? (e as Entity).id : e as EntityId;
         let result = await selectOutputByEntity(this.es, eid);
         if( result ){
-            log('[getEntityOutput]', 'found', eid, result);
+            // log('[getEntityOutput]', 'found', eid, result);
             return result;
         }
         // no output, so try getting the mime from the dst index
         result = this.getDstIndex().getByEid(eid, true);
 
         if( result ){
-            log('[getEntityOutput]', 'no output', eid, result);
+            // log('[getEntityOutput]', 'no output', eid, result);
             return [undefined, (result as any[])[2] ];
         }
 
