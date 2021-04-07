@@ -1,5 +1,6 @@
 import {select} from 'unist-util-select';
 
+const log = (...args) => console.log('[/plugin/title]', ...args);
 
 export interface ConfigProps {
     onConfig?: (config:any, override:boolean) => any;
@@ -14,6 +15,7 @@ export function titlePlugin( { onConfig }: ConfigProps ) {
         let config:any = {};
         
         const firstHeading = select('heading[depth=1] > text', tree);
+
         if( firstHeading ){
             config.title = firstHeading.value;
         }
@@ -32,6 +34,3 @@ export function titlePlugin( { onConfig }: ConfigProps ) {
         }
     }
 };
-
-
-const log = (...args) => console.log('[titlePlugin]', ...args);

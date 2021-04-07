@@ -2,7 +2,7 @@ import Toml from 'toml';
 import Yaml from 'yaml';
 import unistVisit from 'unist-util-visit';
 import unistRemove from 'unist-util-remove';
-
+const log = (...args) => console.log('[/plugin/config]', ...args);
 
 export interface ConfigProps {
     onConfig?: (config: any, override: boolean) => any;
@@ -14,6 +14,8 @@ export interface ConfigProps {
  */
 export function configPlugin({ onConfig }: ConfigProps) {
     return (tree, vFile) => {
+        
+        
 
         unistVisit(tree, { type: 'yaml' }, (node, index, parent) => {
 
@@ -34,3 +36,4 @@ export function configPlugin({ onConfig }: ConfigProps) {
         unistRemove(tree, 'frontMatter');
     }
 };
+

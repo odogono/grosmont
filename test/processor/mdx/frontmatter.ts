@@ -25,9 +25,10 @@ I really like using Markdown.
 
     await process(site, options);
 
-    // await printAll(es);
-
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
+
+    assert.equal( e.Error, undefined );
+
     assert.equal(e.Output.data,
         `<h1>Test Page</h1><p>I really like using Markdown.</p>`);
 });

@@ -1,16 +1,20 @@
 import React from 'react';
 import unified from 'unified';
-import parse from 'remark-parse';
-import stringify from 'remark-stringify';
-import frontmatter from 'remark-frontmatter';
+import remarkParse from 'remark-parse';
+import remarkGridTables from 'remark-grid-tables';
+import remarkStringify from 'remark-stringify';
+import remarkFrontmatter from 'remark-frontmatter';
+import remarkEmoji from 'remark-emoji';
+// import Directive from 'remark-directive';
+import H from 'hastscript';
 
-import mdx from 'remark-mdx';
-import mdxjs from 'remark-mdxjs';
-import squeeze from 'remark-squeeze-paragraphs';
+import Visit from 'unist-util-visit';
+import remarkMdx from 'remark-mdx';
+import remarkMdxJs from 'remark-mdxjs';
+import remarkSqueeze from 'remark-squeeze-paragraphs';
 import mdxAstToMdxHast from '@mdx-js/mdx/mdx-ast-to-mdx-hast';
 import mdxHastToJsx from './mdx-hast-to-jsx';
 
-const emoji = require('remark-emoji')
 
 import { importPlugin } from './unified/plugin/import';
 import { linkProc } from './unified/plugin/link';
@@ -83,10 +87,13 @@ export async function transformMdx(content: string, options: MDXPluginOptions): 
     content = content.replace(/<!--(.*?)-->/, '');
 
     let output = await unified()
-        .use(parse)
-        .use(stringify)
-        .use(frontmatter)
-        .use(emoji)
+        .use(remarkParse)
+        .use(remarkGridTables)
+        // .use(Directive) // needs remark13
+        // .use(htmlDirectives)
+        .use(remarkStringify)
+        .use(remarkFrontmatter)
+        .use(remarkEmoji)
         .use(configPlugin, { onConfig })
         .use(removeCommentPlugin)
         // .use(() => console.dir)
@@ -97,11 +104,11 @@ export async function transformMdx(content: string, options: MDXPluginOptions): 
         // take a snap of the AST
         // .use(() => tree => { ast = JSON.stringify(tree, null, '\t') })
         .use(() => tree => { ast = tree })
-        .use(mdx)
-        .use(mdxjs)
+        .use(remarkMdx)
+        .use(remarkMdxJs)
         .use(titlePlugin, { onConfig })
         .use(importPlugin, { resolveImport })
-        .use(squeeze)
+        .use(remarkSqueeze)
         .use(mdxAstToMdxHast)
         .use(mdxHastToJsx)
         .process(content);
@@ -113,6 +120,22 @@ export async function transformMdx(content: string, options: MDXPluginOptions): 
         ast
     };
 }
+
+function htmlDirectives() {
+    return transform
+  
+    function transform(tree) {
+      Visit(tree, ['textDirective', 'leafDirective', 'containerDirective'], ondirective)
+    }
+  
+    function ondirective(node) {
+      var data = node.data || (node.data = {})
+      var hast = H(node.name, node.attributes)
+  
+      data.hName = hast.tagName
+      data.hProperties = hast.properties
+    }
+  }
 
 /**
  * Parses the frontmatter section of an MDX string
@@ -131,9 +154,9 @@ export async function parseFrontmatter( content: string, options:MDXParseFrontma
     content = content.replace(/<!--(.*?)-->/, '');
 
     let output = await unified()
-        .use(parse)
-        .use(stringify)
-        .use(frontmatter)
+        .use(remarkParse)
+        .use(remarkStringify)
+        .use(remarkFrontmatter)
         .use(configPlugin, { onConfig })
         .process(content);
 

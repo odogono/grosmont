@@ -23,12 +23,13 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
 
 export interface EvalMdxOptions extends ProcessOptions {
     linkIndex?: SiteIndex;
+    disableSamePageLinks?: boolean;
 }
 
 /**
  * Compiles Mdx
  */
-export async function process(site: Site, options: ProcessOptions = {}) {
+export async function process(site: Site, options: EvalMdxOptions = {}) {
     const es = site.es;
     const { reporter } = options;
     setLocation(reporter, Label);
@@ -66,12 +67,13 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
 
 
-async function processEntity(site: Site, e: Entity, options: ProcessOptions): Promise<Component[]> {
+async function processEntity(site: Site, e: Entity, options: EvalMdxOptions): Promise<Component[]> {
 
     const { es } = site;
     const siteRef = site.getRef();
     const { url: base } = e.Src;
     const { reporter } = options;
+    const disableSamePageLinks = options.disableSamePageLinks ?? false;
 
     let imports = [];
     let links: LinkDescr[] = [];
@@ -123,14 +125,19 @@ async function processEntity(site: Site, e: Entity, options: ProcessOptions): Pr
         }
 
         let entry = resolveImport(site, url, base);
+        // log('[resolveLink]', url, entry);
+        // log('[resolveLink]', site.getDstIndex());
+
         if (entry !== undefined) {
             const [eid, lurl, mime, srcUrl, dstUrl] = entry;
-            if (eid !== e.id) {
-                links.push(['int', entry[0], lurl, text]);
-                // log('[resolveLink]', url, e.id, eid, entry);
-                return lurl;
+            // log('[resolveLink]', url, e.id, eid, entry);
+            if (disableSamePageLinks === true && eid !== e.id) {
+                return undefined;
             }
-            return undefined;
+
+            links.push(['int', entry[0], lurl, text]);
+            return lurl;
+
         }
 
         return url;
