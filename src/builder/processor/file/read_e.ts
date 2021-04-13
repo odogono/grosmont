@@ -35,9 +35,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
         const eid = getComponentEntityId(com);
         const e = await es.getEntity(eid, false);
         const ext = Path.extname(com.url).substring(1);
-        let content = await site.readUrl( com.url );
+        let content = await site.getEntityData( eid );
 
-        // log('read from', com.url);
         await parseEntity(es, content, 
             { add: true, e, type:ext as ParseType, excludeList, es, siteRef, srcUrl:com.url });
 

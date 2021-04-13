@@ -260,7 +260,19 @@ export interface PageMeta {
 }
 
 
-export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img' | 'import' | 'script';
+
+/**
+ * dir - a parent and child relationship
+ * layout - src uses dst as a react container
+ * css - src imports the css output from dst
+ * tag - src is tagged using dst
+ * link - src links (eg href) to a url
+ * img - src references an img (similar to link)
+ * import - src imports code from dst
+ * script - src references code from dst (similar to import)
+ * gen - src was generated from dst
+ */
+export type DependencyType = 'dir' | 'layout' | 'css' | 'tag' | 'link' | 'img' | 'import' | 'script' | 'gen';
 
 
 

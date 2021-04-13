@@ -20,6 +20,7 @@ import { findEntityBySrcUrl, FindEntityOptions, insertDependency, selectTagBySlu
 import { applyMeta, createTag, uriToPath, resolveUrlPath } from './util';
 import { isString } from '@odgn/utils';
 import { BitField, toValues as bfToValues } from '@odgn/utils/bitfield';
+import { executionAsyncResource } from 'node:async_hooks';
 
 
 
@@ -47,13 +48,13 @@ export interface ParseOptions {
  */
 export async function parseEntity(from: QueryableEntitySet | Site, input: string | object, options: ParseOptions = {}): Promise<Entity> {
     const es: QueryableEntitySet = isEntitySet(from) ? from as QueryableEntitySet : (from as Site).es;
-    const addToES = options.add ?? true;
-    let { excludeList, siteRef, srcUrl } = options;
+
+    let { siteRef } = options;
     const type = options.type ?? 'yaml';
     if (!isEntitySet(from)) {
         siteRef = (from as Site).getRef();
     }
-    const selectOptions = { siteRef, srcUrl };
+
 
     let data: any = isString(input) ?
         parseConfigString(input as string, type)
@@ -64,8 +65,38 @@ export async function parseEntity(from: QueryableEntitySet | Site, input: string
         return undefined;
     }
 
-    // let eid = 0;
-    // let pk:string;
+    if (Array.isArray(data)) {
+        log('[parseEntity]', 'have array', data);
+        return parseArray(es, data as any[], { ...options, siteRef });
+    }
+
+    return parseData(es, data, { ...options, siteRef });
+
+}
+
+
+async function parseArray(es: QueryableEntitySet, data: ({ [key: string]: any }[]), options: ParseOptions) {
+    let { e:srcE } = options;
+    const addToES = options.add ?? true;
+
+    for (const item of data) {
+        let e = await parseData(es, item, { ...options, e: undefined });
+
+        // add a gen dependency
+        if( addToES && srcE !== undefined ){
+            await insertDependency( es, e.id, srcE.id, 'gen' );
+        }
+    }
+
+    return undefined;
+}
+
+
+async function parseData(es: QueryableEntitySet, data: ({ [key: string]: any }), options: ParseOptions) {
+    const { excludeList, siteRef, srcUrl } = options;
+    const addToES = options.add ?? true;
+    const selectOptions = { siteRef, srcUrl };
+
     let { id: eid, pk, ...other } = data;
     let coms: [ComponentDef, Component][] = [];
     let metaKeys = [];
@@ -87,7 +118,7 @@ export async function parseEntity(from: QueryableEntitySet | Site, input: string
         e[def.name] = com;
     }
 
-    
+
 
     if (metaKeys.length > 0) {
         let meta = {};

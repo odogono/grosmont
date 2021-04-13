@@ -2,7 +2,7 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { parseEntity } from '../../src/builder/config';
 
-import { beforeEach } from '../helpers';
+import { addSrc, beforeEach, printAll, process } from '../helpers';
 
 
 const test = suite('/processor/meta_config');
@@ -79,5 +79,24 @@ pk: /component/url#/url
     // printAll( es );
 });
 
+
+
+test('lists of entities', async ({ es, site }) => {
+
+  let data = `
+- url: http://foo.com/a
+  title: FooA
+
+- url: http://foo.com/b
+  title: FooB
+  `;
+
+  await addSrc(site, 'file:///links.e.yaml', data);
+
+  await process( site );
+
+  await printAll( es );
+
+});
 
 test.run();

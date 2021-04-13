@@ -19,7 +19,8 @@ import {
     QueryableEntitySetMem,
     EntitySetSQL,
     StatementArgs,
-    setEntityId
+    setEntityId,
+    isEntityId
 } from '../es';
 
 import { getPtr, parseEntity, parseConfigString } from './config';
@@ -41,6 +42,7 @@ import { createUUID } from '@odgn/utils';
 import { error, info, Level, Reporter, setLevel, setLocation, warn } from './reporter';
 import { uriToPath } from './util';
 import JSONPointer from 'jsonpointer';
+import { toComponentId } from 'odgn-entity/src/component';
 
 
 
@@ -224,32 +226,38 @@ export class Site {
      * @param e 
      */
     async getEntityData(ev: Entity | EntityId): Promise<string> {
-        let eid = isInteger(ev) ? ev as EntityId : (ev as Entity)?.id;
-        let e: Entity = isInteger(ev) ? await this.es.getEntity(eid) : ev as Entity;
+        const retrieve = isEntityId(ev);
+        let eid = retrieve ? ev as EntityId : (ev as Entity)?.id;
+        let e: Entity = retrieve ? await this.es.createEntity(eid) : ev as Entity;
 
-        // if( e === undefined ){
-        //     console.warn('[getEntityData]', `could not find entity ${eid}`);
-        // }
-
-        const data = e?.Data?.data;
+        let data = e?.Data?.data;
         if (data !== undefined) {
             return data;
         }
 
-        let srcUrl = this.getSrcUrl(e);
+        let cid = toComponentId( eid, this.es.resolveComponentDefId('/component/data') );
+        let com = await this.es.getComponent( cid );
+        data = com?.data;
+        if( data !== undefined ){
+            return data;
+        }
+
+        let srcUrl = e.Src?.url;
+        if( srcUrl === undefined ){
+            cid = toComponentId( eid, this.es.resolveComponentDefId('/component/src') );
+            com = await this.es.getComponent( cid );
+            srcUrl = com?.url;
+        }
 
         if (srcUrl === undefined) {
             return undefined;
         }
+
+        srcUrl = this.getSrcUrl(srcUrl);
+
         return this.readUrl(srcUrl);
     }
 
-    // async setEntityData( e:Entity, data:string ){
-    //     const d = e.Data ?? {data:''};
-    //     d.data = data;
-    //     e.Data = d;
-    //     return e;
-    // }
 
     /**
      * Attempts to read data from the specified path
