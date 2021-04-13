@@ -66,7 +66,6 @@ export async function parseEntity(from: QueryableEntitySet | Site, input: string
     }
 
     if (Array.isArray(data)) {
-        log('[parseEntity]', 'have array', data);
         return parseArray(es, data as any[], { ...options, siteRef });
     }
 
@@ -76,15 +75,15 @@ export async function parseEntity(from: QueryableEntitySet | Site, input: string
 
 
 async function parseArray(es: QueryableEntitySet, data: ({ [key: string]: any }[]), options: ParseOptions) {
-    let { e:srcE } = options;
+    let { e: srcE } = options;
     const addToES = options.add ?? true;
 
     for (const item of data) {
         let e = await parseData(es, item, { ...options, e: undefined });
 
         // add a gen dependency
-        if( addToES && srcE !== undefined ){
-            await insertDependency( es, e.id, srcE.id, 'gen' );
+        if (addToES && srcE !== undefined) {
+            await insertDependency(es, e.id, srcE.id, 'gen');
         }
     }
 
@@ -119,31 +118,43 @@ async function parseData(es: QueryableEntitySet, data: ({ [key: string]: any }),
     }
 
 
-
     if (metaKeys.length > 0) {
         let meta = {};
-        for (const key of metaKeys) {
+        for (let key of metaKeys) {
             const value = other[key];
 
             if (value === undefined) {
                 continue;
             }
 
+            const isPk = key.endsWith('!');
+            if (isPk) {
+                key = key.substring(0, key.length - 1);
+            }
+
             if (key === 'title') {
                 applyToCom(e, 'Title', { title: value });
+                pk = isPk ? '/component/title#title' : pk;
+            }
+            else if (key === 'url') {
+                applyToCom(e, 'Url', { url: value });
+                pk = isPk ? '/component/url#url' : pk;
             }
             else if (key === 'summary') {
                 applyToCom(e, 'Title', { summary: value }, false);
+                pk = isPk ? '/component/title#summary' : pk;
             }
             else if (key === 'src') {
                 applyUrlToCom(e, 'Src', value);
-                // e.Src = {url: value };
+                pk = isPk ? '/component/src#url' : pk;
             }
             else if (key === 'dst') {
                 applyToCom(e, 'Dst', { url: uriToPath(value) }, false);
+                pk = isPk ? '/component/dst#url' : pk;
             }
             else if (key === 'data') {
                 e.Data = { data: value };
+                pk = isPk ? '/component/data#data' : pk;
             }
             else if (key === 'date') {
                 if (Array.isArray(value)) {
@@ -151,14 +162,15 @@ async function parseData(es: QueryableEntitySet, data: ({ [key: string]: any }),
                     e.DateRange = { date_start: dates[0], date_end: dates[1] };
                 } else {
                     e.Date = { date: new Date(value) };
+                    pk = isPk ? '/component/date#date' : pk;
                 }
             }
             else if (key === 'output') {
                 e.Output = { data: value };
+                pk = isPk ? '/component/output#data' : pk;
             }
             else if (key === 'mime') {
                 applyToCom(e, 'Dst', { mime: value }, false);
-                // e.Mime = {type: value };
             }
             else if (key === 'tags') {
                 await applyTags(es, e, value, selectOptions);
@@ -174,13 +186,9 @@ async function parseData(es: QueryableEntitySet, data: ({ [key: string]: any }),
             }
         }
         if (Object.keys(meta).length > 0) {
-            // e.Meta = { meta };
             applyMeta(e, meta);
-            // applyToCom( e, 'Meta', {meta}, false );
         }
     }
-
-    // log('!! done', e.id);
 
     // if a primary key was specified, lookup the e to which it
     // refers
