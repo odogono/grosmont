@@ -20,6 +20,7 @@ import {
     Entity,
     EntityId,
     EntitySet,
+    QueryableEntitySet,
     getComponentEntityId,
     isEntityId,
     setEntityId,
@@ -46,6 +47,7 @@ export interface GraphGenOptions extends ProcessOptions {
     dstOnly?: boolean;
     include?: BitField;
     exclude?: BitField;
+    eid?: EntityId;
 }
 
 /**
@@ -59,8 +61,7 @@ export async function process(site: Site, options: GraphGenOptions) {
     const { reporter, type, path } = options;
     setLocation(reporter, Label);
 
-    
-    
+
     try {
         // build the dot description
         let dot = await generateGraph(site, { showDeps: false, ...options });
@@ -69,6 +70,7 @@ export async function process(site: Site, options: GraphGenOptions) {
         await execute(path, type, dot, reporter);
 
     } catch (err) {
+        log('crap', err);
         error(reporter, 'error executing dot', err);
     }
 
@@ -133,6 +135,7 @@ async function execute(outputPath: string, type: ('svg' | 'png'), dot: string, r
 
 export async function generateGraph(site: Site, options: GraphGenOptions) {
     const { es } = site;
+    const eid = options.eid;
     const g = new Digraph('G', {
         [attribute.rankdir]: 'LR'
     });
@@ -145,6 +148,13 @@ export async function generateGraph(site: Site, options: GraphGenOptions) {
     let edges = [];
     let count = 0;
 
+    if (eid !== undefined) {
+        [nodes, edges] = await addEntity(g, es, eid, nodes, edges, { ...options, depth: 0, maxDepth:2 });
+
+        buildEdges(g, nodes, edges);
+
+        return toDot(g);
+    }
 
     if (options.dstOnly) {
         let idx = site.getDstIndex();
@@ -185,17 +195,28 @@ export async function generateGraph(site: Site, options: GraphGenOptions) {
         [nodes, edges] = await addEntity(g, es, e, nodes, edges, options);
     }
 
+
     buildEdges(g, nodes, edges);
 
     return toDot(g);
 }
 
 
-async function addEntity(g: Digraph, es: EntitySet, id: EntityId | Entity, nodes, edges, options: GraphGenOptions) {
+interface AddEntityOptions extends GraphGenOptions {
+    depth?: number;
+    maxDepth?: number;
+}
+
+async function addEntity(g: Digraph, es: QueryableEntitySet, id: EntityId | Entity, nodes, edges, options: AddEntityOptions) {
     let eid: EntityId = isEntityId(id) ? id as EntityId : (id as Entity).id;
     let e: Entity = isEntityId(id) ? await es.getEntity(id as EntityId, true) : id as Entity;
 
     let { node, deps } = entityToNode(g, es, e, options);
+
+    // if we have already added this, then return
+    if (node && nodes.get(node.eid)) {
+        return [nodes, edges];
+    }
 
     if (node) {
         g.addNode(node);
@@ -203,7 +224,39 @@ async function addEntity(g: Digraph, es: EntitySet, id: EntityId | Entity, nodes
     }
 
     if (deps) {
-        edges = [...edges, ...deps];
+        for( const dep of deps ){
+            if( edges.findIndex( ed => ed[0] === dep[0] && ed[1] === dep[1] ) !== -1 ){
+                continue;
+            }
+            edges.push( dep );
+        }
+        // edges = [...edges, ...deps];
+    }
+
+    const {depth, maxDepth} = options;
+
+    if (maxDepth !== undefined) {
+        console.log('[addEntity]', {depth, maxDepth});
+        if( depth >= maxDepth ){
+            return [nodes, edges];
+        }
+        deps = await getDependencies(es, eid, undefined, false) as Entity[];
+
+        for (const dep of deps) {
+            [nodes, edges] = await addEntity(g, es, dep, nodes, edges, { ...options, depth: depth+1 });
+        }
+
+        deps = await getDependenciesOf(es, eid, undefined, false) as Entity[];
+
+        for (const dep of deps) {
+            [nodes, edges] = await addEntity(g, es, dep, nodes, edges, { ...options, depth: depth+1 });
+        }
+
+        let missing = findMissingEntities(nodes, edges);
+
+        for (const eid of missing) {
+            [nodes, edges] = await addEntity(g, es, eid, nodes, edges, { ...options, depth: depth+1 });
+        }
     }
 
     return [nodes, edges];
@@ -288,11 +341,27 @@ function entityToNode(g: Digraph, es: EntitySet, e: Entity, options: GraphGenOpt
 
         if (def.uri === '/component/dep') {
             if (showDeps) {
+
+                // if (com.type === 'dir' || com.type === 'gen') {
                 deps.push([e.id, com.src, com.type]);
                 deps.push([com.dst, e.id, com.type]);
+                // }
+                // else {
+                //     deps.push([com.src, e.id, com.type]);
+                //     deps.push([e.id, com.dst, com.type]);
+                // }
             }
             else {
-                deps.push([com.dst, com.src, `<${com.type}<br/>(${e.id})>`]);
+                if (com.type === 'import') {
+                    deps.push([com.src, com.dst, `<${com.type}<br/>(${e.id})>`]);
+                }
+                else {
+                    deps.push([com.dst, com.src, `<${com.type}<br/>(${e.id})>`]);
+                }
+                // if (com.type === 'dir' || com.type === 'gen') {
+                // } else {
+                //     deps.push([com.src, com.dst, `<${com.type}<br/>(${e.id})>`]);
+                // }
                 return { node: undefined, deps };
             }
         }
@@ -323,6 +392,7 @@ function entityToNode(g: Digraph, es: EntitySet, e: Entity, options: GraphGenOpt
 
     return { node, deps };
 }
+
 
 
 class EntityNode extends Node {
