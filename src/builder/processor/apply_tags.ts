@@ -39,6 +39,8 @@ export async function process(site: Site, options: ApplyDepsToChildrenOptions = 
     debug(reporter, `leafs ${eids} bl ${excludeEids}`);
     // log( `leafs ${eids} bl ${excludeEids}` );
 
+    let added = 0;
+
     for (const eid of eids) {
         // get the parents of this e
         const peids = await getDependencyParents(es, eid, 'dir');
@@ -54,6 +56,7 @@ export async function process(site: Site, options: ApplyDepsToChildrenOptions = 
             for (const tagId of tagIds) {
                 let depId = await insertDependency(es, peid, tagId, depType);
                 if (depId !== 0) {
+                    added++;
                     // info(reporter, `add ${depType} ${tagId} to ${peid}`, {eid:depId});
                 }
             }
@@ -68,7 +71,7 @@ export async function process(site: Site, options: ApplyDepsToChildrenOptions = 
 
     }
 
-    info(reporter, `processed ${eids.length} - ${depType}`);
+    info(reporter, `processed ${eids.length}, added ${added} - ${depType}`);
 
     return site;
 }

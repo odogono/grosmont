@@ -90,6 +90,7 @@ test('lists of entities', async ({ es, site }) => {
 
 - url!: http://foo.com/b
   title: FooB
+  tags: [ links, article ]
   `;
 
   await addSrc(site, 'file:///links.e.yaml', data);
@@ -107,6 +108,8 @@ test('lists of entities', async ({ es, site }) => {
   let coms = await stmt.getResult();
 
   assert.equal(coms.length, 1);
+
+  await printAll(es);
 });
 
 test.run();

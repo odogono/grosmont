@@ -1271,6 +1271,7 @@ export async function insertDependency(es: QueryableEntitySet, src: EntityId, ds
     await es.add(extra ? [com, ...extra] : com);
 
     let reid = es.getUpdatedEntities()[0];
+    
     return reid;
 }
 

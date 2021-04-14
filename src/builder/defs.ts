@@ -77,7 +77,7 @@ export const defs = [
             { name: 'slug', type: 'string' },
         ]
     },
-    
+
 
     {
         // dependency
@@ -180,8 +180,14 @@ export const defs = [
     {
         uri: '/component/client_code',
         properties: [
-            { name: 'imports', type:'json' },
-            { name: 'components', type:'json' },
+            { name: 'imports', type: 'json' },
+            { name: 'components', type: 'json' },
+        ]
+    },
+    {
+        uri: '/component/thumbnail',
+        properties: [
+            { name: 'url', type: 'string' }
         ]
     }
 ];

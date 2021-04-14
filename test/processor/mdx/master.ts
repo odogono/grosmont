@@ -1,6 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addSrc, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, printAll, process } from '../../helpers';
 
 const test = suite('/processor/mdx/master');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -41,7 +41,6 @@ Hello _world_
 
     assert.equal(e.Output.data,
         `<html lang="en"><body><p>Hello <em>world</em></p></body></html>`);
-
 
 });
 
@@ -89,6 +88,41 @@ import { e, layout } from '@site';
 </html>`);
 })
 
+
+test.skip('import mdx', async ({ es, site, options }) => {
+    await addSrc(site, 'file:///message.mdx', `<a href="/main">Main</a>`);
+
+    await addSrc(site, 'file:///layout/main.mdx', `
+---
+isRenderable: false
+---
+import Message from 'file:///message.mdx';
+
+<html lang="en">
+    <body>
+        <div><Message /></div>
+        {children}
+    </body>
+</html>`);
+
+
+    await addSrc(site, 'file:///pages/main.mdx', `
+---
+layout: /layout/main
+dst: /main.html
+---
+Main Page
+    `);
+
+    await process(site, options);
+
+    await printAll(es);
+
+    let e = await site.getEntityBySrc('file:///pages/main.mdx');
+
+    log( e.Output.data );
+
+});
 
 
 test.run();

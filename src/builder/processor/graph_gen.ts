@@ -236,7 +236,7 @@ async function addEntity(g: Digraph, es: QueryableEntitySet, id: EntityId | Enti
     const {depth, maxDepth} = options;
 
     if (maxDepth !== undefined) {
-        console.log('[addEntity]', {depth, maxDepth});
+        // console.log('[addEntity]', {depth, maxDepth});
         if( depth >= maxDepth ){
             return [nodes, edges];
         }
@@ -352,7 +352,8 @@ function entityToNode(g: Digraph, es: EntitySet, e: Entity, options: GraphGenOpt
                 // }
             }
             else {
-                if (com.type === 'import') {
+                
+                if (['import', 'link'].indexOf(com.type) !== -1) {
                     deps.push([com.src, com.dst, `<${com.type}<br/>(${e.id})>`]);
                 }
                 else {

@@ -227,8 +227,8 @@ async function parseData(es: QueryableEntitySet, data: ({ [key: string]: any }),
 
         // if we couldn't insert the layout earlier because the e had not
         // yet been created, then read it from meta
-        const { layout, ...meta } = e.Meta?.meta ?? {};
-        if (layout) {
+        const { layout, tags, ...meta } = e.Meta?.meta ?? {};
+        if (layout || tags ) {
             e.Meta = Object.keys(meta).length > 0 ? { meta } : undefined;
         }
 
@@ -249,6 +249,10 @@ async function parseData(es: QueryableEntitySet, data: ({ [key: string]: any }),
             } else {
                 // log('could not find layout', layout);
             }
+        }
+
+        if( tags ){
+            await addTags( es, eid, tags, options );
         }
 
         // log('added', eid, await es.getEntity(eid));
@@ -306,6 +310,18 @@ async function applyLayout(es: QueryableEntitySet, e: Entity, url: string, optio
 
 
 async function applyTags(es: QueryableEntitySet, e: Entity, tags: string | string[], options: FindEntityOptions = {}) {
+
+    if (e.id === 0) {
+        log('[applyTags]', 'e not yet present', tags);
+        applyMeta(e, { tags });
+        return e;
+    }
+
+    return addTags(es, e.id, tags, options);
+}
+
+
+async function addTags(es: QueryableEntitySet, eid: EntityId, tags: string | string[], options: FindEntityOptions = {}) {
     let names: string[] = isString(tags) ? [tags as string] : tags as string[];
 
     // get rid of duplicates
@@ -320,11 +336,11 @@ async function applyTags(es: QueryableEntitySet, e: Entity, tags: string | strin
             etag = await createTag(es, tag, options);
         }
 
-        await insertDependency(es, e.id, etag.id, 'tag');
+        log('[addTags]', '', tag, eid, etag.id);
+
+        await insertDependency(es, eid, etag.id, 'tag');
     }
-
 }
-
 
 
 

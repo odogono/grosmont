@@ -75,6 +75,7 @@ export function createRenderContext(site: Site, e: Entity, options: ProcessOptio
         processEntity: processEntityOutput(site, e, options),
         runQuery: runQuery(site, e, options),
         processEntities: processEntities(site, e, options),
+        fetchEntities: fetchEntities(site, e, options),
         resolveUrl: resolveUrl(site, e),
         formatDate,
     };
@@ -104,6 +105,20 @@ function runQuery(site: Site, e: Entity, options: ProcessOptions) {
         const { es } = site;
         let result = await es.prepare(q).getResult(args);
         // log('[runQuery]', q, result);
+        return result;
+    }
+}
+
+
+function fetchEntities(site: Site, e: Entity, options: ProcessOptions) {
+    return async (q: string, args: StatementArgs) => {
+        const { es } = site;
+        let result = await es.prepare(q).getEntities(args);
+
+        for (const ent of result) {
+            await insertDependency(es, e.id, ent.id, 'import');
+        }
+
         return result;
     }
 }
