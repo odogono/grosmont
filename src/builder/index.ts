@@ -1,3 +1,5 @@
+import Path from 'path';
+import Process from 'process';
 import { BitField, get as bfGet } from '@odgn/utils/bitfield';
 import {
     Component,
@@ -200,6 +202,10 @@ async function resolveProcessor(url: any): Promise<Function> {
     let res = await safeImport(url);
 
     if (res === undefined) {
+        res = require( './' + url);
+    }
+
+    if (res === undefined) {
         res = await safeImport('./' + url);
     }
 
@@ -212,6 +218,7 @@ async function resolveProcessor(url: any): Promise<Function> {
 
 async function safeImport(url: string) {
     try {
+        
         return await import(url);
     } catch (err) {
         return undefined;

@@ -4,8 +4,8 @@
 		{
 			"label": "Test Current File",
 			"type": "process",
-			"command": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
-			"args": [  "${file}" ],
+			"command": "node",
+			"args": [ "-r", "ts-eager/register", "${file}" ],
 			"presentation": {
                 "clear": true,
                 "echo": true,
@@ -21,10 +21,10 @@
 		{
 			"label": "Run all",
 			"type": "process",
-			"command": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
+			"command": "node",
+			"args": [ "-r", "ts-eager/register", "${file}" ],
 			"group": "test"
 		},
-		,
         {
             "label": "Run Stored Test",
             "command": "${workspaceRoot}/.vscode/run_stored_test.sh",
