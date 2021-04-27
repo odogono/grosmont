@@ -109,7 +109,7 @@ test('lists of entities', async ({ es, site }) => {
 
   assert.equal(coms.length, 1);
 
-  await printAll(es);
+  // await printAll(es);
 });
 
 test.run();

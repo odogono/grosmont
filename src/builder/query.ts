@@ -2,17 +2,23 @@ import Path from 'path';
 import Mime from 'mime-types';
 
 import {
+    createStdLibStack,
     Component, getComponentEntityId, setEntityId,
-
     Entity, EntityId, isEntity,
-    QueryableEntitySet
+    QueryableEntitySet,
+    QueryStack,
+    StackValue,
+    Statement,
+    SType
 } from "../es";
 import { Site } from "./site";
 import { uriToPath } from './util';
 import { DependencyType, ProcessOptions } from './types';
 import { BitField } from "@odgn/utils/bitfield";
-import { parseUri, slugify, toBoolean } from '@odgn/utils';
-import { SType } from 'odgn-entity/src/query/types';
+import { hash, hashToString, parseUri, slugify, toBoolean } from '@odgn/utils';
+
+
+
 
 
 
@@ -33,22 +39,94 @@ export interface ParseOptionsOptions extends FindEntityOptions {
     warnOnEmptyRef?: boolean;
 }
 
-function parseOptions(options: FindEntityOptions = {}) {
+function parseOptions(options: FindEntityOptions = {}, throwOnMissingRef:boolean = true) {
     const ref = options.siteRef ?? 0;
     const onlyUpdated = options.onlyUpdated ?? false;
     const eids = options.eids;
-    if (ref === 0) {
+    if (ref === 0 && throwOnMissingRef) {
         // console.warn('[parseOptions]', 'empty siteRef passed');
         throw new Error('[parseOptions] empty siteRef passed');
     }
     return { ref, onlyUpdated, eids };
 }
 
+
+let esStacks: Map<string, QueryStack> = new Map<string, QueryStack>();
+// let stack: QueryStack;
+let qCache: Map<string, StackValue[]> = new Map<string, StackValue[]>();
+
+/**
+ * Prepares a query statement
+ * 
+ * @param es 
+ * @param q 
+ * @returns 
+ */
+export function prepare(es: QueryableEntitySet, q: string, cache: boolean = true, options: FindEntityOptions = {}): Statement {
+    
+    let stack = esStacks.get(es.getUrl());
+
+    if (stack === undefined) {
+        stack = createStdLibStack();
+
+        stack = stack.addWord('lookupMimeExt', (stack) => {
+            const mime = stack.popValue();
+            const ext = Mime.extension(mime);
+            return [SType.Value, ext];
+        });
+
+        stack = stack.addWord('findByTags', async (stack) => {
+            let tags = stack.popValue();
+            tags = Array.isArray(tags) ? tags : [tags];
+            const eids = await findEntitiesByTags( es, tags, options );
+            return [SType.List, eids];
+        });
+
+        let ref = options.siteRef;
+        stack = stack.addWord('getRef', (stack) => {
+            return [SType.Value, ref ];
+        });
+
+        // stack.addUDWord('bogus', [SType.Value, true]);
+
+        esStacks.set(es.getUrl(), stack);
+    }
+
+    if( q === undefined ){
+        return undefined;
+    }
+
+    let insts: StackValue[];
+
+    if (cache) {
+        // let id = hash(q, true) as string;
+        insts = qCache.get(q);
+        // if( insts !== undefined ) console.log('[prepare]', 'cache hit', q );
+    }
+
+
+    if (insts === undefined) {
+        // console.log('[prepare]', {hit:insts !== undefined}, q );
+        // stack._stacks[0].id = 0;
+    }
+
+    // console.log('[prepare]', {hit:insts !== undefined}, q );
+    const stmt = es.prepare(q, { stack, insts });
+
+    if (cache && insts === undefined) {
+        qCache.set(q, stmt.insts);
+    }
+
+    return stmt;
+}
+
+
+
 export async function selectTagBySlug(es: QueryableEntitySet, name: string, options: FindEntityOptions = {}) {
     const slug = slugify(name);
     const { ref } = parseOptions(options);
 
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [
         /component/tag#slug !ca $slug ==
         /component/site_ref#ref !ca $ref ==
@@ -69,9 +147,13 @@ export async function selectTagBySlug(es: QueryableEntitySet, name: string, opti
  * @param options 
  */
 export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[], options: FindEntityOptions = {}): Promise<EntityId[]> {
-    const { ref } = parseOptions(options);
+    const { ref } = parseOptions(options, false);
 
     const q = `
+    // since this may be called as directly, or as a word, $ref wont always be set
+    // getRef is defined in prepare
+    getRef $ref or ref let
+
     es let
     [
         $es [
@@ -83,7 +165,7 @@ export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[],
         [ drop false @! ] swap size 0 == rot swap if
         pop!
         @>
-    ] selectTagBySlug define
+    ] *selectTagBySlug define
 
     [
         $es [
@@ -93,10 +175,11 @@ export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[],
         [ drop false @! ] swap size 0 == rot swap if
         
         @>
-    ] selectTagDepByDst define
+    ] *selectTagDepByDst define
 
     // first, resolve the incoming slugs to tag eids
     $tags *selectTagBySlug map
+
     // remove empty results
     [ false != ] filter
 
@@ -110,7 +193,8 @@ export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[],
     unique // get rid of dupes
     `;
 
-    const stmt = es.prepare(q);
+    
+    const stmt = prepare(es, q);
     return await stmt.getResult({ ref, tags });
 }
 
@@ -120,7 +204,7 @@ export async function selectMeta(es: QueryableEntitySet, options: FindEntityOpti
     const { ref } = parseOptions(options);
 
 
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [
         /component/site_ref#ref !ca $ref ==
         /component/meta !bf
@@ -149,7 +233,7 @@ export async function selectTitleAndMeta(es: QueryableEntitySet, options: FindEn
         // rot [ *^$1 /component/dst !bf @c ] select rot +
     `;
 
-    return await es.prepare(query).getEntities({ ref });
+    return await prepare(es, query).getEntities({ ref });
 }
 
 
@@ -184,7 +268,7 @@ export async function selectOutputWithDst(es: QueryableEntitySet, options: FindE
     swap [ *^$1 @eid /component/output !bf @c ] select
     `
 
-    return await es.prepare(q).getResult({ ref });
+    return await prepare(es, q).getResult({ ref });
 }
 
 /**
@@ -218,7 +302,7 @@ export async function selectStaticWithDst(es: QueryableEntitySet, options: FindE
     swap [ *^$1 @eid /component/src !bf @c ] select
     `
 
-    return await es.prepare(q).getResult({ ref });
+    return await prepare(es, q).getResult({ ref });
 }
 
 export async function selectMetaSrc(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
@@ -249,13 +333,13 @@ export async function selectMetaSrc(es: QueryableEntitySet, options: FindEntityO
     `;
 
 
-    return await es.prepare(q).getEntities({ ref });
+    return await prepare(es, q).getEntities({ ref });
 }
 
 
 
 export async function selectMetaDisabled(es: QueryableEntitySet): Promise<EntityId[]> {
-    const stmt = es.prepare(`[
+    const stmt = prepare(es, `[
         /component/status#is !ca active !=
         // /component/meta#/meta/isEnabled !ca false ==
         @eid
@@ -296,7 +380,7 @@ export async function selectJsx(es: QueryableEntitySet, options: FindEntityOptio
     ] select`
     }
 
-    return await es.prepare(q).getEntities({ ref, eids });
+    return await prepare(es, q).getEntities({ ref, eids });
 }
 
 export async function selectMdx(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Entity[]> {
@@ -320,7 +404,7 @@ export async function selectMdx(es: QueryableEntitySet, options: FindEntityOptio
             @e
         ] select`;
 
-    return await es.prepare(q).getEntities({ ref });
+    return await prepare(es, q).getEntities({ ref });
 }
 
 
@@ -349,7 +433,7 @@ export async function selectClientCode(es: QueryableEntitySet, options: FindEnti
     };
 
 
-    return es.prepare(q).getResult({ ref });
+    return prepare(es, q).getResult({ ref });
 }
 
 
@@ -386,7 +470,7 @@ export async function selectJs(es: QueryableEntitySet, options: FindEntityOption
     ] select`
     }
 
-    return await es.prepare(q).getEntities({ ref, eids });
+    return await prepare(es, q).getEntities({ ref, eids });
 }
 
 
@@ -414,7 +498,7 @@ export async function selectMdxSrc(es: QueryableEntitySet, options: FindEntityOp
             @c
         ] select`;
 
-    return await es.prepare(q).getResult({ ref });
+    return await prepare(es, q).getResult({ ref });
 }
 
 
@@ -438,7 +522,7 @@ export async function selectMdxSrc(es: QueryableEntitySet, options: FindEntityOp
 //             @c
 //         ] select`;
 
-//     return await es.prepare(q).getEntities({ ref });
+//     return await prepare(es, q).getEntities({ ref });
 // }
 
 
@@ -451,14 +535,14 @@ export async function selectErrors(es: QueryableEntitySet, options: FindEntityOp
         @c
         ] select`;
 
-    return await es.prepare(q).getResult({ ref });
+    return await prepare(es, q).getResult({ ref });
 }
 
-export async function selectSrc(es: QueryableEntitySet, options: FindEntityOptions = {}):Promise<Component[]> {
+export async function selectSrc(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<Component[]> {
     const { ref, onlyUpdated } = parseOptions(options);
-    let q:string;
-    
-    if( onlyUpdated ){
+    let q: string;
+
+    if (onlyUpdated) {
         q = `
         [
                             /component/upd#op !ca 1 ==
@@ -480,7 +564,7 @@ export async function selectSrc(es: QueryableEntitySet, options: FindEntityOptio
         ] select`;
     }
 
-    return await es.prepare(q).getResult({ ref });
+    return await prepare(es, q).getResult({ ref });
 }
 
 /**
@@ -517,7 +601,7 @@ export async function selectSrcByExt(es: QueryableEntitySet, ext: string[], opti
     ] select`;
 
     // console.log('[selectSrcByExt]', ref, q);
-    return await es.prepare(q).getResult({ ref });
+    return await prepare(es, q, false).getResult({ ref }, true);
 }
 
 export async function selectSrcByMime(es: QueryableEntitySet, mime: string[], options: FindEntityOptions = {}): Promise<Component[]> {
@@ -549,7 +633,7 @@ export async function selectSrcByMime(es: QueryableEntitySet, mime: string[], op
     ] select`;
 
     // console.log('[selectSrcByExt]', ref, q);
-    return await es.prepare(q).getResult({ ref });
+    return await prepare(es, q, false).getResult({ ref });
 }
 
 export async function selectEntitiesByMime(es: QueryableEntitySet, mime: string[], options: FindEntityOptions = {}): Promise<Entity[]> {
@@ -580,7 +664,7 @@ export async function selectEntitiesByMime(es: QueryableEntitySet, mime: string[
     ] select`;
 
     // console.log('[selectSrcByExt]', ref, q);
-    return await es.prepare(q).getEntities({ ref });
+    return await prepare(es, q, false).getEntities({ ref });
 }
 
 
@@ -622,7 +706,7 @@ export async function selectSrcByFilename(es: QueryableEntitySet, names: string[
         @c
     ] select`;
 
-    return await es.prepare(q).getResult({ ref });
+    return await prepare(es, q, false).getResult({ ref });
 }
 
 
@@ -634,7 +718,7 @@ export async function selectDstEntityIds(es: QueryableEntitySet): Promise<Entity
         [ [ /component/dst ] !bf @eid] select
     `;
 
-    const stmt = es.prepare(q);
+    const stmt = prepare(es, q);
     return await stmt.getResult();
 }
 
@@ -668,7 +752,7 @@ export async function findEntityBySrcUrl(es: QueryableEntitySet, path: string, o
         @eid
     ] select`;
 
-    const stmt = es.prepare(query);
+    const stmt = prepare(es, query);
     const r = await stmt.getResult({ ref, path });
     return r.length > 0 ? r[0] : undefined;
 }
@@ -685,7 +769,7 @@ export async function getEntityBySrcUrl(es: QueryableEntitySet, url: string, opt
         @e
     ] select`;
 
-    const stmt = es.prepare(query);
+    const stmt = prepare(es, query);
     const r = await stmt.getEntities({ ref, url });
     return r.length > 0 ? r[0] : undefined;
 }
@@ -739,7 +823,7 @@ export async function findEntityByUrl(es: QueryableEntitySet, url: string, optio
 
 export async function getUrlComponent(es: QueryableEntitySet, url: string, options: FindEntityOptions = {}) {
     const { ref, onlyUpdated } = parseOptions(options);
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [
         /component/site_ref#ref !ca $ref ==
         /component/url#url !ca $url ==
@@ -752,7 +836,7 @@ export async function getUrlComponent(es: QueryableEntitySet, url: string, optio
 
 
 export async function getEntityByUrl(es: QueryableEntitySet, url: string) {
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [
         /component/url#url !ca $url ==
         @e
@@ -792,8 +876,10 @@ export async function buildSrcUrlIndex(es: QueryableEntitySet, options: FindEnti
     ] select
 
     [ /component/src#/url /id /component/ftimes#/mtime /bitField ] pluck!
-    `
-    const stmt = es.prepare(query);
+    `;
+
+    // console.log('[buildSrcUrlIndex]', 'with', es);
+    const stmt = prepare(es, query);
     let result = await stmt.getResult({ ref });
     if (result.length === 0) {
         return result;
@@ -822,7 +908,7 @@ export async function selectFiles(es: QueryableEntitySet, options: FindEntityOpt
         @e
     ] select`
 
-    return await es.prepare(q).getEntities({ ref });
+    return await prepare(es, q).getEntities({ ref });
 }
 
 
@@ -850,14 +936,14 @@ export async function selectFileSrc(es: QueryableEntitySet, options: FindEntityO
         ] select
         `;
 
-    const stmt = es.prepare(q);
+    const stmt = prepare(es, q);
 
     return await stmt.getResult({ ref });
 }
 
 
 export async function selectSrcByUrl(es: QueryableEntitySet, url: string): Promise<Component> {
-    const stmt = es.prepare(`[
+    const stmt = prepare(es, `[
         /component/src#url !ca $url ==
         /component/src !bf
         @c
@@ -869,7 +955,7 @@ export async function selectSrcByUrl(es: QueryableEntitySet, url: string): Promi
 
 export async function selectSrcByEntity(es: QueryableEntitySet, e: EntityId | Entity): Promise<string> {
     const eid = isEntity(e) ? (e as Entity).id : e as EntityId;
-    const stmt = es.prepare(`[
+    const stmt = prepare(es, `[
         $eid @eid
         /component/src !bf
         @c
@@ -881,7 +967,7 @@ export async function selectSrcByEntity(es: QueryableEntitySet, e: EntityId | En
 
 export async function selectOutputByEntity(es: QueryableEntitySet, e: EntityId | Entity): Promise<[string, string]> {
     const eid = isEntity(e) ? (e as Entity).id : e as EntityId;
-    const stmt = es.prepare(`[
+    const stmt = prepare(es, `[
         $eid @eid
         /component/output !bf
         @c
@@ -906,7 +992,7 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
     const { ref } = parseOptions(options);
     // const {ref, onlyUpdated} = parseOptions(options);
 
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
         [
             /component/src#/url !ca $url ==
             /component/site_ref#/ref !ca $ref ==
@@ -948,36 +1034,36 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
  * 
  * wont return anything if the entity does not have a filename dst
  */
-export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:FindEntityOptions = {}): Promise<string | undefined> {
+export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options: FindEntityOptions = {}): Promise<string | undefined> {
     const debug = options.debug;
     // TODO - a complex statement which has many words which should be
     // predefined
 
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [] paths let
     "" filename let
 
     // ( str -- str|false )
-    [ ~r/^\/|file:\/\/\// eval ] selectAbsUri define
+    [ ~r/^\/|file:\/\/\// eval ] *selectAbsUri define
 
-    [ false true rot ~r/^\/|file:\/\/\// eval iif ] isAbsPath define
+    [ false true rot ~r/^\/|file:\/\/\// eval iif ] *isAbsPath define
 
-    [ false true rot ~r/^[^\/]*$/ eval iif ] isFilename define
+    [ false true rot ~r/^[^\/]*$/ eval iif ] *isFilename define
 
-    [ "" swap ~r/^\\/+/ replace ] removeLeadingSlash define
+    [ "" swap ~r/^\\/+/ replace ] *removeLeadingSlash define
 
-    [ "" swap ~r/\\/$/ replace ] removeTrailingSlash define
+    [ "" swap ~r/\\/$/ replace ] *removeTrailingSlash define
 
-    [ $paths "" join ] pathsToStr define
+    [ $paths "" join ] *pathsToStr define
 
     // (str -- str)
     [
         dup isAbsPath
         [["/" *^^$0] "" join ] swap false == if
-    ] ensureLeadingSlash define
+    ] *ensureLeadingSlash define
 
 
-    [ $paths + paths ! ] addToPaths define
+    [ $paths + paths ! ] *addToPaths define
     
     // returns the src url from an entity
     // ( es eid -- es str|false )
@@ -986,7 +1072,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         swap [ *^$1 @eid /component/src#url @ca ] select pop? swap drop
         dup [ drop false @! ] swap undefined == if
         @>
-    ] selectSrcUrl define
+    ] *selectSrcUrl define
 
     // returns the mime from /component/output
     // ( es eid -- es str|false )
@@ -995,7 +1081,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         
         dup [ drop false @! ] swap undefined == if
         @>
-    ] selectOutputMime define
+    ] *selectOutputMime define
 
     // returns the target uri from an entity
     // ( es eid -- es str|false )
@@ -1008,7 +1094,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
 
         @> // restart exec after @!
         
-    ] selectDstUrl define
+    ] *selectDstUrl define
 
 
     // selects the parent entity, or false if none is found
@@ -1041,13 +1127,13 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         
 
         @>
-    ] selectParent define
+    ] *selectParent define
 
     // if /component/dst exists, add to paths.
     // returns "abs" if the target uri is absolute, "rel" if
     // relative, and false if it doesn't exist
     // es eid -- es eid "abs"|"rel"|false
-    [
+    [ 
         // to order eid es eid
         dup rot rot
 
@@ -1071,7 +1157,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         addToPaths swap "rel"
         @>
         
-    ] handleDst define
+    ] *handleDst define
 
 
     // es eid -- es eid|false
@@ -1081,7 +1167,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         // if no parent, stop execution
         [ @! ] *%1 false == if
 
-    ] handleParent define
+    ] *handleParent define
 
     // ( str|false -- )
     [
@@ -1090,7 +1176,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         [ drop @!] $filename size! 0 != if
         filename !
         @>
-    ] setFilename define
+    ] *setFilename define
 
     // ( str -- str|false )
     [
@@ -1099,7 +1185,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         pop!
         size [ drop false @! ] swap 0 == if
         @>
-    ] filenameFromPath define
+    ] *filenameFromPath define
 
     // takes a path, extracts the filename and sets it if exists
     // returns the path without filename
@@ -1115,7 +1201,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         dup [ drop "" @! ] swap undefined == if
         
         @>
-    ] selectFilenameAndPath define
+    ] *selectFilenameAndPath define
 
 
     // ( es eid -- es eid filename|false )
@@ -1143,7 +1229,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         *$2 drop
         
         @>
-    ] selectFilenameFromOutput define
+    ] *selectFilenameFromOutput define
     
 
     // ( es eid -- es eid filename|false )
@@ -1156,7 +1242,8 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
         
         filenameFromPath
 
-    ] selectFilenameFromSrc define
+    ] *selectFilenameFromSrc define
+    
     
 
     // iterate up the dir dependency tree
@@ -1232,13 +1319,8 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options:F
     // [ "ok done" $eid *^%0 ] to_str! .
     `);
 
-    stmt.stack.addWord('lookupMimeExt', (stack) => {
-        const mime = stack.popValue();
-        const ext = Mime.extension( mime );
-        return [SType.Value, ext];
-    });
 
-    const dirCom = await stmt.getResult({ eid, debug });
+    const dirCom = await stmt.getResult({ eid });
     return dirCom && dirCom.length > 0 ? dirCom : undefined;
 }
 
@@ -1271,7 +1353,7 @@ export async function insertDependency(es: QueryableEntitySet, src: EntityId, ds
     await es.add(extra ? [com, ...extra] : com);
 
     let reid = es.getUpdatedEntities()[0];
-    
+
     return reid;
 }
 
@@ -1306,7 +1388,7 @@ export async function getDependency(es: QueryableEntitySet, eid: EntityId, type:
 
 export async function getLayoutFromDependency(es: QueryableEntitySet, eid: EntityId): Promise<Entity> {
     // eid = 0;
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [
         /component/dep#src !ca $eid ==
         /component/dep#type !ca "layout" ==
@@ -1341,14 +1423,14 @@ export async function applyUpdatesToDependencies(site: Site, options: ApplyDepUp
     let exclude = options.exclude;
 
     const regexExt = exclude !== undefined ? exclude.join('|') : undefined;
-    
-    const stmt = site.es.prepare(`
+
+    const stmt = prepare(site.es, `
 
         // returns [eid,op] of all entities which have an update
         [
             $es [ /component/upd !bf @c ] select
             [ /@e /op ] pluck!
-        ] selectUpdates define
+        ] *selectUpdates define
 
 
         // selects /dep which match the eid and returns the src
@@ -1362,14 +1444,14 @@ export async function applyUpdatesToDependencies(site: Site, options: ApplyDepUp
                 /component/dep#src @ca
             ] select
             // ["result is" *^%0] to_str! .
-        ] selectDepSrcExclude define
+        ] *selectDepSrcExclude define
 
         // adds the op to each of the eids
         // eids op -- [ eid, op ]
         [
             swap [ [] + *^%0 + ] map
             swap drop
-        ] applyOp define
+        ] *applyOp define
 
         // adds a /upd to the e
         // [eid,op] -- 
@@ -1377,7 +1459,7 @@ export async function applyUpdatesToDependencies(site: Site, options: ApplyDepUp
             spread
             [ op *^$0 @e *^$0 ] eval to_map
             [] /component/upd + swap + $es swap !c + drop
-        ] addUpdCom define
+        ] *addUpdCom define
 
         // set the es as a word - makes easier to reference
         es let
@@ -1422,7 +1504,7 @@ export async function applyUpdatesToDependencies(site: Site, options: ApplyDepUp
 
             // $count 3 !=
         ] loop
-    `);
+    `, false);
 
     await stmt.run();
 
@@ -1438,7 +1520,7 @@ export async function applyUpdatesToDependencies(site: Site, options: ApplyDepUp
 export async function selectUpdated(es: QueryableEntitySet, options: FindEntityOptions = {}): Promise<EntityId[]> {
     const { ref } = parseOptions(options);
 
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
         [
             /component/upd#op !ca 2 ==
             /component/upd#op !ca 1 ==
@@ -1463,7 +1545,7 @@ export async function clearUpdates(site: Site, options: FindEntityOptions = {}) 
     const { es } = site;
     const { ref } = parseOptions(options);
 
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
         [ 
             /component/site_ref#ref !ca $ref ==
             /component/upd !bf 
@@ -1481,7 +1563,7 @@ export async function clearErrors(site: Site, options: FindEntityOptions = {}) {
     const { es } = site;
     const { ref } = parseOptions(options);
 
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
         [ 
             /component/site_ref#ref !ca $ref ==
             /component/error !bf 
@@ -1503,7 +1585,7 @@ export async function selectTarget(es: QueryableEntitySet): Promise<Entity[]> {
         @e
     ] select`;
 
-    const stmt = es.prepare(query);
+    const stmt = prepare(es, query);
     return await stmt.getEntities();
 }
 
@@ -1517,7 +1599,7 @@ export async function selectTarget(es: QueryableEntitySet): Promise<Entity[]> {
  * @param eid 
  */
 export async function selectDirTarget(es: QueryableEntitySet, eid: EntityId): Promise<Component | undefined> {
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [
         // ["💥 eid is" $eid] to_str! .
         [ $eid @eid /component/target !bf @c ] select
@@ -1560,10 +1642,11 @@ export async function selectDirTarget(es: QueryableEntitySet, eid: EntityId): Pr
  * Returns an array of Meta starting at the eid and working up the dir dependencies
  */
 export async function selectDependencyMeta(es: QueryableEntitySet, eid: EntityId) {
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
 
     // selects the parent dir entity, or 0 if none is found
     // ( es eid -- es eid )
+
     [
         swap
         [
@@ -1572,20 +1655,23 @@ export async function selectDependencyMeta(es: QueryableEntitySet, eid: EntityId
             /component/dep#type !ca dir ==
             and
             @c
-        ] select
+        ] select 
 
         // if the size of the select result is 0, then return 0
         size 0 == [ drop false @! ] swap if
         pop!
         /dst pluck!
         @>
-    ] selectParent define
+        
+    ] *selectParent define
 
     [ // es eid -- es eid [meta]
+        
         swap [ *^%1 @eid /component/meta !bf @c ] select 
+        
         /meta pluck!
         rot swap // rearrange exit vars
-    ] selectMeta define
+    ] *selectMeta define
 
     [] result let
 
@@ -1597,19 +1683,19 @@ export async function selectDependencyMeta(es: QueryableEntitySet, eid: EntityId
 
         // add to result
         $result + result !
-        
+    
         selectParent
         
         // if no parent, stop execution
-        dup [ drop @! ] swap false == if
+        dup [ drop  @! ] swap false == if
 
         true // true
     ] loop
-
-    `);
-    await stmt.run({ eid });
+    `, true);
+    await stmt.run({ eid }, true);
 
     let metaList = stmt.getValue('result');
+    // console.log('[selectDependencyMeta]', 'complete', stmt.stack.toString());
 
     return metaList;
 }
@@ -1622,7 +1708,7 @@ export async function selectDependencyMeta(es: QueryableEntitySet, eid: EntityId
  * @param type string
  */
 export async function getDependencyParents(es: QueryableEntitySet, eid: EntityId, type: DependencyType): Promise<EntityId[]> {
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     // selects the parent dir entity, or 0 if none is found
     // ( es eid -- es eid )
     [
@@ -1640,7 +1726,7 @@ export async function getDependencyParents(es: QueryableEntitySet, eid: EntityId
         pop!
         /dst pluck!
         @>
-    ] selectParent define
+    ] *selectParent define
 
     [] result let
 
@@ -1675,7 +1761,7 @@ export async function getDependencyParents(es: QueryableEntitySet, eid: EntityId
  * @param depth 
  */
 export async function getDependencyChildren(es: QueryableEntitySet, eid: EntityId, type: DependencyType, depth: number = 100): Promise<EntityId[]> {
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
 
     // selects child ids of the e, or false if none found
     [
@@ -1693,7 +1779,7 @@ export async function getDependencyChildren(es: QueryableEntitySet, eid: EntityI
         
         @>
         swap drop // drop the es
-    ] selectChildren define
+    ] *selectChildren define
     
     es let
     [] result let
@@ -1731,7 +1817,7 @@ export async function findLeafDependenciesByType(es: QueryableEntitySet, type: D
     // select dependency components by type
     // build a list of all src and all dst
     // remove from src all those that appear in dst
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [
         /component/dep#type !ca $type ==
         @c
@@ -1764,7 +1850,7 @@ export async function findLeafDependenciesByType(es: QueryableEntitySet, type: D
  * @param type 
  */
 export async function getDepenendencyDst(es: QueryableEntitySet, src: EntityId, type: DependencyType): Promise<EntityId[]> {
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [
         /component/dep#type !ca $type ==
         /component/dep#src !ca $src ==
@@ -1807,7 +1893,7 @@ export async function getDependencies(es: QueryableEntitySet, eid: EntityId, typ
         ] select`;
     }
 
-    return await es.prepare(q).getResult({ eid });
+    return await prepare(es, q, false).getResult({ eid });
 }
 
 export async function getDependencyEntityIds(es: QueryableEntitySet, eid: EntityId, type?: DependencyType[]): Promise<EntityId[]> {
@@ -1818,12 +1904,12 @@ export async function getDependencyEntities(es: QueryableEntitySet, eid: EntityI
 }
 
 export async function getDependencyComponent(es: QueryableEntitySet, src: EntityId, dst: EntityId, type: DependencyType): Promise<Component> {
-    const stmt = es.prepare(`
+    const stmt = prepare(es, `
     [
-        /component/dep#src !ca ${src} ==
-        /component/dep#dst !ca ${dst} ==
+        /component/dep#src !ca $src ==
+        /component/dep#dst !ca $dst ==
         and
-        /component/dep#type !ca ${type} ==
+        /component/dep#type !ca $type ==
         and
         /component/dep !bf
         @c
@@ -1841,7 +1927,7 @@ export async function getDepdendencyComponentBySrc(es: QueryableEntitySet, src: 
         @c
     ] select
     `;
-    return es.prepare(q).getResult({ src });
+    return prepare(es, q).getResult({ src });
 }
 
 export async function getDependencyComponents(es: QueryableEntitySet, eid: EntityId, type: DependencyType[]): Promise<Component[]> {
@@ -1868,7 +1954,7 @@ export async function getDependencyComponents(es: QueryableEntitySet, eid: Entit
     }
 
 
-    return await es.prepare(q).getResult({ eid });
+    return await prepare(es, q, false).getResult({ eid });
 }
 
 
@@ -1896,7 +1982,7 @@ export async function getDependenciesOf(es: QueryableEntitySet, eid: EntityId, t
         ${ret}
     ] select`;
 
-    return await es.prepare(q).getResult({ eid, type });
+    return await prepare(es, q, false).getResult({ eid, type });
 }
 
 export async function getDependencyOfEntityIds(es: QueryableEntitySet, eid: EntityId, type?: DependencyType): Promise<EntityId[]> {

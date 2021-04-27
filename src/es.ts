@@ -55,6 +55,8 @@ export {
 
 export { printAll } from 'odgn-entity/src/util/print';
 
-function blah(){
-    
-}
+export { SType, StackValue } from 'odgn-entity/src/query/types';
+
+export { QueryStack } from 'odgn-entity/src/query/stack';
+
+export { createStdLibStack } from 'odgn-entity/src/query';

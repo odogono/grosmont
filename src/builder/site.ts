@@ -34,7 +34,8 @@ import {
     selectSrcByFilename,
     selectSrcByUrl,
     selectOutputByEntity,
-    selectUpdated
+    selectUpdated,
+    prepare
 } from './query';
 import { DependencyType, ProcessOptions, SiteIndex } from './types';
 import { isEmpty, isInteger, isString, parseUri } from '@odgn/utils';
@@ -712,6 +713,7 @@ async function initialiseES(site: Site, options: SiteOptions) {
     await initialiseSiteEntity(site, options);
 
 
+    prepare(es, undefined, true, {siteRef:site.getRef()});
 
     // log('root:', rootPath);
     // log('config:', configPath);
