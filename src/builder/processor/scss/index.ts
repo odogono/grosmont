@@ -1,4 +1,5 @@
 import PostCSS from 'postcss';
+import Scss from 'postcss-scss';
 import PreCSS from 'precss';
 import CSSNano from 'cssnano';
 import AtImport from './plugin-import';
@@ -96,7 +97,7 @@ export async function renderScss(site: Site, srcUrl: string, scss: string, optio
         minify ? CSSNano : undefined
     ].filter(Boolean);
 
-    let args = { from: srcUrl, to: '/' };
+    let args = { parser: Scss, from: srcUrl, to: '/' };
     const { css, ...rest } = await PostCSS(plugins)
         .process(scss, args);
 
