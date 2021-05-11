@@ -2,7 +2,7 @@ import { renderToOutput } from "../builder";
 import { getDependencyEntities, getDependencyOfEntities } from "../builder/query";
 import { Site } from "../builder/site";
 import { EntityId, Entity, toComponentId } from "../es";
-import { SiteProcessor } from "../builder/types";
+import { DependencyType, SiteProcessor } from "../builder/types";
 import { applyMeta } from "../builder/util";
 import { QueryableEntitySet } from "odgn-entity/src/entity_set/queryable";
 
@@ -71,7 +71,7 @@ export async function buildEntityDepsOfDisplay(site: Site, process:SiteProcessor
 
 async function buildDepData( site:Site, e:Entity, field:string = 'dst' ){
     const {es} = site;
-    const type = e.Dep.type;
+    const type:DependencyType = e.Dep.type;
     let linkEid = e.Dep[field] ?? 0;
     if (linkEid === 0) {
         return e;
@@ -81,6 +81,18 @@ async function buildDepData( site:Site, e:Entity, field:string = 'dst' ){
         const did = es.resolveComponentDefId('/component/title');
         let com = await es.getComponent( toComponentId(linkEid, did) );
         meta.label = com.title;
+    }
+    else if( type === 'link' ){
+        let did = es.resolveComponentDefId('/component/url');
+        let com = await es.getComponent( toComponentId(linkEid, did) );
+        if( com !== undefined ){
+            meta.label = com?.url;
+        }
+        else {
+            did = es.resolveComponentDefId('/component/src');
+            com = await es.getComponent( toComponentId(linkEid, did) );
+            meta.label = com?.url;
+        }
     }
     else {
         meta.label = await site.getEntitySrcUrl(linkEid);

@@ -460,7 +460,8 @@ export async function selectJs(es: QueryableEntitySet, options: FindEntityOption
                 and
             and
             @e 
-        ] select`;
+        ] select
+        `;
     } else {
         q = `[
             /component/js !bf
@@ -955,7 +956,7 @@ export async function selectSrcByUrl(es: QueryableEntitySet, url: string): Promi
 
 export async function selectSrcByEntity(es: QueryableEntitySet, e: EntityId | Entity): Promise<string> {
     const eid = isEntity(e) ? (e as Entity).id : e as EntityId;
-    const stmt = prepare(es, `[
+    const stmt = es.prepare(`[
         $eid @eid
         /component/src !bf
         @c
@@ -992,7 +993,8 @@ export async function selectEntityBySrc(site: Site, url: string, options: FindEn
     const { ref } = parseOptions(options);
     // const {ref, onlyUpdated} = parseOptions(options);
 
-    const stmt = prepare(es, `
+    // const stmt = prepare(es, `
+    const stmt = es.prepare(`
         [
             /component/src#/url !ca $url ==
             /component/site_ref#/ref !ca $ref ==

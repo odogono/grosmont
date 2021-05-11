@@ -11,7 +11,7 @@ import { buildProcessors, getProcessorSpec, RawProcessorEntry, renderToOutput } 
 import { Reporter, setLocation, info, error, Level, setLevel } from '../builder/reporter';
 import { EntityUpdate, SiteProcessor } from '../builder/types';
 import { debounce } from '@odgn/utils';
-import { ChangeSetOp } from '../es';
+import { ChangeSetOp, EntityId } from '../es';
 
 
 export interface RoutesConfig {
@@ -149,7 +149,14 @@ async function startWatcher(site: Site, process:SiteProcessor, emitter:Emitter) 
             op = ChangeSetOp.Remove;
         }
 
-        const eid = await site.getEntityIdBySrc('file://' + relPath);
+        let eid:EntityId;
+
+        try {
+            eid = await site.getEntityIdBySrc('file://' + relPath);
+
+        } catch( err ){
+            error(reporter, `error file://${relPath}`, err );
+        }
 
         setLocation(reporter, '/serve/watch');
         info(reporter, `change - file://${relPath}`, { eid });

@@ -312,7 +312,7 @@ async function applyLayout(es: QueryableEntitySet, e: Entity, url: string, optio
 async function applyTags(es: QueryableEntitySet, e: Entity, tags: string | string[], options: FindEntityOptions = {}) {
 
     if (e.id === 0) {
-        log('[applyTags]', 'e not yet present', tags);
+        // log('[applyTags]', 'e not yet present', tags);
         applyMeta(e, { tags });
         return e;
     }
@@ -336,7 +336,7 @@ async function addTags(es: QueryableEntitySet, eid: EntityId, tags: string | str
             etag = await createTag(es, tag, options);
         }
 
-        log('[addTags]', '', tag, eid, etag.id);
+        // log('[addTags]', '', tag, eid, etag.id);
 
         await insertDependency(es, eid, etag.id, 'tag');
     }

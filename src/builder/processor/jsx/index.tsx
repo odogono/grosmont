@@ -203,83 +203,8 @@ function evalJS( code:string, path: string, context: any = {} ){
         React,
         log: (...args) => log('[evalCode]', ...args),
     }
-
+    
     return evalCode( code, path, {context, scope} );
-}
-
-// /**
-//  * 
-//  * @param code 
-//  * @param path 
-//  */
-// function evalCode(code: string, path: string, context:any = {}): EvalCodeResult {
-//     const {importData} = context;
-
-//     const requireManual = (requirePath) => {
-//         // log('[evalCode][requireManual]', requirePath);
-
-//         if( requirePath === '@site' || requirePath === '@odgn/grosmont' ){
-//             return context;
-//         }
-
-//         if( importData && importData[requirePath] ){
-//             return importData[requirePath];
-//         }
-
-//         // the default behaviour - normal require
-//         const req = require(requirePath);
-
-//         return req;
-//     }
-
-
-
-//     let out = _eval(code, path, {
-//         // createElement: mdxReact,
-//         React,
-//         require: requireManual,
-//         console: console
-//     });
-
-//     return { ...out };
-// }
-
-// const presets = [
-//     ["@babel/preset-env", {
-//         "exclude": [
-//             "@babel/plugin-transform-spread"
-//         ],
-//         "targets": { "node": "current" }
-//     }],
-//     "@babel/preset-react"
-// ];
-
-
-// function transformJSX(jsx: string) {
-//     const plugins = [
-//         ["module-resolver", {
-//             "root": ["."],
-//             // alias
-//         }]
-//     ]
-//     const {code,...other} = Babel.transform(jsx, { presets, plugins });
-
-//     // log('[transformJSX]', other);
-//     return code;
-// }
-
-
-
-
-function findFileWithExt(path: string, exts: string[]) {
-    exts = ['', ...exts];
-    for (const ext of exts) {
-        let epath = path + `.${ext}`;
-        if (Fs.existsSync(epath)) {
-            return epath;
-        }
-    }
-    return path;
 }
 
 

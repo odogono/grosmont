@@ -5,14 +5,27 @@ import assert from 'uvu/assert';
 import { buildProcessors, OutputES, RawProcessorEntry } from '../src/builder';
 
 import { parseEntity } from '../src/builder/config';
-import { beforeEach } from './helpers';
+import { addSrc, beforeEach } from './helpers';
 
 const log = (...args) => console.log('[/test/site]', ...args);
 const test = suite('/site');
 test.before.each(beforeEach);
 
 
-test('process', async ({ es, site, options }) => {
+test('getEntityBySrc', async ({ es, site, options }) => {
+
+    await addSrc(site, 'file:///admin/styles.scss', `
+# Hello World
+    `);
+
+    let eid = await site.getEntityIdBySrc('file:///admin/styles.scss');
+
+    await printAll(es);
+});
+
+
+
+test.skip('process', async ({ es, site, options }) => {
 
     await parseEntity( site, `
     src: file:///pages/index.mdx

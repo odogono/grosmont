@@ -113,5 +113,24 @@ test('@import rule', async ({ es, site, options }) => {
 
 });
 
+test('comments', async ({ es, site, options }) => {
+
+    await addSrc(site, 'file:///style.scss',`
+    h1 {
+        // margin-top: 0.8em;
+        margin-bottom: 0.8em;
+    }`);
+
+    await process(site);
+
+    // await printAll(es);
+
+    let e = await site.getEntityBySrc('file:///style.scss');
+
+    assert.equal( e.Output.data, `h1{margin-bottom:.8em}` );
+
+});
+
+
 test.run();
 

@@ -1,6 +1,9 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { parseEntity } from '../../../src/builder/config';
+import { Site } from '../../../src/builder/site';
+import { prepare } from '../../../src/builder/query';
+import { ProcessOptions } from '../../../src/builder/types';
 import { addSrc, beforeEach, process } from '../../helpers';
 
 const test = suite('/processor/mdx/tags');
@@ -39,6 +42,40 @@ tags:
 
 
 test('tags inherited from dir', async ({ es, site, options }) => {
+    await createEntities(site, options);
+
+    // await printAll(es);
+
+    assert.equal(
+        await site.findByTags(['things']),
+        [1008]);
+    assert.equal(
+        await site.findByTags(['blog', 'odgn']),
+        [1008, 1998, 1999]);
+    assert.equal(
+        await site.findByTags(['2021', 'blog']),
+        [1008, 1999]);
+    assert.equal(
+        await site.findByTags(['2021', 'things']),
+        [1008]);
+});
+
+
+test('findByTags word', async ({ es, site, options }) => {
+    await createEntities(site, options);
+
+    let eids = await prepare( es, `
+        [things] findByTags
+    `).getResult();
+
+    // log('eids', eids);
+    assert.equal( eids, [1008] );
+});
+
+
+
+
+async function createEntities(site: Site, options:ProcessOptions) {
     await parseEntity(site, `
     id: 1998
     src: /pages/
@@ -63,25 +100,7 @@ tags:
     `);
 
     await process(site, options);
-
-    // await printAll(es);
-
-    assert.equal(
-        await site.findByTags(['things']),
-        [1008]);
-    assert.equal(
-        await site.findByTags(['blog', 'odgn']),
-        [1008, 1998, 1999]);
-    assert.equal(
-        await site.findByTags(['2021', 'blog']),
-        [1008, 1999]);
-    assert.equal(
-        await site.findByTags(['2021', 'things']),
-        [1008]);
-});
-
-
-
+}
 
 
 test.run();

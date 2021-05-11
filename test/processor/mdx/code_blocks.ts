@@ -13,24 +13,19 @@ test.before.each(beforeEach);
 
 
 test('generate code blocks', async ({ es, site, options }) => {
-    await addSrc(site, 'file:///test.mdx', `
+  await addSrc(site, 'file:///test.mdx', `
     ${'```'}javascript
     function test() {
       console.log('notice the blank line before this function?');
     }
     ${'```'}
     `);
-    
-    await process(site);
 
-    // await printAll( site.es );
+  await process(site);
 
-    let e = await site.getEntityBySrc('file:///test.mdx');
+  let e = await site.getEntityBySrc('file:///test.mdx');
 
-    // let e = await site.es.getEntity(2000);
-    // assert.equal(e.Mdx, undefined);
-
-    assert.ok( e.Output.data.startsWith('<pre><pre class="prism-code language-javascript"'))
+  assert.ok(e.Output.data.startsWith('<pre>'));
 });
 
 

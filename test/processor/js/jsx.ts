@@ -46,4 +46,32 @@ test('imports scss', async ({es,site,options}) => {
 });
 
 
+test('pass ref', async ({es,site,options}) => {
+
+    await addSrc(site, 'file:///title.jsx', `
+
+    export default ({e}) => (
+        <h1>{e?.Title?.title}</h1>
+    )
+    `);
+
+    await addSrc(site, 'file:///main.mdx', `
+---
+title: Hello World
+---
+import { e } from '@site';
+import Title from './title';
+
+<Title e={e} />
+    `);
+
+    await process(site,options);
+
+    let e = await site.getEntityBySrc('file:///main.mdx');
+
+    assert.equal( e.Output.data, `<h1>Hello World</h1>`);
+});
+
+
+
 test.run();
