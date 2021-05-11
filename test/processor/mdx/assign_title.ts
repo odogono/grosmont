@@ -1,6 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addSrc, beforeEach, printAll, process} from '../../helpers';
+import { addSrc, beforeEach, printAll, process } from '../../helpers';
 
 const test = suite('/processor/mdx/assign_title');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -12,7 +12,7 @@ test.skip('extract target slug from title', async ({ es, site, options }) => {
 
     await addSrc(site, 'file:///pages/main.mdx', `
 # Extracting the Page Title
-    `, {dst: '/html/'} );
+    `, { dst: '/html/' });
 
     await process(site, options);
 
@@ -35,8 +35,8 @@ test.skip('extract target slug from title with dst', async ({ es, site, options 
 
     await process(site, options);
 
-    
-    
+
+
 
     // await printES(es);
 
@@ -54,7 +54,7 @@ dst: index.html
 ---
 # Extracting the Page Title
     `);
-    
+
     await process(site, options);
 
     let e = await site.getEntityByDst('/index.html');
@@ -67,7 +67,7 @@ dst: index.html
     // printES(es);
 });
 
-test('extracted title does not override frontmatter', async ({es,site,options}) => {
+test('extracted title does not override frontmatter', async ({ es, site, options }) => {
     await addSrc(site, 'file:///pages/main.mdx', `
 ---
 title: Main
@@ -81,6 +81,29 @@ title: Main
 
     assert.equal(e.Title.title, 'Main');
 })
+
+
+test('extract first paragraph as summary', async ({ es, site, options }) => {
+    await addSrc(site, 'file:///pages/main.mdx', `
+---
+title: How to blog
+---
+
+# How to blog
+
+![How To Blog](file:///media/how-to-blog.png)
+
+Writing a blog post can be delightful and painful in equal measures
+`);
+
+    await process(site, options);
+
+    let e = await site.getEntityBySrc('file:///pages/main.mdx');
+
+    // assert.equal(e.Title.title, 'How to blog');
+    assert.equal(e.Title.summary, 'Writing a blog post can be delightful and painful in equal measures');
+
+});
 
 
 test.run();
