@@ -1,9 +1,14 @@
 /* eslint react/jsx-key: 0 */
 
 import React from 'react'
+// import Prism from "prism-react-renderer/prism";
 import Highlight, { defaultProps } from 'prism-react-renderer'
 // import {LiveProvider, LiveEditor, LiveError, LivePreview} from 'react-live'
 import {mdx} from '@mdx-js/react'
+
+// declare var Prism: any;
+// (typeof global !== "undefined" ? global : window).Prism = Prism;
+import './prism-filth';
 
 /**
  * 
@@ -19,8 +24,10 @@ export default ({ children, className, live, render }) => {
     throw new Error('mdx undefined');
   }
 
+  let {theme, ...themelessProps} = defaultProps;
+
   return (
-    <Highlight {...defaultProps} code={children.trim()} language={language}>
+    <Highlight {...themelessProps} code={children.trim()} language={language}>
       {({ className, style, tokens, getLineProps, getTokenProps }) => (
         <pre className={className} style={{ ...style, padding: '20px' }}>
           {tokens.map((line, i) => (
