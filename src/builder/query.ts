@@ -821,12 +821,20 @@ export async function findEntityByUrl(es: QueryableEntitySet, url: string, optio
     return undefined;
 }
 
-
+/**
+ * Returns an existing /component/url with the given url
+ * 
+ * @param es 
+ * @param url 
+ * @param options 
+ * @returns 
+ */
 export async function getUrlComponent(es: QueryableEntitySet, url: string, options: FindEntityOptions = {}) {
     const { ref, onlyUpdated } = parseOptions(options);
     const stmt = prepare(es, `
     [
-        /component/site_ref#ref !ca $ref ==
+        // urls dont have a siteref
+        // /component/site_ref#ref !ca $ref ==
         /component/url#url !ca $url ==
         @c
     ] select

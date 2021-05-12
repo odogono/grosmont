@@ -2,7 +2,7 @@ import { suite } from 'uvu';
 import assert from 'uvu/assert';
 import { parseEntity } from '../../../src/builder/config';
 
-import { addSrc, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, printAll, process } from '../../helpers';
 
 const test = suite('/processor/mdx/links');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -97,6 +97,34 @@ dst: /index
 // <p>Something <a>else</a> here</p>
 // <p><a>Otherwise</a></p>`);
 
+});
+
+
+test('external link entities', async ({es, site, options}) => {
+    await addSrc( site, 'file:///index.mdx', `
+---
+dst: /index.html
+---
+# Links
+
+[PSB](https://www.petshopboys.co.uk)
+
+    ` );
+
+    await process(site);
+    // await printAll( es );
+    await process(site);
+
+    // select url
+    const coms = await es.prepare(`
+    [
+        /component/url#/url !ca "https://www.petshopboys.co.uk" ==
+        @c
+    ] select`).getResult();
+    
+
+
+    assert.equal( coms.length, 1 );
 })
 
 

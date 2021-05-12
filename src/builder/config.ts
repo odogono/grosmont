@@ -20,7 +20,6 @@ import { findEntityBySrcUrl, FindEntityOptions, insertDependency, selectTagBySlu
 import { applyMeta, createTag, uriToPath, resolveUrlPath } from './util';
 import { isString } from '@odgn/utils';
 import { BitField, toValues as bfToValues } from '@odgn/utils/bitfield';
-import { executionAsyncResource } from 'node:async_hooks';
 
 
 
