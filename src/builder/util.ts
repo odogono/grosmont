@@ -445,6 +445,8 @@ export enum FormatDateType {
 export function formatDate( obj:any, formatType:FormatDateType = FormatDateType.MonthYear ){
     if( obj === undefined ){ return ''; }
 
+    // log('[formatDate]', obj, formatType);
+
     let result = '';
     let format = 'MMM YYYY';
 
@@ -455,28 +457,48 @@ export function formatDate( obj:any, formatType:FormatDateType = FormatDateType.
     if(obj.date_start ){
         let { date_start:start, date_end:end } = obj;
         let isSameYear = false;
-
+        let isSame = false;
+        let isBothStart = false;
+        
         if( start !== undefined && end !== undefined ){
             isSameYear = Day(start).year() === Day(end).year();
+            isSame = Day(start).isSame( Day(end) );
+            isBothStart = Day(start).month() === 0 && Day(end).month() === 0;
         }
 
-        if( start !== undefined ){
-            start = Day(start);
-            result += Day(start).format( isSameYear ? format.replace(/Y/gi, '').trim() : format);
+        if( isSame ){
+            return applyDayFormat(start, formatType === FormatDateType.DayMonthYear ? format : 'YYYY' );
         }
 
-        result += ' -';
+        if( isBothStart ){
+            format = 'YYYY';
+        }
+
+        let startStr = start !== undefined ? applyDayFormat( start, isSameYear ? format.replace(/Y/gi, '').trim() : format ) : '';
+        let endStr = end !== undefined ? applyDayFormat(end,format) : '';
+
+        if( Day(end).year() === 9999 ){
+            endStr = '';
+        }
         
-        if( end !== undefined ){
-            end = Day(end);
-            result += ' ' + Day(end).format(format);
+        if( startStr !== endStr ){
+            result = (startStr + ' - ' + endStr).trim();
+        } else {
+            result = startStr;
         }
-
     }
 
     else if( obj.date ){
-        result = Day(obj.date).format(format);
+        result = applyDayFormat(obj.date, format);// Day(obj.date).format(format);
     }
 
     return result;
+}
+
+function applyDayFormat( date:string, format:string ){
+    if( toInteger(date) + '' === date ){
+        return date;
+    }
+    let day = Day(date);
+    return Day(day).format(format);
 }
