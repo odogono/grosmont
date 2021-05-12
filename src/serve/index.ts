@@ -7,7 +7,7 @@ import Path from 'path';
 import Mitt, { Emitter } from 'mitt'
 import Chokidar from 'chokidar';
 import { Site } from '../builder/site';
-import { buildProcessors, getProcessorSpec, RawProcessorEntry, renderToOutput } from '../builder';
+import { BuildProcessOptions, buildProcessors, getProcessorSpec, RawProcessorEntry, renderToOutput } from '../builder';
 import { Reporter, setLocation, info, error, Level, setLevel } from '../builder/reporter';
 import { EntityUpdate, SiteProcessor } from '../builder/types';
 import { debounce } from '@odgn/utils';
@@ -87,8 +87,9 @@ async function initialiseSite(path: string) {
     info(reporter, `config: ${path}`);
     info(reporter, `root: ${site.getSrcUrl()}`);
 
-    const spec = getProcessorSpec(site, {});
-    let process = await buildProcessors(site, '/server/main', spec, {onlyUpdated:true});
+    // const spec = getProcessorSpec(site, {});
+    let options:BuildProcessOptions = {includeDefault:true, onlyUpdated:true};
+    let process = await buildProcessors(site, '/server/main', undefined, options);
 
     site = await process(site);
 

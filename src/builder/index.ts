@@ -43,7 +43,12 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
 
 export interface BuildProcessOptions extends ProcessOptions {
     updates?: EntityUpdate[];
+
+    // whether the default processors should be included
     includeDefault?: boolean;
+
+    // whether processors defined in config should be included
+    includeConfig?: boolean;
 }
 
 
@@ -63,10 +68,10 @@ export async function build(site: Site, label:string = '/build', options: BuildP
     const updateOptions = { reporter, onlyUpdated: true, ...options, siteRef };
 
 
-    const spec = getProcessorSpec(site, options);
+    // const spec = getProcessorSpec(site, options);
 
 
-    let process = await buildProcessors(site, label, spec, { onlyUpdated: true });
+    let process = await buildProcessors(site, label, undefined, { includeDefault:true, includeConfig:true, onlyUpdated: true });
 
 
     site = await process(site, { ...updateOptions, ...options });
@@ -135,15 +140,21 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
  * @param spec 
  * @param options 
  */
-export async function buildProcessors(site: Site, label:string, spec: RawProcessorEntry[], options: BuildProcessOptions = {}): Promise<SiteProcessor> {
+export async function buildProcessors(site: Site, label:string, spec: RawProcessorEntry[] = [], options: BuildProcessOptions = {}): Promise<SiteProcessor> {
     let reporter = site.reporter;
     const siteRef = site.getRef();
     const updateOptions = { reporter, onlyUpdated: false, ...options, siteRef };
     const includeDefault = options.includeDefault ?? false;
+    const includeConfig = options.includeConfig ?? true;
 
     if( includeDefault ){
         let def = getProcessorSpec(site,options);
         spec = [...def, ...spec];
+    }
+
+    if( includeDefault ){
+        let config = site.getConfig('/processors', []);
+        spec = [...spec, ...config];
     }
 
     spec = spec.filter(Boolean);
