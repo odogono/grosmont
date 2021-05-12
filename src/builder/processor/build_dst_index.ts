@@ -34,7 +34,7 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
     
     const upDid = es.resolveComponentDefId('/component/upd');
 
-    // log('updating', coms);
+    
 
     for (const com of coms) {
         const eid = getComponentEntityId(com);
@@ -59,8 +59,6 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
     }
 
     info(reporter, `processed ${coms.length}`);
-
-    // return await site.addQueryIndex('/index/srcUrl', query, { ref: siteEntity.id });
 
     return site;
 }
@@ -109,6 +107,7 @@ async function ensureExtension(site: Site, eid: EntityId, url: string): Promise<
 
     if (com !== undefined) {
         result = appendExtFromMime(url, com?.meta?.mime);
+        
         if( result !== undefined ){
             return [result, com?.meta?.mime];;
         }

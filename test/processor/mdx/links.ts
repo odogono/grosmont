@@ -127,7 +127,33 @@ dst: /index.html
     assert.equal( coms.length, 1 );
 })
 
+test('link to jsx', async ({es, site, options}) => {
 
+    await addSrc( site, 'file:///links.tsx', `
+export const title = 'links';
+export const dst = '/links';
+
+export default () => {
+    return <div>Links</div>;
+};
+
+    `);
+
+    await addSrc( site, 'file:///index.mdx', `
+---
+dst: /index.html
+---
+
+[Links](/links)
+    `);
+
+    await process(site);
+    // await printAll( es );
+
+    let e = await site.getEntityBySrc('file:///index.mdx');
+    assert.equal(e.Output.data, `<p><a href="/links.html">Links</a></p>`);
+
+});
 
 
 test.run();

@@ -29,9 +29,7 @@ export function linkProc({ resolveLink }: LinkProcProps) {
             {type:'mdxSpanElement', name:'a' }
         ]
         unistVisit(tree, test, (node, index,parent) => {
-            // log('a', node);
             
-            // const hrefNode = (node as any).attributes.find( attr => attr.name === 'href' );
             const hrefNodeIdx = (node as any).attributes.findIndex( attr => attr.name === 'href' );
 
             if( hrefNodeIdx === -1 ){
@@ -57,6 +55,7 @@ export function linkProc({ resolveLink }: LinkProcProps) {
 
             if( resolveLink ){
                 let resultUrl = resolveLink( url, text as string );
+                
                 if( resultUrl !== undefined ){
                     hrefNode.value = resultUrl;
                 }
@@ -84,6 +83,8 @@ export function linkProc({ resolveLink }: LinkProcProps) {
             
             if( resolveLink ){
                 let resultUrl = resolveLink( url, text?.value as string )
+                // log('[resolveLink]', url, text, resultUrl);
+
                 if( resultUrl !== undefined ){
                     // console.log('[link]', url, '->', resultUrl );
                     node.url = resultUrl;

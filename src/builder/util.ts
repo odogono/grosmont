@@ -305,6 +305,9 @@ export function mapToTargetMime(mime: string) {
             return 'text/css';
         case 'text/mdx':
             return 'text/html';
+        case 'text/jsx':
+            return 'text/html';
+
         default:
             return mime;
     }
