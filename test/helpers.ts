@@ -10,8 +10,6 @@ import { Entity, EntityId, EntitySetSQL, printAll } from '../src/es';
 import { DependencyType, ProcessOptions } from '../src/builder/types';
 export { Entity, EntityId, EntitySetSQL, printAll } from '../src/es';
 
-// export { build as process };
-
 
 export const rootPath = Path.resolve(__dirname, "../");
 

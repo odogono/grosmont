@@ -1,8 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
 
-import { parseEntity } from '../../src/builder/config';
-import { getDstUrl } from '../../src/builder/query';
 import { ChangeSetOp } from '../../src/es';
 import { build, buildProcessors, RawProcessorEntry } from '../../src/builder';
 import { addFile, beforeEach, printAll } from '../helpers';

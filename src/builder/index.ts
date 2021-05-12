@@ -43,6 +43,7 @@ const log = (...args) => console.log(`[${Label}]`, ...args);
 
 export interface BuildProcessOptions extends ProcessOptions {
     updates?: EntityUpdate[];
+    includeDefault?: boolean;
 }
 
 
@@ -50,6 +51,7 @@ export type ProcessorEntry = [Function, number? /*priority*/, any? /*options*/, 
 export type RawProcessorEntry = [string | Function, number?, any?];
 
 /**
+ * Creates a processor
  * 
  * @param site 
  */
@@ -117,7 +119,9 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
         ['/processor/build_dst_index', 0, { onlyUpdated: false }],
 
         ['/processor/js/render', 0, { beautify: true }],
-        ['/processor/build_dst_index', -99, { onlyUpdated: false }],
+        
+        ['/processor/build_dst_index', 0, { onlyUpdated: false }],
+
         ['/processor/write', -100],
         ['/processor/static/copy', -101],
         ['/processor/remove', -102],
@@ -135,6 +139,12 @@ export async function buildProcessors(site: Site, label:string, spec: RawProcess
     let reporter = site.reporter;
     const siteRef = site.getRef();
     const updateOptions = { reporter, onlyUpdated: false, ...options, siteRef };
+    const includeDefault = options.includeDefault ?? false;
+
+    if( includeDefault ){
+        let def = getProcessorSpec(site,options);
+        spec = [...def, ...spec];
+    }
 
     spec = spec.filter(Boolean);
 

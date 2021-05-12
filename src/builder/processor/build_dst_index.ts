@@ -34,8 +34,6 @@ export async function process(site: Site, options: DstIndexOptions = {}) {
     
     const upDid = es.resolveComponentDefId('/component/upd');
 
-    
-
     for (const com of coms) {
         const eid = getComponentEntityId(com);
         
