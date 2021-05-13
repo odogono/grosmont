@@ -371,6 +371,7 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
 
     // log('[resolveSiteUrl]', {url,base}, path);
 
+
     // attempt getting by given value
     let entry = srcIdx.get(path);
     if (entry !== undefined) {
@@ -392,52 +393,47 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
     let reUrl = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     let re = new RegExp(`^${reUrl}(?:\..+)?`, 'i');
 
-    for (const key of srcIdx.index.keys()) {
+    // order the keys by length, so we match shortest first
+    let srcKeys = sortKeys(srcIdx.index, re);
+    // let srcKeys = Array.from( srcIdx.index.keys() );
+    // srcKeys.sort();
+
+    if( srcKeys.length > 0 ){
+    // for (const key of srcKeys) {
+        const key = srcKeys[0];
         // log('[resolveSiteUrl]', 'test', key, reUrl);
-        if (re.test(key)) {
-            const [eid, mime, bf] = srcIdx.get(key);
-            const dst = dstIdx !== undefined ? dstIdx.getByEid(eid) : undefined;
-            return [key, dst, eid, mime, bf];
-        }
+        const [eid, mime, bf] = srcIdx.get(key);
+        const dst = dstIdx !== undefined ? dstIdx.getByEid(eid) : undefined;
+        return [key, dst, eid, mime, bf];
+        
     }
 
     if (dstIdx !== undefined) {
         reUrl = reUrl.replace('file://', '');
         re = new RegExp(`^${reUrl}(?:\..+)?`, 'i');
 
-        let possibles = [];
-        for (const key of dstIdx.index.keys()) {
-            if (re.test(key)) {
-                possibles.push(key);
-            }
-        }
-        if (possibles.length === 0) {
-            return undefined;
-        }
+        const dstKeys = sortKeys(dstIdx.index, re);
 
-        // get the shortest possible url
-        possibles.sort((a, b) => a.length - b.length);
-
-        // log('possibles for', reUrl, ':', possibles);
-        const [eid] = dstIdx.get(possibles[0]);
-        const [src, mime, bf] = srcIdx.getByEid(eid, true);
-        // log('look at', key, src );
-        return [src, possibles[0], eid, mime, bf];
-
-        // for (const key of dstIdx.index.keys()) {
-        //     log('look at', key, '?', reUrl, dstIdx.get(key));
-        //     if (re.test(key)) {
-        //         const [eid] = dstIdx.get(key);
-        //         const [src, mime, bf] = srcIdx.getByEid(eid, true);
-        //         // log('look at', key, src );
-        //         return [src, key, eid, mime, bf];
-        //     }
-        // }
+        if( dstKeys.length > 0 ){
+            const key = dstKeys[0];
+            const [eid] = dstIdx.get(key);
+            const [src, mime, bf] = srcIdx.getByEid(eid, true);
+            return [src, key, eid, mime, bf];
+        }        
     }
     return undefined;
 }
 
-
+function sortKeys(index: Map<any, any>, re: RegExp) {
+    let result = [];
+    for (const key of index.keys()) {
+        if (re.test(key)) {
+            result.push(key);
+        }
+    }
+    result.sort();
+    return result;
+}
 
 
 export enum FormatDateType {
@@ -445,61 +441,61 @@ export enum FormatDateType {
     DayMonthYear = 1
 }
 
-export function formatDate( obj:any, formatType:FormatDateType = FormatDateType.MonthYear ){
-    if( obj === undefined ){ return ''; }
+export function formatDate(obj: any, formatType: FormatDateType = FormatDateType.MonthYear) {
+    if (obj === undefined) { return ''; }
 
     // log('[formatDate]', obj, formatType);
 
     let result = '';
     let format = 'MMM YYYY';
 
-    if( formatType === FormatDateType.DayMonthYear ){
+    if (formatType === FormatDateType.DayMonthYear) {
         format = 'D MMMM, YYYY';
     }
 
-    if(obj.date_start ){
-        let { date_start:start, date_end:end } = obj;
+    if (obj.date_start) {
+        let { date_start: start, date_end: end } = obj;
         let isSameYear = false;
         let isSame = false;
         let isBothStart = false;
-        
-        if( start !== undefined && end !== undefined ){
+
+        if (start !== undefined && end !== undefined) {
             isSameYear = Day(start).year() === Day(end).year();
-            isSame = Day(start).isSame( Day(end) );
+            isSame = Day(start).isSame(Day(end));
             isBothStart = Day(start).month() === 0 && Day(end).month() === 0;
         }
 
-        if( isSame ){
-            return applyDayFormat(start, formatType === FormatDateType.DayMonthYear ? format : 'YYYY' );
+        if (isSame) {
+            return applyDayFormat(start, formatType === FormatDateType.DayMonthYear ? format : 'YYYY');
         }
 
-        if( isBothStart ){
+        if (isBothStart) {
             format = 'YYYY';
         }
 
-        let startStr = start !== undefined ? applyDayFormat( start, isSameYear ? format.replace(/Y/gi, '').trim() : format ) : '';
-        let endStr = end !== undefined ? applyDayFormat(end,format) : '';
+        let startStr = start !== undefined ? applyDayFormat(start, isSameYear ? format.replace(/Y/gi, '').trim() : format) : '';
+        let endStr = end !== undefined ? applyDayFormat(end, format) : '';
 
-        if( Day(end).year() === 9999 ){
+        if (Day(end).year() === 9999) {
             endStr = '';
         }
-        
-        if( startStr !== endStr ){
+
+        if (startStr !== endStr) {
             result = (startStr + ' - ' + endStr).trim();
         } else {
             result = startStr;
         }
     }
 
-    else if( obj.date ){
+    else if (obj.date) {
         result = applyDayFormat(obj.date, format);// Day(obj.date).format(format);
     }
 
     return result;
 }
 
-function applyDayFormat( date:string, format:string ){
-    if( toInteger(date) + '' === date ){
+function applyDayFormat(date: string, format: string) {
+    if (toInteger(date) + '' === date) {
         return date;
     }
     let day = Day(date);

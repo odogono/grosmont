@@ -156,5 +156,25 @@ dst: /index.html
 });
 
 
+test('resolve shortest link', async ({es, site, options}) => {
+    
+    await addSrc( site, 'file:///writing/first.mdx', ``, { dst:'/writing/first.html'});
+    await addSrc( site, 'file:///writing.mdx', ``, { dst:'/writing.html'});
+
+    await addSrc( site, 'file:///index.mdx', `
+---
+dst: /index.html
+---
+    <a href="/writing">Writing</a>
+    `)
+    
+    await process(site);
+    // await printAll(es);
+
+    let e = await site.getEntityBySrc( 'file:///index.mdx' );
+    assert.equal( e.Output.data, `<a href="/writing.html">Writing</a>`)
+
+});
+
 test.run();
 

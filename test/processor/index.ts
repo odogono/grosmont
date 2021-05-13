@@ -1,4 +1,5 @@
 import 'stateful-hooks';
+import './assign_url';
 import './dst_index';
 import './dst_url';
 import './file';
