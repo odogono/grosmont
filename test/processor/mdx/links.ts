@@ -176,16 +176,18 @@ test('self link', async ({es, site, options}) => {
 dst: /index.html
 ---
 
-[Home](/index.html)
+<a href="/index.html">Home</a>
     `);
 
     await process(site);
     // await printAll(es);
 
     let e = await site.getEntityBySrc( 'file:///index.mdx' );
-    assert.equal( e.Output.data, `<p><a href="/index.html">Home</a></p>`);
+    assert.equal( e.Output.data, `<a href="/index.html" aria-current="true">Home</a>`);
 
 });
+
+// [Home](/index.html)
 
 test.run();
 

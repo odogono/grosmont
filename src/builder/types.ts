@@ -199,11 +199,18 @@ export interface ClientCodeDetails {
     components: ({ [key:string]: string} )
 }
 
+export interface ResolveLinkResult {
+    url: string;
+    attrs?: {[key: string]:any }
+}
+
+export type ResolveLinkType = (url:string, text?:string) => ResolveLinkResult | undefined;
+
 export interface TranspileOptions {
     render?: boolean;
     forceRender?: boolean;
     resolveImport?: (path: string, specifiers:string[]) => [string,boolean] | undefined;
-    resolveLink?: (url:string, text?:string) => any;
+    resolveLink?: ResolveLinkType;
     // given a srcUrl, returns the data that belongs to the matching entity
     resolveData?: (srcUrl: string, text?:string, type?:DependencyType) => Promise<any>;
     registerClientCode?: ( details:ClientCodeDetails ) => Promise<any>;

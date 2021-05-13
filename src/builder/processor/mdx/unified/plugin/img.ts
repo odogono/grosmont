@@ -1,8 +1,9 @@
 import unistVisit from 'unist-util-visit';
+import { ResolveLinkType } from '../../../../types';
 import { ensureQuotes, removeQuotes } from '../../../../util';
 
 export interface ImgProcProps {
-    resolveLink?: (url:string, text?:string) => any;
+    resolveLink?: ResolveLinkType;
 }
 
 export function process({ resolveLink }: ImgProcProps) {
@@ -42,10 +43,10 @@ export function process({ resolveLink }: ImgProcProps) {
             // console.log('replace url', {srcValue, altValue});
             
             if( resolveLink ){
-                let resultUrl = resolveLink( srcValue, altValue )
-                if( resultUrl !== undefined ){
+                let result = resolveLink( srcValue, altValue )
+                if( result !== undefined ){
                     // console.log('replace url', resultUrl);
-                    srcAttr.value = resultUrl;// ensureQuotes(resultUrl);
+                    srcAttr.value = result.url;// ensureQuotes(resultUrl);
                 }
             }
         }
@@ -65,10 +66,10 @@ export function process({ resolveLink }: ImgProcProps) {
             }
 
             if( resolveLink ){
-                let resultUrl = resolveLink( srcValue, altValue )
+                let result = resolveLink( srcValue, altValue )
                 // console.log('replace url', resultUrl);
-                if( resultUrl !== undefined ){
-                    node.url = resultUrl;// ensureQuotes(resultUrl);
+                if( result !== undefined ){
+                    node.url = result.url;
                 }
             }
 

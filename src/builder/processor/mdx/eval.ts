@@ -10,7 +10,7 @@ import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { ClientCodeDetails, DependencyType, ProcessOptions, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
+import { ClientCodeDetails, DependencyType, ProcessOptions, ResolveLinkResult, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
 import { transformJSX } from '../../transpile';
 import { applyImports, buildProps } from '../js/util';
 import { parseEntity } from '../../config';
@@ -117,11 +117,11 @@ async function processEntity(site: Site, e: Entity, options: EvalMdxOptions): Pr
         return false;
     };
 
-    function resolveLink(url: string, text: string) {
+    function resolveLink(url: string, text: string): ResolveLinkResult {
 
         if (!isUrlInternal(url)) {
             links.push(['ext', undefined, url, text]);
-            return url;
+            return {url};
         }
 
         let entry = resolveImport(site, url, base);
@@ -130,17 +130,19 @@ async function processEntity(site: Site, e: Entity, options: EvalMdxOptions): Pr
 
         if (entry !== undefined) {
             const [eid, lurl, mime, srcUrl, dstUrl] = entry;
+            let isCurrent = eid === e.id;
             // log('[resolveLink]', url, e.id, eid, entry, {disableSamePageLinks});
             
-            if (disableSamePageLinks === true && eid === e.id) {
+            if (disableSamePageLinks === true && isCurrent) {
                 return undefined;
             }
 
             links.push(['int', entry[0], lurl, text]);
-            return lurl;
+
+            return isCurrent ? {url:lurl, attrs:{ isCurrent }} : {url:lurl};
         }
 
-        return url;
+        return {url};
     }
 
     async function resolveData(srcUrl: string, text?: string, type: DependencyType = 'img') {

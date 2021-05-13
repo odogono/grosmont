@@ -2,13 +2,13 @@ import { toBoolean } from '@odgn/utils';
 import unistVisit from 'unist-util-visit';
 import { ensureQuotes, removeQuotes } from '../../../../util';
 
-import { DependencyType } from '../../../../types';
+import { DependencyType, ResolveLinkType } from '../../../../types';
 import { hastToMdxHast, toHAST } from '../../util';
 
 export interface SvgProcProps {
     // given a srcUrl, returns the data that belongs to the matching entity
     resolveData?: (srcUrl: string, text?:string, type?:DependencyType) => Promise<any>;
-    resolveLink?: (url:string, text?:string) => any;
+    resolveLink?: ResolveLinkType;
 }
 
 export function process({ resolveData, resolveLink }: SvgProcProps) {
@@ -32,9 +32,9 @@ export function process({ resolveData, resolveLink }: SvgProcProps) {
 
             if( !isInline ){
                 if( resolveLink ){
-                    let resultUrl = resolveLink( srcValue )
-                    if( resultUrl !== undefined ){
-                        srcAttr.value.value = ensureQuotes(resultUrl);
+                    let result = resolveLink( srcValue )
+                    if( result !== undefined ){
+                        srcAttr.value.value = ensureQuotes(result.url);
                     }
                 }
 

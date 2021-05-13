@@ -87,9 +87,11 @@ export default async function routes(app, { config: { site, process, processOutp
         output.push(data);
 
         if (mime === 'text/html') {
+            output.push('<footer>');
             output.push(await buildEntityDisplay(site, processOutput, eid));
             output.push(await buildEntityDepsDisplay(site, processOutput, eid));
             output.push(await buildEntityDepsOfDisplay(site, processOutput, eid));
+            output.push('</footer>');
             output.push(sseClientIdHeader(eid, path));
             output.push(sseClientScript);
         }
