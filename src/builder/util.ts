@@ -367,6 +367,8 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
     const srcIdx = site.getSrcIndex();
     const dstIdx = site.getDstIndex();
 
+    base = pathToUri(base);
+    // log('[resolveSiteUrl]', {url,base} );
     let path = resolveUrlPath(url, base);
 
     // log('[resolveSiteUrl]', {url,base}, path);
@@ -398,14 +400,14 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
     // let srcKeys = Array.from( srcIdx.index.keys() );
     // srcKeys.sort();
 
-    if( srcKeys.length > 0 ){
-    // for (const key of srcKeys) {
+    if (srcKeys.length > 0) {
+        // for (const key of srcKeys) {
         const key = srcKeys[0];
         // log('[resolveSiteUrl]', 'test', key, reUrl);
         const [eid, mime, bf] = srcIdx.get(key);
         const dst = dstIdx !== undefined ? dstIdx.getByEid(eid) : undefined;
         return [key, dst, eid, mime, bf];
-        
+
     }
 
     if (dstIdx !== undefined) {
@@ -414,12 +416,12 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
 
         const dstKeys = sortKeys(dstIdx.index, re);
 
-        if( dstKeys.length > 0 ){
+        if (dstKeys.length > 0) {
             const key = dstKeys[0];
             const [eid] = dstIdx.get(key);
             const [src, mime, bf] = srcIdx.getByEid(eid, true);
             return [src, key, eid, mime, bf];
-        }        
+        }
     }
     return undefined;
 }
@@ -500,4 +502,17 @@ function applyDayFormat(date: string, format: string) {
     }
     let day = Day(date);
     return Day(day).format(format);
+}
+
+
+
+// https://stackoverflow.com/a/48032528
+export async function replaceAsync(str, regex, asyncFn) {
+    const promises = [];
+    str.replace(regex, (match, ...args) => {
+        const promise = asyncFn(match, ...args);
+        promises.push(promise);
+    });
+    const data = await Promise.all(promises);
+    return str.replace(regex, () => data.shift());
 }

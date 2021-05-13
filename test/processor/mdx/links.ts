@@ -187,7 +187,31 @@ dst: /index.html
 
 });
 
-// [Home](/index.html)
+test('component link', async ({es, site, options}) => {
+
+    await addSrc( site, 'file:///menu.tsx', `
+import { resolveUrl } from '@site';
+
+    export default () => {
+        return <a href={resolveUrl("/index")}>Home</a>;
+    };
+    `);
+
+    await addSrc( site, 'file:///index.mdx', `
+---
+dst: /index.html
+---
+import Link from '/menu';
+
+    <Link />
+    `)
+
+    await process(site);
+    // await printAll(es);
+
+    let e = await site.getEntityBySrc( 'file:///index.mdx' );
+    assert.equal( e.Output.data, `<a href="/index.html">Home</a>` );
+});
 
 test.run();
 

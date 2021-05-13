@@ -87,8 +87,14 @@ export function createRenderContext(site: Site, e: Entity, options: ProcessOptio
 function resolveUrl(site: Site, e: Entity) {
     return (q: EntityId | string) => {
         if (isEntityId(q)) {
-            return site.getEntityDstUrl(q as EntityId);
+            let result = site.getEntityDstUrl(q as EntityId);
+            if( result === undefined ){
+                result = `{{e://${e.id}/component/dst#url}}`;
+            }
+            // log('[resolveUrl]', q, 'for', e.id, result );
+            return result;
         }
+        // log('[resolveUrl]', q);
         let entry = resolveSiteUrl(site, q as string, q as string);
         // log('[resolveUrl]', q, {entry});
         if (entry === undefined) {
@@ -341,10 +347,13 @@ export function parseEntityUrl(url: string) {
     const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "i");
     let match = re.exec(url);
     if (match !== null) {
-        const [url, eid, did] = match;
-        return { eid: toInteger(eid), did, url };
+        const [url, eid, path] = match;
+
+        let parts = path.split('#');
+        const [did,attr] = parts;
+        // const parts = /(^\/.*)#(.*)/.exec(did);
+
+        return { eid: toInteger(eid), did, attr, url };
     }
     return undefined;
 }
-
-

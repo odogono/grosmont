@@ -1,5 +1,6 @@
 import Process from 'process';
 import React from 'react';
+import Jsonpointer from 'jsonpointer';
 import { html as BeautifyHTML } from 'js-beautify';
 
 import { getDependencyEntities, getDependencyComponents, getLayoutFromDependency, insertDependency, selectJs, getDstUrl } from '../../query';
@@ -8,19 +9,22 @@ import { Site } from '../../site';
 
 
 import { ProcessOptions, TranspileProps, TranspileResult, EvalContext, EvalScope } from '../../types';
-import { createRenderContext, getEntityCSSDependencies } from './util';
+import { createRenderContext, getEntityCSSDependencies, parseEntityUrl } from './util';
 import {
     Component, setEntityId, toComponentId,
     QueryableEntitySet,
     Entity,
+    getDefId
 } from '../../../es';
 
 import { hash, toInteger } from '@odgn/utils';
 import { buildImports } from './eval';
 import { useServerEffect, serverEffectValue, beginServerEffects, endServerEffects } from '../jsx/server_effect';
-import { createErrorComponent } from '../../util';
+import { createErrorComponent, replaceAsync } from '../../util';
 import { transformComponent } from './transform';
 import { transformJS } from '../mdx/transform';
+import { printAll } from 'odgn-entity/src/util/print';
+
 
 const Label = '/processor/js/render';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -53,7 +57,6 @@ export async function process(site: Site, options: RenderJsOptions = {}) {
 
     for (const e of ents) {
         const srcUrl = e.Src?.url;
-
         try {
 
             updates.push(await processEntity(site, e, undefined, options));
@@ -69,7 +72,7 @@ export async function process(site: Site, options: RenderJsOptions = {}) {
     updates = updates.filter(Boolean);
 
     await es.add(updates);
-    
+
     info(reporter, `processed ${ents.length}`);
 
     return site;
@@ -81,6 +84,13 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     const { es } = site;
     const { url: base } = e.Src;
     const applyLayout = options.applyLayout ?? true;
+    const { reporter } = options;
+    const disableSamePageLinks = options.disableSamePageLinks ?? false;
+
+    if (e.Js === undefined) {
+        warn(reporter, `no /component/js found`, { eid: e.id });
+        return undefined;
+    }
 
     const { data } = e.Js;
     let path = site.getSrcUrl(e);
@@ -89,7 +99,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     const { require } = await buildImports(site, e.id, options);
 
-    
+
     if (meta.isEnabled === false) {
         return undefined;
     }
@@ -143,7 +153,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
     // reset requests
     beginServerEffects(base);
 
-    // log('[processEntity]', base, {data} );
+    // log('[processEntity]', base );
 
     let result: any = transformJS(data, props, { context, require, scope });
 
@@ -204,14 +214,14 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     // replace any e:// urls with dst url links
     // we pass the context.e because this might be a layout render
-    output = replaceEntityUrls(site, context.e, output, disableSamePageLinks);
+    output = await replaceEntityUrls(site, context.e, output, disableSamePageLinks);
 
     // if( base === 'file:///test/components.jsx' ){
     //     Process.exit(1);
     // }
 
     if (options.beautify) {
-        if( mime === 'text/html' ){
+        if (mime === 'text/html') {
             output = BeautifyHTML(output);
         }
     }
@@ -220,6 +230,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
 
 const hrefRe = /(href|src)="e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)"/gi;
+const tmplRe = /{{e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)}}/gi;
 
 /**
  * Looks through the data looking for entity urls and replaces
@@ -227,31 +238,54 @@ const hrefRe = /(href|src)="e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)"/gi;
  * @param site 
  * @param data 
  */
-function replaceEntityUrls(site: Site, e:Entity, data: string, disableSelfLinks:boolean = false) {
+async function replaceEntityUrls(site: Site, e: Entity, data: string, disableSelfLinks: boolean = false) {
+    const { es } = site;
 
     // this could arguably be a processor by itself
 
-    data = data.replace( hrefRe, (val,attr,eid,path) => {
+    data = data.replace(hrefRe, (val, attr, eid, path) => {
         eid = toInteger(eid);
-        
-        let url = site.getEntityDstUrl( eid );
-        // log('[replaceEntityUrls]', val, eid, path, url );
+
+        let url = site.getEntityDstUrl(eid);
+        // log('[replaceEntityUrls]', val, eid, path, {attr,url} );
         return url === undefined || (disableSelfLinks && eid === e.id) ? '' : `${attr}="${url}"`;
     })
 
+
+    // do template replacements
+    data = await replaceAsync(data, tmplRe, async (val, _eid, path) => {
+        let { eid, did, attr } = parseEntityUrl(val);
+
+        // log('[replaceEntityUrls]', val, { eid, did, attr });
+
+        // override the dst#url using the site index
+        if( did === '/component/dst' && (attr === 'url' || attr === '/url') ){
+            let url = site.getEntityDstUrl(eid);
+            // log('[replaceEntityUrls]', 'dst', url);
+            // log( site.getDstIndex() );
+            return url !== undefined ? url : '';
+        }
+
+        const def = es.getByUri(did);
+
+        let com = await es.getComponent(toComponentId(eid, getDefId(def)));
+        if (com === undefined) {
+            return '';
+        }
+
+        // log('[replaceEntityUrls]',  com);
+
+        if (!attr.startsWith('/')) {
+            attr = '/' + attr;
+        }
+
+        return Jsonpointer.get(com, attr);
+
+        // return val;
+    })
+
     return data;
-    // const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "gi");
-    // return data.replace(re, (val, eid, path) => {
-    //     let url = site.getEntityDstUrl( toInteger(eid) );
-
-    //     // log('[replaceEntityUrls]', e.id, {path, eid, data, url} );
-
-    //     return url === undefined ? '' : url;
-    // });
 }
-
-
-
 
 
 async function applyCSSDependencies(es: QueryableEntitySet, e: Entity, child: TranspileResult, props: TranspileProps): Promise<TranspileProps> {
@@ -263,12 +297,12 @@ async function applyCSSDependencies(es: QueryableEntitySet, e: Entity, child: Tr
         return props;
     }
 
-    
+
     let css = cssEntries.map(ent => ent.text).join('\n');
     let cssLinks = cssEntries.map(ent => ent.path);
     if (child !== undefined) {
         // log('[applyCSSDependencies]', e.id, {css, child:child.css});
-        if( child.css !== undefined ){
+        if (child.css !== undefined) {
             css = css + ' ' + child.css;
         }
         // log('[applyCSSDependencies]', child.cssLinks);
