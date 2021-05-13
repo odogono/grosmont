@@ -81,7 +81,7 @@ dst: /index
     [Otherwise](/index)
     `);
 
-    await process(site, {...options, beautify:true} );
+    await process(site, {...options, beautify:true, disableSamePageLinks:true} );
 
     let e = await site.getEntityBySrc('file:///index.mdx');
     // log( e.Output.data );
@@ -90,13 +90,6 @@ dst: /index
 `<h1>Main</h1><a href="/about.html">About</a>
 <p>Something <a>else</a> here</p>
 <p><a>Otherwise</a></p>`);
-//     assert.equal(e.Output.data,
-// `<h1>Main</h1><a href="/about.html">
-//     <p>About</p>
-// </a>
-// <p>Something <a>else</a> here</p>
-// <p><a>Otherwise</a></p>`);
-
 });
 
 
@@ -172,7 +165,25 @@ dst: /index.html
     // await printAll(es);
 
     let e = await site.getEntityBySrc( 'file:///index.mdx' );
-    assert.equal( e.Output.data, `<a href="/writing.html">Writing</a>`)
+    assert.equal( e.Output.data, `<a href="/writing.html">Writing</a>`);
+
+});
+
+
+test('self link', async ({es, site, options}) => {
+    await addSrc( site, 'file:///index.mdx', `
+---
+dst: /index.html
+---
+
+[Home](/index.html)
+    `);
+
+    await process(site);
+    // await printAll(es);
+
+    let e = await site.getEntityBySrc( 'file:///index.mdx' );
+    assert.equal( e.Output.data, `<p><a href="/index.html">Home</a></p>`);
 
 });
 

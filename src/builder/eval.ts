@@ -17,14 +17,13 @@ export interface EvalOptions {
 export function evalCode(code: string, path: string, options: EvalOptions = {}) {
     let { context, scope: inScope } = options;
 
-    // path = path + '.mjs';
-    // console.log('[evalCode]', path, code );
-
+    
     context = {
         useServerEffect: () => { },
         ...context
     }
-
+    
+    // console.log('[evalCode]', path );
 
     // log('[evalCode]', path, context.useServerEffect.toString() );
 

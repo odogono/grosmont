@@ -130,14 +130,14 @@ async function processEntity(site: Site, e: Entity, options: EvalMdxOptions): Pr
 
         if (entry !== undefined) {
             const [eid, lurl, mime, srcUrl, dstUrl] = entry;
-            // log('[resolveLink]', url, e.id, eid, entry);
-            if (disableSamePageLinks === true && eid !== e.id) {
+            // log('[resolveLink]', url, e.id, eid, entry, {disableSamePageLinks});
+            
+            if (disableSamePageLinks === true && eid === e.id) {
                 return undefined;
             }
 
             links.push(['int', entry[0], lurl, text]);
             return lurl;
-
         }
 
         return url;

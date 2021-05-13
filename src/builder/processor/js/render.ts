@@ -3,7 +3,7 @@ import React from 'react';
 import { html as BeautifyHTML } from 'js-beautify';
 
 import { getDependencyEntities, getDependencyComponents, getLayoutFromDependency, insertDependency, selectJs, getDstUrl } from '../../query';
-import { setLocation, info, debug, error } from '../../reporter';
+import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
 
@@ -34,6 +34,7 @@ export interface RenderJsOptions extends ProcessOptions {
     context?: EvalContext;
     scripts?: string[];
     beautify?: boolean;
+    disableSamePageLinks?: boolean;
 }
 
 
@@ -203,7 +204,7 @@ async function processEntity(site: Site, e: Entity, child: TranspileResult, opti
 
     // replace any e:// urls with dst url links
     // we pass the context.e because this might be a layout render
-    output = replaceEntityUrls(site, context.e, output);
+    output = replaceEntityUrls(site, context.e, output, disableSamePageLinks);
 
     // if( base === 'file:///test/components.jsx' ){
     //     Process.exit(1);
@@ -226,16 +227,16 @@ const hrefRe = /(href|src)="e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)"/gi;
  * @param site 
  * @param data 
  */
-function replaceEntityUrls(site: Site, e:Entity, data: string) {
+function replaceEntityUrls(site: Site, e:Entity, data: string, disableSelfLinks:boolean = false) {
 
     // this could arguably be a processor by itself
 
     data = data.replace( hrefRe, (val,attr,eid,path) => {
-        // log('[replaceEntityUrls]', val, eid, path );
         eid = toInteger(eid);
+        
         let url = site.getEntityDstUrl( eid );
-        // log('[replaceEntityUrls]', e.id, {url, eid} );
-        return url === undefined || eid === e.id ? '' : `${attr}="${url}"`;
+        // log('[replaceEntityUrls]', val, eid, path, url );
+        return url === undefined || (disableSelfLinks && eid === e.id) ? '' : `${attr}="${url}"`;
     })
 
     return data;

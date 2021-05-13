@@ -83,14 +83,7 @@ import Menu from '../components/menu';
     // log( e.Output.data );
 
     assert.equal( e.Output.data, 
-        `<h1>Home</h1><a>Home</a><a href="/projects">Projects</a><a href="/about">About</a>`);
-//     assert.equal( e.Output.data, `<h1>Home</h1><a>
-//     <p>Home</p>
-// </a><a href="/projects">
-//     <p>Projects</p>
-// </a><a href="/about">
-//     <p>About</p>
-// </a>`)
+        `<h1>Home</h1><a href="/index.html">Home</a><a href="/projects">Projects</a><a href="/about">About</a>`);
 
 });
 
