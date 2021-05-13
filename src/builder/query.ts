@@ -138,6 +138,9 @@ export async function selectTagBySlug(es: QueryableEntitySet, name: string, opti
     return await stmt.getEntity({ ref, slug });
 }
 
+export interface FindEntitiesByTagsOptions extends FindEntityOptions {
+    mode?: 'AND'|'OR';
+}
 
 /**
  * Returns EntityIds which have all of the specified tags
@@ -146,8 +149,9 @@ export async function selectTagBySlug(es: QueryableEntitySet, name: string, opti
  * @param tags 
  * @param options 
  */
-export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[], options: FindEntityOptions = {}): Promise<EntityId[]> {
+export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[], options: FindEntitiesByTagsOptions = {}): Promise<EntityId[]> {
     const { ref } = parseOptions(options, false);
+    const mode = options.mode ?? 'AND';
 
     const q = `
     // since this may be called as directly, or as a word, $ref wont always be set
@@ -172,7 +176,7 @@ export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[],
             /component/dep#dst !ca *^$1 ==
             @eid /component/dep#src @ca
         ] select swap drop
-        [ drop false @! ] swap size 0 == rot swap if
+        // [ drop [] @! ] swap size 0 == rot swap if
         
         @>
     ] *selectTagDepByDst define
@@ -183,11 +187,15 @@ export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[],
     // remove empty results
     [ false != ] filter
 
-    
     [] // reduce result
     [
         swap *selectTagDepByDst
-        [ intersect! ] [ + ] *%3 size 0 == swap drop iif
+        [ [union!] ] [ [intersect!] ] $mode "AND" == iif
+        
+        // [ intersect! ] [ + ] *%3 size 0 == swap drop iif
+        [ + ] *%3 size 0 == swap drop  iif
+        // [ union! ] [ + ] *%3 size 0 == swap drop  iif
+        
     ] reduce
     
     unique // get rid of dupes
@@ -195,7 +203,7 @@ export async function findEntitiesByTags(es: QueryableEntitySet, tags: string[],
 
     
     const stmt = prepare(es, q);
-    return await stmt.getResult({ ref, tags });
+    return await stmt.getResult({ ref, tags, mode });
 }
 
 

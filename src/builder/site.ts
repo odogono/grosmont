@@ -35,7 +35,8 @@ import {
     selectSrcByUrl,
     selectOutputByEntity,
     selectUpdated,
-    prepare
+    prepare,
+    FindEntitiesByTagsOptions
 } from './query';
 import { DependencyType, ProcessOptions, SiteIndex } from './types';
 import { isEmpty, isInteger, isString, parseUri } from '@odgn/utils';
@@ -501,8 +502,8 @@ export class Site {
      * 
      * @param tags 
      */
-    async findByTags(tags: string[]): Promise<EntityId[]> {
-        return findEntitiesByTags(this.es, tags, { siteRef: this.e.id });
+    async findByTags(tags: string[], options:FindEntitiesByTagsOptions = {}): Promise<EntityId[]> {
+        return findEntitiesByTags(this.es, tags, { ...options, siteRef: this.getRef() });
     }
 
     /**

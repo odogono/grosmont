@@ -5,6 +5,7 @@ import { Site } from '../../../src/builder/site';
 import { prepare } from '../../../src/builder/query';
 import { ProcessOptions } from '../../../src/builder/types';
 import { addSrc, beforeEach, process } from '../../helpers';
+import { printAll } from 'odgn-entity/src/util/print';
 
 const test = suite('/processor/mdx/tags');
 const log = (...args) => console.log(`[/test${test.name}]`, ...args);
@@ -72,6 +73,24 @@ test('findByTags word', async ({ es, site, options }) => {
     assert.equal( eids, [1008] );
 });
 
+
+test('findByTags OR', async({es,site,options}) => {
+    await parseEntity(site,`
+    id: 1006
+    tags: [ blog ]
+    `);
+    await parseEntity(site,`
+    id: 1007
+    tags: [ link ]
+    `);
+
+    await process(site,options);
+    // await printAll(es);
+
+    assert.equal(
+        await site.findByTags(['blog', 'link'], {mode:'OR'}),
+        [1006,1007]);
+});
 
 
 
