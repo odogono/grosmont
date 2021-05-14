@@ -36,7 +36,9 @@ import {
     selectOutputByEntity,
     selectUpdated,
     prepare,
-    FindEntitiesByTagsOptions
+    FindEntitiesByTagsOptions,
+    FindEntityOptions,
+    getDependencyDstEntities
 } from './query';
 import { DependencyType, ProcessOptions, SiteIndex } from './types';
 import { isEmpty, isInteger, isString, parseUri } from '@odgn/utils';
@@ -504,6 +506,17 @@ export class Site {
      */
     async findByTags(tags: string[], options:FindEntitiesByTagsOptions = {}): Promise<EntityId[]> {
         return findEntitiesByTags(this.es, tags, { ...options, siteRef: this.getRef() });
+    }
+
+    /**
+     * Returns the Tag entities that belong to the specified entity
+     * 
+     * @param eid 
+     * @param options 
+     * @returns 
+     */
+    async getTagsByEntityId( eid:EntityId, options:ProcessOptions = {}): Promise<Entity[]> {
+        return getDependencyDstEntities(this.es, eid, ['tag'] );
     }
 
     /**

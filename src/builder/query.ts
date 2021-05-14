@@ -1881,6 +1881,41 @@ export async function getDepenendencyDst(es: QueryableEntitySet, src: EntityId, 
     return await stmt.getResult({ src, type });
 }
 
+
+/**
+ * Returns the entities which are linked to the given entity by a dependency
+ * 
+ * @param es 
+ * @param eid 
+ * @param type 
+ */
+export async function getDependencyDstEntities(es: QueryableEntitySet, eid, type?: DependencyType[] ) {
+    const regexExt = type.join('|');
+
+    let q = `
+    // select the dst eids from the dependency entities
+    [
+        /component/dep#type !ca ~r/^(${regexExt})$/i ==
+        /component/dep#src !ca $eid ==
+        and
+        /component/dep !bf
+        @c
+    ] select
+    
+    /dst pluck!
+
+    // select the entities using the eids
+    swap
+    [
+        *^$1
+        @e
+    ] select
+    `;
+
+    return await prepare(es, q, false).getResult({eid});
+}
+
+
 /**
  * Returns EntityIds of the dependency entities which match the given eid and type
  * 
