@@ -76,4 +76,35 @@ test('format date range', async ({es, site, options}) => {
 });
 
 
+test('format to date', () => {
+    let com:any = {
+        date: '2021-05-14T13:18:00.000Z'
+    }
+
+    assert.equal( formatDate(com, FormatDateType.Date), '2021-05-14' );
+
+    com = {
+        date_start: '1998-01-01T00:00:00.000Z',
+        date_end: '9999-01-01T00:00:00.000Z'
+    };
+
+    assert.equal( formatDate(com, FormatDateType.Date), '1998-01-01' );
+    
+    com = {
+        date_start: '2009-01-01T00:00:00.000Z',
+        date_end: '2009-01-01T00:00:00.000Z'
+    };
+
+    assert.equal( formatDate(com, FormatDateType.Date), '2009-01-01' );
+    
+    com = {
+        date_start: "2016-05-01T00:00:00.000Z",
+        date_end: "2016-12-30T00:00:00.000Z"
+    };
+
+    assert.equal( formatDate(com, FormatDateType.Date), '2016-12-30' );
+
+});
+
+
 test.run();

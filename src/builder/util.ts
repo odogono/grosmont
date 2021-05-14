@@ -439,21 +439,38 @@ function sortKeys(index: Map<any, any>, re: RegExp) {
 
 
 export enum FormatDateType {
-    MonthYear = 0,
-    DayMonthYear = 1
+    MonthYear = 'MonthYear', // May 2021
+    DayMonthYear = 'DayMonthYear', // 14 May, 2021 
+    Date = 'Date', // 2011-11-18
 }
 
+/**
+ * 
+ * @param obj 
+ * @param formatType 
+ * @returns 
+ */
 export function formatDate(obj: any, formatType: FormatDateType = FormatDateType.MonthYear) {
     if (obj === undefined) { return ''; }
 
     // log('[formatDate]', obj, formatType);
 
     let result = '';
+
     let format = 'MMM YYYY';
 
-    if (formatType === FormatDateType.DayMonthYear) {
-        format = 'D MMMM, YYYY';
+    switch( formatType ){
+        case FormatDateType.DayMonthYear:
+            format = 'D MMMM, YYYY';
+            break;
+        case FormatDateType.Date:
+            format = 'YYYY-MM-DD';
+        default:
+            break;
     }
+
+    
+
 
     if (obj.date_start) {
         let { date_start: start, date_end: end } = obj;
@@ -468,6 +485,9 @@ export function formatDate(obj: any, formatType: FormatDateType = FormatDateType
         }
 
         if (isSame) {
+            if( formatType === FormatDateType.Date ){
+                return applyDayFormat(start, format);
+            }
             return applyDayFormat(start, formatType === FormatDateType.DayMonthYear ? format : 'YYYY');
         }
 
@@ -479,10 +499,16 @@ export function formatDate(obj: any, formatType: FormatDateType = FormatDateType
         let endStr = end !== undefined ? applyDayFormat(end, format) : '';
 
         if (Day(end).year() === 9999) {
+            if( formatType === FormatDateType.Date ){
+                return Day(start).format('YYYY-MM-DD');
+            }
             endStr = '';
         }
 
         if (startStr !== endStr) {
+            if( formatType === FormatDateType.Date ){
+                return Day(end).format('YYYY-MM-DD');
+            }
             result = (startStr + ' - ' + endStr).trim();
         } else {
             result = startStr;

@@ -1,7 +1,9 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
-import { addSrc, beforeEach, process } from '../../helpers';
+import { addSrc, beforeEach, printAll, process } from '../../helpers';
 import { buildProcessors, OutputES, RawProcessorEntry, renderToOutput } from '../../../src/builder';
+import { parseEntityUrl } from '../../../src/builder/processor/js/util';
+
 
 const test = suite('/processor/js/jsx');
 const log = (...args) => console.log(`[${test.name}]`, ...args);
@@ -72,6 +74,37 @@ import Title from './title';
     assert.equal( e.Output.data, `<h1>Hello World</h1>`);
 });
 
+test('pass dst', async ({es,site,options}) => {
+
+    await addSrc(site, 'file:///heading.jsx', `
+import {resolveUrl} from '@site';
+
+    export default ({e}) => (
+        <p>Link is {resolveUrl(e.id)}</p>
+    )
+    `);
+
+    await addSrc(site, 'file:///main.mdx', `
+---
+dst: /main.html
+---
+import { e } from '@site';
+import Heading from './heading';
+
+<Heading e={e} />
+    `);
+
+    await process(site,options);
+    // await printAll(es);
+
+    let e = await site.getEntityBySrc('file:///main.mdx');
+    assert.equal( e.Output.data, `<p>Link is /main.html</p>`);
+});
+
+
+test.skip('parse entity url', () => {
+    log( parseEntityUrl('e://1234/component/dst') );
+})
 
 
 test.run();
