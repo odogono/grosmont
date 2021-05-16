@@ -234,7 +234,7 @@ export class Site {
         let eid = retrieve ? ev as EntityId : (ev as Entity)?.id;
         let e: Entity = retrieve ? await this.es.createEntity(eid) : ev as Entity;
 
-        let data = e?.Data?.data;
+        let data = e?.Data?.data ?? e?.Mdx?.data;
         if (data !== undefined) {
             return data;
         }

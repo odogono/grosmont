@@ -89,6 +89,12 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
     //         log('srcidx', key);
     //     }
     // }
+    // function printDstIndex(site:Site, options:ProcessOptions){
+    //     const idx = site.getDstIndex();
+    //     for( const key of idx.index.keys() ){
+    //         log('dstidx', key);
+    //     }
+    // }
 
     const beautify = options.beautify ?? false;
 
@@ -96,7 +102,7 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
 
     return [
         ['/query#clearUpdates', 1000],
-        ['/query#clearErrors', 1000],
+        ['/query#clearErrors', 999],
         ['/processor/file'],
 
         ['/processor/mark#statics'],
@@ -124,6 +130,7 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
         ['/processor/build_dst_index', 0, { onlyUpdated: false }],
 
         ['/processor/js/render', 0, { beautify: true }],
+        
         
         ['/processor/build_dst_index', 0, { onlyUpdated: false }],
 
@@ -178,11 +185,24 @@ export async function buildProcessors(site: Site, label:string, spec: RawProcess
         return 0;
     });
 
+    let removePriorities = [];
 
+    // look for /processor/noop and clear with same priority
+    for (let [prc, priority, pOptions, url] of result) {
+        if( url === '/processor/noop' ){
+            removePriorities.push( priority );
+        }
+    }
+
+    result = result.filter( ([,priority]) => {
+        return removePriorities.indexOf(priority) === -1;
+    })
+    
     // log('[buildProcessors]', result);
     // for (let [prc, priority, pOptions, url] of result) {
-    //     setLocation(reporter, Label);
-    //     info(reporter, `[buildProcessors] ${url}`);
+    // //     setLocation(reporter, Label);
+    // //     info(reporter, `[buildProcessors] ${url}`);
+    //     log('[buildProcessors]', priority, url );
     // }
     
 

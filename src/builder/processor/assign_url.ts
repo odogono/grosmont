@@ -1,7 +1,7 @@
 import Path from 'path';
 import Day from 'dayjs';
 
-import { Entity, EntityId } from "../../es";
+import { Entity, EntityId, printAll } from "../../es";
 import { Site } from '../site';
 import { extensionFromMime } from "./assign_mime";
 import { ProcessOptions } from '../types';
@@ -26,30 +26,30 @@ export interface AssignDstOptions extends ProcessOptions {
  */
 export async function process(site: Site, options:AssignDstOptions = {}) {
     const es = options.es ?? site.es;
-    const {reporter, tags:filterTags, bf:filterBf, siteRef:ref } = options;
+    const {reporter, tags:filterTags, bf:filterBf, siteRef:ref, onlyUpdated } = options;
     setLocation(reporter, Label);
 
     let ents:Entity[];
     let q:string;
     let eids:EntityId[];
 
-    // retrieve entities by tag
+    let qb = [ `[` ];
     if( filterTags ){
         eids = await site.findByTags(filterTags);
-        q = `[
-            $eids
-            /component/site_ref#ref !ca $ref ==
-            [ /component/title /component/date  ] !bf 
-            @e
-        ] select`;
-    } else {
-        q = `[
-            [ /component/title /component/date  ] !bf 
-            @e
-        ] select`
+        qb.push('$eids');
     }
+    if( onlyUpdated ){
+        qb.push(`/component/upd#/op !ca 1 ==`);
+        qb.push(`/component/upd#/op !ca 2 ==`);
+        qb.push(`or`);
+    }
+    qb.push('[ /component/title /component/date  ] !bf ');
+    qb.push('@e');
+    qb.push('] select');
 
-    ents = await es.prepare(q).getEntities({eids,ref});
+    q = qb.join('\n');
+
+    ents = await es.prepare(q).getEntities({eids});
 
     let dstIndex = site.getDstIndex();
 
@@ -69,12 +69,16 @@ export async function process(site: Site, options:AssignDstOptions = {}) {
         
         let genDst = path.join( Path.sep );
 
+        
         let ext = extensionFromMime( mime );
-
+        
         genDst = `${genDst}.${ext}`;
 
+        
         dstIndex.setByEid( e.id, genDst, op, mime );
-
+        
+        // log( 'ents', title, {dst,op,mime}, genDst );
+        
         info(reporter, `update dst ${genDst}`, {eid:e.id});
     }
 

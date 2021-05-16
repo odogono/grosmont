@@ -671,8 +671,6 @@ export async function selectEntitiesByMime(es: QueryableEntitySet, mime: string[
         /component/src !bf
         @e
     ] select`;
-
-    // console.log('[selectSrcByExt]', ref, q);
     return await prepare(es, q, false).getEntities({ ref });
 }
 

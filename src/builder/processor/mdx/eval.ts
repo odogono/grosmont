@@ -16,6 +16,7 @@ import { applyImports, buildProps } from '../js/util';
 import { parseEntity } from '../../config';
 import { createErrorComponent, isUrlInternal, resolveImport, resolveUrlPath } from '../../util';
 import { transformMdx } from './transform';
+import { printAll } from 'odgn-entity/src/util/print';
 
 const Label = '/processor/mdx/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);
@@ -38,6 +39,8 @@ export async function process(site: Site, options: EvalMdxOptions = {}) {
     // let ents = await selectMdx(es, options);
     let ents = await selectEntitiesByMime(es, ['text/mdx'], options);
 
+    
+
     let output: Component[] = [];
 
     // first pass at parsing the mdx - pulling out links, local meta etc
@@ -45,7 +48,9 @@ export async function process(site: Site, options: EvalMdxOptions = {}) {
         const srcUrl = e.Src?.url;
 
         try {
+            
             let coms = await processEntity(site, e, options);
+            
             output = output.concat(coms);
 
             debug(reporter, `${e.Src?.url}`, { eid: e.id });
@@ -58,10 +63,12 @@ export async function process(site: Site, options: EvalMdxOptions = {}) {
 
     }
 
+    
+
     await es.add(output);
 
     info(reporter, `processed ${ents.length}`);
-
+    
     return site;
 }
 
@@ -212,8 +219,7 @@ async function processEntity(site: Site, e: Entity, options: EvalMdxOptions): Pr
     const { data } = props;
     let context = { site, e };
 
-    // log('->', e.id, props);
-
+    
     if (data === undefined) {
         return [];
     }
@@ -229,7 +235,10 @@ async function processEntity(site: Site, e: Entity, options: EvalMdxOptions): Pr
     // const jsxCom = setEntityId(es.createComponent('/component/jsx', { data: jsx }), e.id);
 
     meta = { ...meta, ...config };
+    // log( {meta}, {config} );
     await parseEntity(es, meta, { add: true, e, siteRef });
+    // log('->', e.id, props, e.Title);
+    
 
     // creates link dependencies and adds to the link
     // index for use at the point of rendering

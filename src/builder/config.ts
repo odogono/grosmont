@@ -150,7 +150,7 @@ async function parseData(es: QueryableEntitySet, data: ({ [key: string]: any }),
             }
 
             if (key === 'title') {
-                applyToCom(e, 'Title', { title: value });
+                applyToCom(e, 'Title', { title: value }, false);
                 pk = isPk ? '/component/title#title' : pk;
             }
             else if (key === 'url') {
@@ -293,7 +293,7 @@ function applyUrlToCom(e: Entity, name: string, url: string, overwrite: boolean 
 
 function applyToCom(e: Entity, name: string, attrs: any, overwrite: boolean = true) {
     let com = e[name] ?? {};
-    com = overwrite ? { ...attrs } : { ...com, ...attrs };
+    com = overwrite ? { ...attrs } : { ...attrs, ...com };
     e[name] = com;
     return e;
 }
