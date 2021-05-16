@@ -266,7 +266,7 @@ async function replaceEntityUrls(site: Site, e: Entity, data: string, disableSel
             return url !== undefined ? url : '';
         }
 
-        const def = es.getByUri(did);
+        const def = es.getByUrl(did);
 
         let com = await es.getComponent(toComponentId(eid, getDefId(def)));
         if (com === undefined) {

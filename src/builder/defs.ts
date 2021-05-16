@@ -1,33 +1,33 @@
 
 export const defs = [
     {
-        uri: '/component/src',
+        url: '/component/src',
         properties: [
             { name: 'url', type: 'string' },
             { name: 'mime', type: 'string' },
         ]
     },
     {
-        uri: '/component/dst',
+        url: '/component/dst',
         properties: [
             { name: 'url', type: 'string' },
             { name: 'mime', type: 'string' },
         ]
     },
     {
-        uri: '/component/url',
+        url: '/component/url',
         properties: [
             { name: 'url', type: 'string' },
         ]
     },
     {
-        uri: '/component/uuid',
+        url: '/component/uuid',
         properties: [
             { name: 'uuid', type: 'string' },
         ]
     },
     {
-        uri: '/component/status',
+        url: '/component/status',
         properties: [
             {
                 name: 'status', type: 'string',
@@ -36,7 +36,7 @@ export const defs = [
         ]
     },
     {
-        uri: '/component/data',
+        url: '/component/data',
         properties: [
             { name: 'data', type: 'string' /* base64 encoded */ },
             { name: 'mime', type: 'string' },
@@ -46,33 +46,33 @@ export const defs = [
     // btime - birthtime - the creation date
     // mtime - the last time the file was modified
     {
-        uri: '/component/ftimes',
+        url: '/component/ftimes',
         properties: [
             { name: 'btime', type: 'datetime' },
             { name: 'mtime', type: 'datetime' },
         ]
     },
     {
-        uri: '/component/title',
+        url: '/component/title',
         properties: [
             { name: 'title', type: 'string' },
             { name: 'summary', type: 'string' }
         ]
     },
     {
-        uri: '/component/meta',
+        url: '/component/meta',
         properties: [
             { name: 'meta', type: 'json' }
         ]
     },
     {
         // a static file which gets copied from src to dst
-        uri: '/component/static',
+        url: '/component/static',
         properties: []
     },
 
     {
-        uri: '/component/tag',
+        url: '/component/tag',
         properties: [
             { name: 'slug', type: 'string' },
         ]
@@ -81,7 +81,7 @@ export const defs = [
 
     {
         // dependency
-        uri: '/component/dep',
+        url: '/component/dep',
         properties: [
             // src/dependent entity
             { name: 'src', type: 'entity' },
@@ -97,19 +97,19 @@ export const defs = [
 
     {
         // 
-        uri: '/component/site',
+        url: '/component/site',
         properties: [
             { name: 'name', type: 'string' }
         ]
     },
     {
-        uri: '/component/site_ref',
+        url: '/component/site_ref',
         properties: [
             { name: 'ref', type: 'entity' }
         ]
     },
     {
-        uri: '/component/patterns',
+        url: '/component/patterns',
         properties: [
             { name: 'include', type: 'json' },
             { name: 'exclude', type: 'json' }
@@ -118,31 +118,31 @@ export const defs = [
 
     {
         // 
-        uri: '/component/scss',
+        url: '/component/scss',
         properties: [
             { name: 'data', type: 'string' }
         ]
     },
     {
-        uri: '/component/mdx',
+        url: '/component/mdx',
         properties: [
             { name: 'data', type: 'string' }
         ]
     },
     {
-        uri: '/component/jsx',
+        url: '/component/jsx',
         properties: [
             { name: 'data', type: 'string' }
         ]
     },
     {
-        uri: '/component/js',
+        url: '/component/js',
         properties: [
             { name: 'data', type: 'string' }
         ]
     },
     {
-        uri: '/component/error',
+        url: '/component/error',
         properties: [
             { name: 'message' },
             { name: 'from' },
@@ -151,7 +151,7 @@ export const defs = [
     },
 
     {
-        uri: '/component/output',
+        url: '/component/output',
         properties: [
             { name: 'data', type: 'string' },
             { name: 'mime', type: 'string' }
@@ -159,35 +159,42 @@ export const defs = [
     },
 
     {
-        uri: '/component/upd',
+        url: '/component/upd',
         properties: [
             { name: 'op', type: 'integer' } // ChangeSetOp
         ]
     },
     {
-        uri: '/component/date',
+        url: '/component/date',
         properties: [
             { name: 'date', type: 'datetime' }
         ]
     },
     {
-        uri: '/component/date_range',
+        url: '/component/date_range',
         properties: [
             { name: 'date_start', type: 'datetime' },
             { name: 'date_end', type: 'datetime' }
         ]
     },
     {
-        uri: '/component/client_code',
+        url: '/component/client_code',
         properties: [
             { name: 'imports', type: 'json' },
             { name: 'components', type: 'json' },
         ]
     },
     {
-        uri: '/component/thumbnail',
+        url: '/component/thumbnail',
         properties: [
             { name: 'url', type: 'string' }
+        ]
+    },
+    {
+        url: '/component/pageable',
+        properties: [
+            { name: 'pageSize', type: 'number' },
+            { name: 'orderBy', type: 'string' }
         ]
     }
 ];

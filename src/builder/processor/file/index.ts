@@ -143,7 +143,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
     let updateEs: Entity[] = [];
     setLocation(reporter, `${Label}#apply_entity_set_diffs`)
 
-    const diffDefId = getDefId(esA.getByUri('/component/upd'));
+    const diffDefId = getDefId(esA.getByUrl('/component/upd'));
 
     // log('[applyEntitySetDiffs]', diffs);
 
@@ -204,7 +204,7 @@ export async function applyEntitySetDiffs(esA: EntitySet, esB: EntitySet, diffs:
 
 
 async function applyUpdateToEntities(es: QueryableEntitySet, updates: EntityUpdate[]) {
-    const diffDefId = getDefId(es.getByUri('/component/upd'));
+    const diffDefId = getDefId(es.getByUrl('/component/upd'));
 
     let coms: Component[] = [];
     for (const [eid, op] of updates) {

@@ -44,7 +44,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     // let ents = await selectJsx(es, { ...options, siteRef: site.getRef() });
     let src = await selectSrcByMime(es, ['text/jsx'], { ...options, siteRef: site.getRef() });
 
-    const did = es.getByUri('/component/data');
+    const did = es.getByUrl('/component/data');
 
     // log('ents', src);
 

@@ -339,7 +339,7 @@ function entityToNode(g: Digraph, es: EntitySet, e: Entity, options: GraphGenOpt
 
         let [attr, refs] = componentToTable(e, def, com);
 
-        if (def.uri === '/component/dep') {
+        if (def.url === '/component/dep') {
             if (showDeps) {
 
                 // if (com.type === 'dir' || com.type === 'gen') {
@@ -460,7 +460,7 @@ function componentToTable(e: Entity, def: ComponentDef, com: Component) {
 }
 
 function keyAttributeFromComponent(def: ComponentDef, com: Component) {
-    switch (def.uri) {
+    switch (def.url) {
         case '/component/src':
         case '/component/dst':
             return com.url;

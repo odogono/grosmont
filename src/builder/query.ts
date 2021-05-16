@@ -794,7 +794,7 @@ export async function getEntityBySrcUrl(es: QueryableEntitySet, url: string, opt
 export async function findEntityByUrl(es: QueryableEntitySet, url: string, options: FindEntityOptions = {}): Promise<Entity> {
 
     // file:///file:///pages/main.mdx - ref to File component
-    // e://component/file?uri=file:///pages/main.mdx - address an entity
+    // e://component/file?url=file:///pages/main.mdx - address an entity
     // https://news.bbc.co.uk/ - external
 
     if (url.startsWith('/')) {
@@ -1101,7 +1101,7 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options: 
         @>
     ] *selectOutputMime define
 
-    // returns the target uri from an entity
+    // returns the target url from an entity
     // ( es eid -- es str|false )
     [
         swap [ *^$1 @eid /component/dst#url @ca ] select pop? swap drop

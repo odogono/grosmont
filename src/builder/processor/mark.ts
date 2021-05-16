@@ -53,7 +53,7 @@ export async function process(site: Site, options: MarkOptions) {
     const coms = await selectSrcByExt(site.es, exts, { ...options, siteRef: site.getRef() });
 
     // log( {exts, onlyUpdated}, 'coms', coms);
-    const def = comUrl !== undefined ? es.getByUri(comUrl) : undefined;
+    const def = comUrl !== undefined ? es.getByUrl(comUrl) : undefined;
     const did = def !== undefined ? getDefId(def) : 0;
     const srcDid = es.resolveComponentDefId('/component/src');
 

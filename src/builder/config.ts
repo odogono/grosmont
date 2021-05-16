@@ -103,7 +103,7 @@ async function parseData(es: QueryableEntitySet, data: ({ [key: string]: any }),
 
         let parts = parseComponentUrl( key );
 
-        const def = parts !== undefined ? es.getByUri(parts.did) : undefined;
+        const def = parts !== undefined ? es.getByUrl(parts.did) : undefined;
         
         if( def === undefined ){
             metaKeys.push(key);

@@ -37,7 +37,7 @@ export async function applyMimeToEntityId(es: QueryableEntitySet, eid: EntityId,
 }
 
 export async function applyMetaComponentToEntityId(es: QueryableEntitySet, eid: EntityId, data: any): Promise<Component> {
-    const metaDef = es.getByUri('/component/meta');
+    const metaDef = es.getByUrl('/component/meta');
     const metaDid = getDefId(metaDef);
 
     let meta = await es.getComponent(toComponentId(eid, metaDid));
@@ -145,13 +145,13 @@ export function getParentDirectory(uri: string) {
 
 export async function selectSiteTargetUri(es: QueryableEntitySet, e: Entity) {
     if (e.Site !== undefined) {
-        return e.Target !== undefined ? e.Target.uri : undefined;
+        return e.Target !== undefined ? e.Target.url : undefined;
     }
     if (e.SiteRef !== undefined) {
         const eid = e.SiteRef.ref;
         const did = es.resolveComponentDefId('/component/target');
         const com = await es.getComponent(toComponentId(eid, did));
-        return com !== undefined ? com.uri : undefined;
+        return com !== undefined ? com.url : undefined;
     }
     return undefined;
 }
