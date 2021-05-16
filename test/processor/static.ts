@@ -8,7 +8,7 @@ import { statics as markStatic } from '../../src/builder/processor/mark';
 import { process as copyStatic } from '../../src/builder/processor/static/copy';
 import { FindEntityOptions, selectSrcByExt } from '../../src/builder/query';
 import { Level, Reporter, setLevel } from '../../src/builder/reporter';
-import { addFile, addSrc, printAll } from '../helpers';
+import { addFile, addSrc, printAll, process } from '../helpers';
 import { buildProcessors, RawProcessorEntry } from '../../src/builder';
 
 
@@ -130,6 +130,21 @@ test('copy changed', async ({site, es, options}) => {
 
     // await printAll(es);
 
+});
+
+test('copy robots.txt with dst', async ({site, es, options}) => {
+    
+    await addSrc(site, 'file:///robots.e.yaml', 
+`- /component/src#/url!: file:///robots.txt
+  dst: robots.txt
+    `);
+    await addFile( site, 'file:///robots.txt' );
+    await process( site );
+
+    // await printAll( es );
+
+    let e = await site.getEntityBySrc('file:///robots.txt');
+    assert.equal( e.Dst.url, 'robots.txt');
 });
 
 
