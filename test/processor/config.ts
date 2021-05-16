@@ -112,4 +112,28 @@ test('lists of entities', async ({ es, site }) => {
   // await printAll(es);
 });
 
+
+test('pk from component url', async ({ es, site }) => {
+  let data = `
+- /component/tag#/slug!: odgn-blog
+  title: Blog
+  `;
+  
+  await addSrc( site, 'file:///tags.e.yaml', data );
+
+  await process(site);
+  await process(site);
+
+  const stmt = es.prepare(`[
+    /component/tag#/slug !ca "odgn-blog" ==
+    /component/title !bf
+    @c
+  ] select`);
+  let coms = await stmt.getResult();
+
+  assert.equal(coms.length, 1);
+
+});
+
+
 test.run();

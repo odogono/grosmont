@@ -12,7 +12,8 @@ import {
     formatDate,
     resolveUrlPath,
     resolveSiteUrl,
-    uriToPath
+    uriToPath,
+    parseEntityUrl
 } from "../../util";
 import {
     PageLink,
@@ -342,18 +343,3 @@ export async function applyImports(site: Site, eid: EntityId, imports: ImportDes
     return eid;
 }
 
-
-export function parseEntityUrl(url: string) {
-    const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "i");
-    let match = re.exec(url);
-    if (match !== null) {
-        const [url, eid, path] = match;
-
-        let parts = path.split('#');
-        const [did,attr] = parts;
-        // const parts = /(^\/.*)#(.*)/.exec(did);
-
-        return { eid: toInteger(eid), did, attr, url };
-    }
-    return undefined;
-}

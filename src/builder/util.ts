@@ -459,7 +459,7 @@ export function formatDate(obj: any, formatType: FormatDateType = FormatDateType
 
     let format = 'MMM YYYY';
 
-    switch( formatType ){
+    switch (formatType) {
         case FormatDateType.DayMonthYear:
             format = 'D MMMM, YYYY';
             break;
@@ -469,7 +469,7 @@ export function formatDate(obj: any, formatType: FormatDateType = FormatDateType
             break;
     }
 
-    
+
 
 
     if (obj.date_start) {
@@ -485,7 +485,7 @@ export function formatDate(obj: any, formatType: FormatDateType = FormatDateType
         }
 
         if (isSame) {
-            if( formatType === FormatDateType.Date ){
+            if (formatType === FormatDateType.Date) {
                 return applyDayFormat(start, format);
             }
             return applyDayFormat(start, formatType === FormatDateType.DayMonthYear ? format : 'YYYY');
@@ -499,14 +499,14 @@ export function formatDate(obj: any, formatType: FormatDateType = FormatDateType
         let endStr = end !== undefined ? applyDayFormat(end, format) : '';
 
         if (Day(end).year() === 9999) {
-            if( formatType === FormatDateType.Date ){
+            if (formatType === FormatDateType.Date) {
                 return Day(start).format('YYYY-MM-DD');
             }
             endStr = '';
         }
 
         if (startStr !== endStr) {
-            if( formatType === FormatDateType.Date ){
+            if (formatType === FormatDateType.Date) {
                 return Day(end).format('YYYY-MM-DD');
             }
             result = (startStr + ' - ' + endStr).trim();
@@ -541,4 +541,41 @@ export async function replaceAsync(str, regex, asyncFn) {
     });
     const data = await Promise.all(promises);
     return str.replace(regex, () => data.shift());
+}
+
+/**
+ * 
+ * @param url 
+ * @returns 
+ */
+export function parseEntityUrl(url: string) {
+    const re = new RegExp("e:\/\/([0-9]+)([-a-zA-Z0-9()@:%_+.~#?&//=]*)", "i");
+    let match = re.exec(url);
+    if (match === null) {
+        return undefined;
+    }
+
+    const [, eid, path] = match;
+
+    let parts = path.split('#');
+    const [did, attr] = parts;
+    // const parts = /(^\/.*)#(.*)/.exec(did);
+
+    return { eid: toInteger(eid), did, attr, url };
+
+}
+
+
+export function parseComponentUrl(url: string) {
+    const re = new RegExp("(\/[-a-zA-Z0-9()@:%_+.~#?&//=]*)", "i");
+    let match = re.exec(url);
+    if (match === null) {
+        return undefined;
+    }
+
+    const [,path] = match;
+
+    let parts = path.split('#');
+    const [did, attr] = parts;
+    return { did, attr, url };
 }

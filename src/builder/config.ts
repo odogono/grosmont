@@ -14,10 +14,10 @@ import {
 } from "../es";
 
 
-import { slugify, stringify, toInteger } from '@odgn/utils';
+import { isObject, slugify, stringify, toInteger } from '@odgn/utils';
 import { Site } from './site';
 import { findEntityBySrcUrl, FindEntityOptions, insertDependency, selectTagBySlug } from './query';
-import { applyMeta, createTag, uriToPath, resolveUrlPath } from './util';
+import { applyMeta, createTag, uriToPath, resolveUrlPath, parseComponentUrl } from './util';
 import { isString } from '@odgn/utils';
 import { BitField, toValues as bfToValues } from '@odgn/utils/bitfield';
 
@@ -101,11 +101,29 @@ async function parseData(es: QueryableEntitySet, data: ({ [key: string]: any }),
 
     for (const [key, val] of Object.entries(other)) {
 
-        const def = es.getByUri(key);
-        if (def !== undefined) {
-            coms.push([def, es.createComponent(def, val)]);
-        } else {
+        let parts = parseComponentUrl( key );
+
+        const def = parts !== undefined ? es.getByUri(parts.did) : undefined;
+        
+        if( def === undefined ){
             metaKeys.push(key);
+        }
+        else {
+            if( key.endsWith('!') ){
+                pk = key.substring(0, key.length-1);
+            }
+            
+            let attrs = isObject(val) ? val : {};
+            let attr = parts?.attr;
+            
+            if( attr !== undefined ){
+                attr = attr.startsWith('/') ? attr : '/' + attr;
+                Jsonpointer.set(attrs, attr, val);
+            }
+            
+            let com = es.createComponent(def, attrs);
+        
+            coms.push([def, com]);
         }
     }
 

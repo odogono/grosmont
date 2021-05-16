@@ -5,6 +5,8 @@ import assert from 'uvu/assert';
 import { addSrc, beforeEach, process } from '../../helpers';
 import { buildProcessors, OutputES, RawProcessorEntry, renderToOutput } from '../../../src/builder';
 import { printAll } from 'odgn-entity/src/util/print';
+import { selectJs } from '../../../src/builder/query';
+import { parseEntity } from '../../../src/builder/config';
 
 const test = suite('processor/js/render');
 const log = (...args) => console.log(`[${test.name}]`, ...args);

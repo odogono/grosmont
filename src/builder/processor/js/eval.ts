@@ -6,9 +6,9 @@ import { Site } from '../../site';
 
 import { ProcessOptions } from '../../types';
 
-import { createRenderContext, parseEntityUrl } from './util';
+import { createRenderContext } from './util';
 import { parseEntity } from '../../config';
-import { createErrorComponent } from '../../util';
+import { createErrorComponent, parseEntityUrl } from '../../util';
 import { transformJS } from '../mdx/transform';
 
 const Label = '/processor/js/eval';

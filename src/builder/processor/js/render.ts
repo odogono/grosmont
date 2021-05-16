@@ -9,7 +9,7 @@ import { Site } from '../../site';
 
 
 import { ProcessOptions, TranspileProps, TranspileResult, EvalContext, EvalScope } from '../../types';
-import { createRenderContext, getEntityCSSDependencies, parseEntityUrl } from './util';
+import { createRenderContext, getEntityCSSDependencies } from './util';
 import {
     Component, setEntityId, toComponentId,
     QueryableEntitySet,
@@ -20,7 +20,7 @@ import {
 import { hash, toInteger } from '@odgn/utils';
 import { buildImports } from './eval';
 import { useServerEffect, serverEffectValue, beginServerEffects, endServerEffects } from '../jsx/server_effect';
-import { createErrorComponent, replaceAsync } from '../../util';
+import { createErrorComponent, parseEntityUrl, replaceAsync } from '../../util';
 import { transformComponent } from './transform';
 import { transformJS } from '../mdx/transform';
 import { printAll } from 'odgn-entity/src/util/print';
