@@ -33,7 +33,7 @@ test('build an index', async ({ site, es, options }) => {
 
     await buildDstIndex(site, options);
 
-    assert.equal(site.getDstIndex().getEid('/styles/main.css'), 2001 );
+    assert.equal(site.getDstIndex().getEid('/styles/main'), 2001 );
 });
 
 
@@ -54,13 +54,15 @@ test('resolve a url', async ({ site, es, options }) => {
 
     assert.equal(
         resolveSiteUrl(site, '/index', 'file:///main.mdx'),
-        ['file:///main.mdx', '/index.html', 1002, 'text/mdx', createBF(147526)]
+        ['file:///main.mdx', '/index', 1002, 'text/mdx', createBF(147526)]
     );
 });
 
 
 
 test('dst urls with missing extensions', async ({ site, es, options }) => {
+    site.setConfig('/dst/url/withExtension', true);
+
     await addSrc(site, 'file:///main.mdx', '# Main', { dst: '/index' });
     await addSrc(site, 'file:///styles.scss', 'body{ color: red }', { dst: '/styles' });
 
@@ -74,6 +76,8 @@ test('dst urls with missing extensions', async ({ site, es, options }) => {
 
 
 test('files with dst from dir', async ({ site, es, options}) => {
+    site.setConfig('/dst/url/withExtension', true);
+    
     await parseEntity( site, `
     src: file:///dir.e.yaml
     dst: pages/
@@ -113,8 +117,8 @@ test('keeps track of removed files', async ({site,es,options}) => {
 
     // log( site.getDstIndex() );
 
-    assert.equal( site.getDstIndex().getByEid(1002, true), 
-        ['/main.html', ChangeSetOp.Remove, 'text/html'] );
+    assert.equal( site.getDstIndex().getByEid(1002, {full:true}), 
+        ['/main', ChangeSetOp.Remove, 'text/html'] );
 
 });
 

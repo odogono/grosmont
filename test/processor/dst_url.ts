@@ -4,8 +4,7 @@ import assert from 'uvu/assert';
 import { parseEntity } from '../../src/builder/config';
 import { getDstUrl } from '../../src/builder/query';
 import { build, buildProcessors, RawProcessorEntry } from '../../src/builder';
-import { beforeEach } from '../helpers';
-import { printAll } from 'odgn-entity/src/util/print';
+import { beforeEach, printAll, process } from '../helpers';
 
 
 const test = suite('/processor/dst_url');
@@ -228,6 +227,22 @@ test('filename from src', async ({es, site}) => {
     assert.equal( path, "/static/house.png" );
 })
 
+test.skip('getEntityIdByDst', async({es, site}) => {
 
+    await parseEntity( site, `
+    src: file:///projects.mdx
+    dst: /pages/
+    data: "# Projects"
+    `);
+
+    await process(site);
+
+    let eid = site.getEntityIdByDst('/pages/projects');
+
+    log('got', eid);
+
+    log( site.getDstIndex() );
+
+})
 
 test.run();

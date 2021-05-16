@@ -55,8 +55,6 @@ import 'file:///styles/alt.scss';
 ## Main page
     `);
 
-    // log('\n\n 👟 \n\n');
-
     await process(site, options);
 
     // await printAll(es);

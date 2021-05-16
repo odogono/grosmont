@@ -10,9 +10,8 @@ import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { ClientCodeDetails, DependencyType, ProcessOptions, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
-import { transformJSX } from '../../transpile';
-import { applyImports, buildProps } from '../js/util';
+import { ProcessOptions } from '../../types';
+import { buildProps } from '../js/util';
 import { parseEntity } from '../../config';
 import { createErrorComponent, isUrlInternal, resolveImport, resolveUrlPath } from '../../util';
 import { parseFrontmatter, transformMdx } from './transform';

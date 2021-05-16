@@ -110,7 +110,7 @@ function getMissingPaths(site: Site) {
     if( srcIdx === undefined ){
         return [];
     }
-    const srcs = Array.from(srcIdx.index.keys());
+    const srcs = Array.from(srcIdx.keys());
 
     // log('[getMissingPaths]', 'srcs');
     // srcs.forEach( s => log(s) );

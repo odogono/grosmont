@@ -29,10 +29,12 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     for (const src of srcComs) {
         const eid = getComponentEntityId(src);
         try {
-
+            
             // const dst = await getDstUrl(es, eid);
-            const [dst,op] = dstIndex.getByEid(eid, true);
+            const dst = dstIndex.getByEid(eid, {withExtension:true});
+            // log('no dst found', eid, dst);
 
+            // log( 'no dst found' );
             if (dst === undefined) {
                 debug(reporter, 'no dst found', { eid });
                 continue;
@@ -53,6 +55,7 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
         } catch (err) {
             error(reporter, err.message, err, { eid });
+            // log( err );
         }
     }
 

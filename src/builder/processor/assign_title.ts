@@ -1,11 +1,11 @@
 import Path from 'path';
 import { Entity, EntityId } from "../../es";
 import { Site } from '../site';
-import { extensionFromMime } from "./assign_mime";
 import { ProcessOptions } from '../types';
 import { selectTitleAndMeta } from '../query';
 import { isString, slugify } from "@odgn/utils";
 import { info, setLocation } from '../reporter';
+import { extensionFromMime } from '../util';
 
 
 
@@ -66,14 +66,14 @@ export async function process(site: Site, options:AssignDstOptions = {}) {
 
         let ext = Path.extname(url);
 
-        
         // log( url, {title, dst, outputMime} );
         if( outputMime ){
             ext = extensionFromMime( outputMime );
         }
 
         if( ext !== undefined && ext !== '' ){
-            url = `${url}.${ext}`;
+            // url = `${url}.${ext}`;
+            // log('setting', url, ext);
         }
 
         e.Dst = { url };

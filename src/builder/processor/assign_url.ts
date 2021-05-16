@@ -3,10 +3,8 @@ import Day from 'dayjs';
 
 import { Entity, EntityId, printAll } from "../../es";
 import { Site } from '../site';
-import { extensionFromMime } from "./assign_mime";
 import { ProcessOptions } from '../types';
-import { selectTitleAndMeta } from '../query';
-import { isString, slugify } from "@odgn/utils";
+import { slugify } from "@odgn/utils";
 import { info, setLocation } from '../reporter';
 
 
@@ -26,12 +24,14 @@ export interface AssignDstOptions extends ProcessOptions {
  */
 export async function process(site: Site, options:AssignDstOptions = {}) {
     const es = options.es ?? site.es;
-    const {reporter, tags:filterTags, bf:filterBf, siteRef:ref, onlyUpdated } = options;
+    let {reporter, tags:filterTags, bf:filterBf, siteRef:ref, onlyUpdated } = options;
     setLocation(reporter, Label);
 
     let ents:Entity[];
     let q:string;
     let eids:EntityId[];
+
+    onlyUpdated = false;
 
     let qb = [ `[` ];
     if( filterTags ){
@@ -57,7 +57,7 @@ export async function process(site: Site, options:AssignDstOptions = {}) {
         let {title} = e.Title;
         let date = Day(e.Date.date);
 
-        const [dst,op,mime] = dstIndex.getByEid(e.id, true);
+        const [dst,op,mime] = dstIndex.getByEid(e.id, {full:true});
 
         let path = [ Path.dirname(dst) ];
 
@@ -69,11 +69,11 @@ export async function process(site: Site, options:AssignDstOptions = {}) {
         
         let genDst = path.join( Path.sep );
 
+        // let ext = extensionFromMime( mime );
         
-        let ext = extensionFromMime( mime );
-        
-        genDst = `${genDst}.${ext}`;
+        // genDst = `${genDst}.${ext}`;
 
+        // log('setting', genDst);
         
         dstIndex.setByEid( e.id, genDst, op, mime );
         

@@ -10,7 +10,7 @@ test.before.each(beforeEach);
 
 
 test('internal page link', async ({ es, site, options }) => {
-    // await addSrc( site, 'file:///pages/main.mdx', `# Main Page`);
+    site.setConfig('/dst/url/withExtension', true);
 
     let e = await parseEntity(site, `
     /component/src:
@@ -59,7 +59,7 @@ test('external page link', async ({ es, site, options }) => {
 
 
 test('links within html', async ({ es, site, options }) => {
-
+    site.setConfig('/dst/url/withExtension', true);
     await addSrc(site, 'file:///about.mdx', `
 ---
 dst: /about.html
@@ -122,6 +122,8 @@ dst: /index.html
 
 test('link to jsx', async ({es, site, options}) => {
 
+    site.setConfig('/dst/url/withExtension', true);
+
     await addSrc( site, 'file:///links.tsx', `
 export const title = 'links';
 export const dst = '/links';
@@ -150,7 +152,7 @@ dst: /index.html
 
 
 test('resolve shortest link', async ({es, site, options}) => {
-    
+    site.setConfig('/dst/url/withExtension', true);
     await addSrc( site, 'file:///writing/first.mdx', ``, { dst:'/writing/first.html'});
     await addSrc( site, 'file:///writing.mdx', ``, { dst:'/writing.html'});
 
@@ -171,6 +173,8 @@ dst: /index.html
 
 
 test('self link', async ({es, site, options}) => {
+    site.setConfig('/dst/url/withExtension', true);
+    
     await addSrc( site, 'file:///index.mdx', `
 ---
 dst: /index.html
@@ -210,7 +214,7 @@ import Link from '/menu';
     // await printAll(es);
 
     let e = await site.getEntityBySrc( 'file:///index.mdx' );
-    assert.equal( e.Output.data, `<a href="/index.html">Home</a>` );
+    assert.equal( e.Output.data, `<a href="/index">Home</a>` );
 });
 
 test.run();

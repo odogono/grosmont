@@ -57,7 +57,8 @@ test('process directly from file', async () => {
 
 
 test('menu', async ({es, site, options}) => {
-
+    site.setConfig('/dst/url/withExtension', true);
+    
     await addSrc(site, 'file:///pages/home.mdx', `
 ---
 dst: /index.html

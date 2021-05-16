@@ -23,9 +23,9 @@ export async function process(site: Site, options: ProcessOptions = {}) {
     const idx = site.getDstIndex();
     const did = es.resolveComponentDefId('/component/output');
 
-    for (const [path, [eid, op]] of idx) {
+    for (const [key, [eid, op]] of idx) {
 
-        // log('path', path, {op} );
+        // log('path', key, {op} );
 
         if ((op === undefined && onlyUpdated) || op === ChangeSetOp.Remove) {
             continue;
@@ -37,6 +37,8 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             continue;
         }
 
+        let path = site.getEntityDstUrl(eid, true);
+
         let fullPath = site.getDstUrl(path);
 
         if (dryRun) {
@@ -45,7 +47,6 @@ export async function process(site: Site, options: ProcessOptions = {}) {
             await site.writeToUrl(fullPath, com.data);
             info(reporter, `wrote to ${path} : ${op}`, { eid });
         }
-
     }
 
     return site;

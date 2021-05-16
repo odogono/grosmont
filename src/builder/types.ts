@@ -6,6 +6,7 @@ import {
 } from '../es';
 import { Reporter } from './reporter';
 import { Site } from './site';
+import { SiteIndex } from './site_index';
 
 
 
@@ -47,101 +48,6 @@ export interface EvalScope {
 
 export interface EvalContext {
     [key: string]: any;
-}
-
-// export interface SiteIndex {
-//     query?: string;
-//     args?: StatementArgs;
-//     index: Map<any, any[]>;
-// }
-
-// type SiteIndexEntry = [EntityId, ...any];
-
-export class SiteIndex {
-    query?: string;
-    args?: StatementArgs;
-    index: Map<any, any[]>;
-    eIndex: Map<EntityId, any[]>;
-    constructor(query?: string, args?:StatementArgs ){
-        this.query = query;
-        this.args = args;
-        this.index = new Map<any, any[]>();
-        this.eIndex = new Map<EntityId, any[]>();
-    }
-    get( key:string ){
-        return this.index.get(key);
-    }
-    getEid( key ):EntityId {
-        let entry = this.index.get(key);
-        if( entry !== undefined ){
-            return entry[0];
-        }
-        return undefined;
-    }
-    
-    [Symbol.iterator]() {
-        return this.index.entries();
-    }
-
-    /**
-     * Removes the given keys from the index
-     * 
-     * @param keys 
-     */
-    remove( keys:any[] ){
-        for( const key of keys ){
-            let entry = this.index.get(key);
-            if( entry !== undefined ){
-                this.index.delete(key);
-                this.eIndex.delete( entry[0] );
-            }
-            else {
-                entry = this.eIndex.get(key);
-                if( entry !== undefined ){
-                    this.eIndex.delete(key);
-                    this.index.delete( entry[0] );
-                }
-            }
-        }
-    }
-
-    removeByEid( eid:EntityId ){
-        let entry = this.eIndex.get(eid);
-        if( entry !== undefined ){
-            this.eIndex.delete( eid );
-            this.index.delete( entry[0] );
-        }
-    }
-
-    /**
-     * Returns the path associated with this eid
-     * or, if full details are required, an array of details
-     * @param eid 
-     * @param full 
-     * @returns 
-     */
-    getByEid( eid:EntityId, full:boolean = false ) {
-        let entry = this.eIndex.get(eid);
-        return entry !== undefined ? 
-            full ? entry : entry[0]
-            : undefined;
-    }
-    set( key:any, eid:EntityId, ...args){
-        this.removeByEid(eid);
-        this.index.set( key, [eid,...args]);
-        this.eIndex.set( eid, [key,...args]);
-    }
-
-    setByEid( eid:EntityId, key:any, ...args ){
-        this.removeByEid(eid);
-        this.eIndex.set(eid, [key, ...args] );
-        this.index.set(key, [eid,...args]);
-    }
-    
-    clear(){
-        this.index.clear();
-        this.eIndex.clear();
-    }
 }
 
 export type SiteProcessor = (site:Site, options?: ProcessOptions) => Promise<Site>;

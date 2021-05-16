@@ -76,7 +76,8 @@ import Title from './title';
 });
 
 test('pass dst', async ({es,site,options}) => {
-
+    site.setConfig('/dst/url/withExtension', true);
+    
     await addSrc(site, 'file:///heading.jsx', `
 import {resolveUrl} from '@site';
 

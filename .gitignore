@@ -13,3 +13,4 @@ yarn.lock
 *.sqlite-shm
 test/fixtures/odgn*
 test/fixtures/ccode
+*.graph.png

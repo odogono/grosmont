@@ -1,5 +1,4 @@
 import Path from 'path';
-import Mime from 'mime-types';
 
 import {
     createStdLibStack,
@@ -12,13 +11,10 @@ import {
     SType
 } from "../es";
 import { Site } from "./site";
-import { uriToPath } from './util';
+import { extensionFromMime, uriToPath } from './util';
 import { DependencyType, ProcessOptions } from './types';
 import { BitField } from "@odgn/utils/bitfield";
 import { hash, hashToString, parseUri, slugify, toBoolean } from '@odgn/utils';
-
-
-
 
 
 
@@ -71,7 +67,7 @@ export function prepare(es: QueryableEntitySet, q: string, cache: boolean = true
 
         stack = stack.addWord('lookupMimeExt', (stack) => {
             const mime = stack.popValue();
-            const ext = Mime.extension(mime);
+            const ext = extensionFromMime(mime);
             return [SType.Value, ext];
         });
 
@@ -1227,8 +1223,6 @@ export async function getDstUrl(es: QueryableEntitySet, eid: EntityId, options: 
         
 
         *$1 *%2 selectOutputMime
-
-        
 
         // ( eid filename es mime -- )
         // return if false

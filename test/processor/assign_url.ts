@@ -31,12 +31,8 @@ date: '2021-05-12'
     await process(site);
 
     let e = await site.getEntityBySrc( 'file:///one.mdx' );
-    let dst = site.getDstIndex().getByEid( e.id );
+    let dst = site.getDstIndex().getByEid( e.id, {withExtension: true} );
 
-    // log('dst index');
-    // for( const [key, [eid]] of site.getDstIndex() ){
-    //     log( eid, key );
-    // }
     assert.equal( dst, '/blog/2021/5/12/first-blog-entry.html' );
 
 });
@@ -60,8 +56,10 @@ test('updates only', async ({es, site, options}) => {
     const process = await buildProcess( site );
     await process(site, {...options, onlyUpdated:true});
 
+    // await printAll(es);
+
     let e = await site.getEntityBySrc( 'file:///one.mdx' );
-    let dst = site.getDstIndex().getByEid( e.id );
+    let dst = site.getDstIndex().getByEid( e.id, {withExtension:true} );
 
     // log( site.getDstIndex() );
     // log( dst );

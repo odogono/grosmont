@@ -1,3 +1,4 @@
+import Mime from 'mime-types';
 import Path from 'path';
 import {
     Component,
@@ -375,7 +376,7 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
 
 
     // attempt getting by given value
-    let entry = srcIdx.get(path);
+    let entry = srcIdx.getByPath(path);
     if (entry !== undefined) {
         const [eid, mime, bf] = entry;
         const dst = dstIdx !== undefined ? dstIdx.getByEid(eid) : undefined;
@@ -383,10 +384,10 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
     }
 
     if (dstIdx !== undefined) {
-        entry = dstIdx.get(url);
+        entry = dstIdx.getByPath(url);
         if (entry !== undefined) {
             const [eid] = entry;
-            const [src, mime, bf] = srcIdx.getByEid(eid, true);
+            const [src, mime, bf] = srcIdx.getByEid(eid, {full:true});
             return [src, url, eid, mime, bf];
         }
     }
@@ -396,7 +397,7 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
     let re = new RegExp(`^${reUrl}(?:\..+)?`, 'i');
 
     // order the keys by length, so we match shortest first
-    let srcKeys = sortKeys(srcIdx.index, re);
+    let srcKeys = sortKeys(srcIdx.keys(), re);
     // let srcKeys = Array.from( srcIdx.index.keys() );
     // srcKeys.sort();
 
@@ -404,7 +405,7 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
         // for (const key of srcKeys) {
         const key = srcKeys[0];
         // log('[resolveSiteUrl]', 'test', key, reUrl);
-        const [eid, mime, bf] = srcIdx.get(key);
+        const [eid, mime, bf] = srcIdx.getByPath(key);
         const dst = dstIdx !== undefined ? dstIdx.getByEid(eid) : undefined;
         return [key, dst, eid, mime, bf];
 
@@ -414,21 +415,21 @@ export function resolveSiteUrl(site: Site, url: string, base: string): ResolveSi
         reUrl = reUrl.replace('file://', '');
         re = new RegExp(`^${reUrl}(?:\..+)?`, 'i');
 
-        const dstKeys = sortKeys(dstIdx.index, re);
+        const dstKeys = sortKeys(dstIdx.keys(), re);
 
         if (dstKeys.length > 0) {
             const key = dstKeys[0];
-            const [eid] = dstIdx.get(key);
-            const [src, mime, bf] = srcIdx.getByEid(eid, true);
+            const [eid] = dstIdx.getByPath(key);
+            const [src, mime, bf] = srcIdx.getByEid(eid, {full:true});
             return [src, key, eid, mime, bf];
         }
     }
     return undefined;
 }
 
-function sortKeys(index: Map<any, any>, re: RegExp) {
+function sortKeys(keys: IterableIterator<any>, re: RegExp) {
     let result = [];
-    for (const key of index.keys()) {
+    for (const key of keys) {
         if (re.test(key)) {
             result.push(key);
         }
@@ -578,4 +579,45 @@ export function parseComponentUrl(url: string) {
     let parts = path.split('#');
     const [did, attr] = parts;
     return { did, attr, url };
+}
+
+
+export function appendExtFromMime(url: string, mime: string) {
+    let ext = extensionFromMime(mime);
+    if (ext) {
+        return url + '.' + ext;
+    }
+    return undefined;
+}
+
+/**
+ * Removes an extension from the given url
+ * 
+ * @param url 
+ * @returns 
+ */
+export function removeExt(url:string){
+    return url.replace(/\.[^/.]+$/, "");
+}
+
+/**
+ * 
+ * @param url 
+ * @returns 
+ */
+export function extensionFromPath(url:string){
+    return Path.extname(url);
+}
+
+/**
+ * 
+ * @param ext 
+ * @returns 
+ */
+export function mimeFromExtension(ext: string) {
+    return Mime.lookup(ext);
+}
+
+export function extensionFromMime(mime: string){
+    return Mime.extension(mime);
 }

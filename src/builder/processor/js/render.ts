@@ -280,8 +280,6 @@ async function replaceEntityUrls(site: Site, e: Entity, data: string, disableSel
         }
 
         return Jsonpointer.get(com, attr);
-
-        // return val;
     })
 
     return data;

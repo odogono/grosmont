@@ -56,6 +56,7 @@ test('rendering an entity with arguments', async ({ es, site, options }) => {
 
 
 test('resolving dst urls', async ({ es, site, options }) => {
+    site.setConfig('/dst/url/withExtension', true);
 
     const process = await buildProcessors(site, '/test', spec);
 
@@ -105,6 +106,7 @@ test('resolving dst urls', async ({ es, site, options }) => {
 
 test('direct render entities', async ({ es, site, options }) => {
 
+    site.setConfig('/dst/url/withExtension', true);
     const process = await buildProcessors(site, '/test', spec);
 
     await addSrc( site, 'file:///pages/main.tsx', `

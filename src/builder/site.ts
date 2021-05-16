@@ -40,11 +40,12 @@ import {
     FindEntityOptions,
     getDependencyDstEntities
 } from './query';
-import { DependencyType, ProcessOptions, SiteIndex } from './types';
+import { DependencyType, ProcessOptions } from './types';
+import { SiteIndex } from './site_index';
 import { isEmpty, isInteger, isString, parseUri } from '@odgn/utils';
 import { createUUID } from '@odgn/utils';
 import { error, info, Level, Reporter, setLevel, setLocation, warn } from './reporter';
-import { uriToPath } from './util';
+import { appendExtFromMime, uriToPath } from './util';
 import JSONPointer from 'jsonpointer';
 import { toComponentId } from 'odgn-entity/src/component';
 
@@ -81,12 +82,19 @@ export class Site {
     e: Entity; // reference to the active site entity
     rootPath: string;
     reporter: Reporter;
+    config: any;
 
     indexes: Map<string, SiteIndex> = new Map<string, SiteIndex>();
 
     static async create(options: SiteOptions = {}) {
         // read from the path
         let site = new Site();
+
+        site.config = {
+            dst: { url: { withExtension: false } },
+            processors: [],
+            serve: { port: 3000 }
+        };
 
         let reporter = options.reporter ?? new Reporter();
         setLocation(reporter, '/site');
@@ -179,13 +187,37 @@ export class Site {
      * @param e 
      * @param appendRoot 
      */
-    getEntityDstUrl(eid: EntityId | Entity) {
+    getEntityDstUrl(e: EntityId | Entity, withExtension: boolean = undefined) {
         const idx = this.getDstIndex();
-        if (idx !== undefined) {
-            return idx.getByEid(isEntity(eid) ? (eid as Entity).id : eid as EntityId);
+        if (idx === undefined) {
+            return undefined;
         }
-        return undefined;
-        // return getDstUrl(this.es, isEntity(eid) ? (eid as Entity).id : eid as EntityId);
+
+        if (withExtension === undefined) {
+            withExtension = this.getConfig('/dst/url/withExtension');
+        }
+
+        let eid = isEntity(e) ? (e as Entity).id : e as EntityId;
+
+        let entry = idx.getByEid(eid, { full: true });
+
+        if( entry === undefined ){
+            return undefined;
+        }
+
+        let [ url, _eid, mime, upd] = entry;
+
+        if( mime !== 'text/html' ){
+            withExtension = true;
+        }
+
+        if( withExtension && mime ){
+            return appendExtFromMime( url, mime );
+        }
+
+        return url;
+        // return idx.getByEid( eid, { withExtension });
+
     }
 
     /**
@@ -205,18 +237,18 @@ export class Site {
      * @param appendRoot 
      */
     async getEntityOutput(e: EntityId | Entity): Promise<[string, string]> {
-        const eid:EntityId = isEntity(e) ? (e as Entity).id : e as EntityId;
+        const eid: EntityId = isEntity(e) ? (e as Entity).id : e as EntityId;
         let result = await selectOutputByEntity(this.es, eid);
-        if( result ){
+        if (result) {
             // log('[getEntityOutput]', 'found', eid, result);
             return result;
         }
         // no output, so try getting the mime from the dst index
-        result = this.getDstIndex().getByEid(eid, true);
+        result = this.getDstIndex().getByEid(eid, { full: true });
 
-        if( result ){
+        if (result) {
             // log('[getEntityOutput]', 'no output', eid, result);
-            return [undefined, (result as any[])[2] ];
+            return [undefined, (result as any[])[2]];
         }
 
         return undefined;
@@ -239,17 +271,17 @@ export class Site {
             return data;
         }
 
-        let cid = toComponentId( eid, this.es.resolveComponentDefId('/component/data') );
-        let com = await this.es.getComponent( cid );
+        let cid = toComponentId(eid, this.es.resolveComponentDefId('/component/data'));
+        let com = await this.es.getComponent(cid);
         data = com?.data;
-        if( data !== undefined ){
+        if (data !== undefined) {
             return data;
         }
 
         let srcUrl = e.Src?.url;
-        if( srcUrl === undefined ){
-            cid = toComponentId( eid, this.es.resolveComponentDefId('/component/src') );
-            com = await this.es.getComponent( cid );
+        if (srcUrl === undefined) {
+            cid = toComponentId(eid, this.es.resolveComponentDefId('/component/src'));
+            com = await this.es.getComponent(cid);
             srcUrl = com?.url;
         }
 
@@ -301,7 +333,7 @@ export class Site {
      * @param path 
      * @param src 
      */
-    async copyToUrl( src: string, dst: string) {
+    async copyToUrl(src: string, dst: string) {
         src = uriToPath(src);
         dst = uriToPath(dst);
 
@@ -321,20 +353,20 @@ export class Site {
     async removeDstUrl(path: string) {
         const sitePath = this.getDstUrl();
         const fullPath = this.getDstUrl(path);
-        if( fullPath === undefined || sitePath === fullPath ){
+        if (fullPath === undefined || sitePath === fullPath) {
             return;
         }
 
         try {
             let exists = await Fs.pathExists(fullPath);
-            if( exists ) {
+            if (exists) {
                 await Fs.unlink(fullPath);
             } else {
                 warn(this.reporter, `removeDstUrl ${path} not found`);
             }
 
-        } catch( err ){
-            error(this.reporter, 'removeDstUrl', err );
+        } catch (err) {
+            error(this.reporter, 'removeDstUrl', err);
         }
 
         return true;
@@ -382,17 +414,32 @@ export class Site {
     /**
      * Returns config
      * 
+     * /processors - list of additional processors
+     * /dst/url/withExtension - whether extensions should be appended
+     * /serve/port - server port
+     * 
      * @param ptr 
      */
     getConfig(ptr: string, defaultTo?: any): any {
+        const defConf = this.config;
         const conf = this.getEntity()?.Meta?.meta ?? {};
         try {
-            const value = JSONPointer.get(conf, ptr) ?? defaultTo;
-            return value;
+            let value = JSONPointer.get(conf, ptr);
+            if (value === undefined) {
+                value = JSONPointer.get(defConf, ptr);
+            }
+            return value ?? defaultTo;
         } catch (err) {
             return defaultTo;
         }
     }
+
+    setConfig(ptr: string, val: any) {
+        try {
+            JSONPointer.set(this.config, ptr, val);
+        } catch (e) { }
+    }
+
 
     /**
      * Convenience function for adding an entity with a /component/src
@@ -437,12 +484,13 @@ export class Site {
      * 
      * @param url 
      */
-    getEntityIdByDst(url: string, includeDetails:boolean = false): EntityId {
+    getEntityIdByDst(url: string, includeDetails: boolean = false): EntityId {
         const idx = this.getDstIndex();
         if (idx === undefined) {
             return undefined;
         }
-        const entry = includeDetails ? idx.getEid(url) : idx.get(url);
+        const entry = includeDetails ? idx.getEid(url) : idx.getByPath(url);
+        
         if (entry === undefined) {
             return undefined;
         }
@@ -459,7 +507,7 @@ export class Site {
         if (idx === undefined) {
             return undefined;
         }
-        return idx.getByEid(eid, false);
+        return idx.getByEid(eid, { withExtension: true });
     }
 
     /**
@@ -504,7 +552,7 @@ export class Site {
      * 
      * @param tags 
      */
-    async findByTags(tags: string[], options:FindEntitiesByTagsOptions = {}): Promise<EntityId[]> {
+    async findByTags(tags: string[], options: FindEntitiesByTagsOptions = {}): Promise<EntityId[]> {
         return findEntitiesByTags(this.es, tags, { ...options, siteRef: this.getRef() });
     }
 
@@ -515,8 +563,8 @@ export class Site {
      * @param options 
      * @returns 
      */
-    async getTagsByEntityId( eid:EntityId, options:ProcessOptions = {}): Promise<Entity[]> {
-        return getDependencyDstEntities(this.es, eid, ['tag'] );
+    async getTagsByEntityId(eid: EntityId, options: ProcessOptions = {}): Promise<Entity[]> {
+        return getDependencyDstEntities(this.es, eid, ['tag']);
     }
 
     /**
@@ -727,7 +775,7 @@ async function initialiseES(site: Site, options: SiteOptions) {
     await initialiseSiteEntity(site, options);
 
 
-    prepare(es, undefined, true, {siteRef:site.getRef()});
+    prepare(es, undefined, true, { siteRef: site.getRef() });
 
     // log('root:', rootPath);
     // log('config:', configPath);

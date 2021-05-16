@@ -10,13 +10,14 @@ import { setLocation, info, debug, error, warn } from '../../reporter';
 import { Site } from '../../site';
 
 
-import { ClientCodeDetails, DependencyType, ProcessOptions, ResolveLinkResult, SiteIndex, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
+import { ClientCodeDetails, DependencyType, ProcessOptions, ResolveLinkResult, TranspileOptions, TranspileProps, TranspileResult } from '../../types';
 import { transformJSX } from '../../transpile';
 import { applyImports, buildProps } from '../js/util';
 import { parseEntity } from '../../config';
 import { createErrorComponent, isUrlInternal, resolveImport, resolveUrlPath } from '../../util';
 import { transformMdx } from './transform';
 import { printAll } from 'odgn-entity/src/util/print';
+import { SiteIndex } from '../../site_index';
 
 const Label = '/processor/mdx/eval';
 const log = (...args) => console.log(`[${Label}]`, ...args);

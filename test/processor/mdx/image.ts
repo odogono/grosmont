@@ -8,7 +8,7 @@ const log = (...args) => console.log(`[/test${test.name}]`, ...args);
 test.before.each(beforeEach);
 
 test('renders image', async ({ site, es, options }) => {
-
+    // site.setConfig('/dst/url/withExtension', true);
     await parseEntity(site, `
     src: file:///static/image.jpg
     dst: image.jpg
@@ -27,7 +27,7 @@ test('renders image', async ({ site, es, options }) => {
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
 
     assert.equal(e.Output.data,
-        `<h1>My home</h1><img src="/image.jpg" alt="Image alt"/>`);
+        `<h1>My home</h1><img src="/image.jpeg" alt="Image alt"/>`);
 });
 
 
@@ -52,7 +52,7 @@ test('markdown image', async ({ site, es, options }) => {
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
 
     assert.equal(e.Output.data,
-        `<h1>My home</h1><p><img src="/image.jpg" alt="Image alt"/></p>`);
+        `<h1>My home</h1><p><img src="/image.jpeg" alt="Image alt"/></p>`);
 })
 
 

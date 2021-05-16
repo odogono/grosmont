@@ -5,6 +5,7 @@ import { Site } from '../../src/builder/site';
 import { ChangeSetOp, Entity, EntityId } from '../../src/es';
 import { parseEntity } from '../../src/builder/config';
 import { statics as markStatic } from '../../src/builder/processor/mark';
+import { process as buildDstIndex } from '../../src/builder/processor/build_dst_index';
 import { process as copyStatic } from '../../src/builder/processor/static/copy';
 import { FindEntityOptions, selectSrcByExt } from '../../src/builder/query';
 import { Level, Reporter, setLevel } from '../../src/builder/reporter';
@@ -87,6 +88,7 @@ test('copies static files', async ({site,es, options}) => {
 
     // options.reporter = new Reporter();
     await markStatic(site, options);
+    await buildDstIndex(site,options);
     await copyStatic(site, {...options, dryRun:true});
 
     // await printAll(es);

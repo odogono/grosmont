@@ -14,6 +14,7 @@ import { selectSrcByExt } from '../query';
 import { Site } from "../site";
 import { ProcessOptions } from "../types";
 import { debug, info, setLocation } from '../reporter';
+import { mimeFromExtension } from '../util';
 
 
 const Label = '/processor/mark';
@@ -83,7 +84,7 @@ export async function process(site: Site, options: MarkOptions) {
 
         if (mime === undefined) {
             const ext = Path.extname(url);
-            mime = Mime.lookup(ext);
+            mime = mimeFromExtension(ext);
         }
 
         // set the mime type

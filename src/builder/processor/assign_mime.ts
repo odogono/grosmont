@@ -4,7 +4,7 @@ import Mime from 'mime-types';
 
 import { Entity } from "../../es";
 import { Site } from '../site';
-import { applyMeta, mapToTargetMime } from '../util';
+import { applyMeta, mapToTargetMime, mimeFromExtension } from '../util';
 import { ProcessOptions } from '../types';
 import { selectFiles } from '../query';
 import { setLocation, info } from '../reporter';
@@ -58,13 +58,3 @@ export async function process(site: Site, options: ProcessOptions = {}) {
 
 
 
-
-
-
-function mimeFromExtension(ext: string) {
-    return Mime.lookup(ext);
-}
-
-export function extensionFromMime(mime: string) {
-    return Mime.extension(mime);
-}

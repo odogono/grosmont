@@ -89,12 +89,16 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
     //         log('srcidx', key);
     //     }
     // }
-    // function printDstIndex(site:Site, options:ProcessOptions){
-    //     const idx = site.getDstIndex();
-    //     for( const key of idx.index.keys() ){
-    //         log('dstidx', key);
-    //     }
-    // }
+    function printDstIndex(site:Site, options:ProcessOptions){
+        const idx = site.getDstIndex();
+        for( const key of idx.keys() ){
+            log('dstidx', key);
+        }
+    }
+
+    function here(site:Site){
+        log('here!');
+    }
 
     const beautify = options.beautify ?? false;
 
@@ -117,8 +121,9 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
         ['/processor/apply_tags', 0, { type: 'layout' }],
         ['/processor/mdx/resolve_meta'],
         ['/processor/build_dst_index', 0, { onlyUpdated: false }],
-
-
+        
+        // [here],
+        
         ['/processor/scss', 0, { renderScss: true }],
         ['/processor/jsx/eval'],
         ['/processor/mdx/eval'],
@@ -127,12 +132,13 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
 
         ['/processor/client_code'],
 
-        ['/processor/build_dst_index', 0, { onlyUpdated: false }],
+        // [printDstIndex, -5],
 
-        ['/processor/js/render', 0, { beautify: true }],
+        ['/processor/build_dst_index', -6, { onlyUpdated: false, overwrite: false }],
+
+        ['/processor/js/render', -8, { beautify: true }],
         
-        
-        ['/processor/build_dst_index', 0, { onlyUpdated: false }],
+        ['/processor/build_dst_index', -10, { onlyUpdated: false, overwrite: false }],
 
         ['/processor/write', -100],
         ['/processor/static/copy', -101],

@@ -18,7 +18,6 @@ import {
 import {
     PageLink,
     PageLinks,
-    SiteIndex,
     TranspileProps,
     ProcessOptions,
     DependencyType,
@@ -37,6 +36,7 @@ import { toInteger } from '@odgn/utils';
 import { useServerEffect } from '../jsx/server_effect';
 import { buildProcessors, OutputES } from '../..';
 import { info } from '../../reporter';
+import { SiteIndex } from '../../site_index';
 
 const log = (...args) => console.log('[/processor/mdx/util]', ...args);
 
@@ -202,7 +202,7 @@ export async function buildPageLinks(es: QueryableEntitySet, linkIndex: SiteInde
     let result: PageLinks = new Map<string, PageLink>();
 
 
-    for (const [url, [eid, type, child]] of linkIndex.index) {
+    for (const [url, [eid, type, child]] of linkIndex.keyIndex) {
         if (type === 'external') {
             result.set(url, { url });
         } else {
@@ -233,10 +233,10 @@ export function getEntityImportUrlFromPath(fileIndex: SiteIndex, path: string, m
     if (fileIndex === undefined || path == '') {
         return undefined;
     }
-    let entry = fileIndex.index.get(path);
+    let entry = fileIndex.keyIndex.get(path);
     if (entry === undefined) {
         // attempt to find without ext
-        for (const [url, idxEntry] of fileIndex.index) {
+        for (const [url, idxEntry] of fileIndex.keyIndex) {
             let ext = Path.extname(url);
             let wit = url.substring(0, url.length - ext.length);
             if (path === wit) {
