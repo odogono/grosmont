@@ -16,10 +16,18 @@ import {
 
 import { isObject, slugify, stringify, toInteger } from '@odgn/utils';
 import { Site } from './site';
-import { findEntityBySrcUrl, FindEntityOptions, insertDependency, selectTagBySlug } from './query';
+import { 
+    findEntityBySrcUrl, 
+    FindEntityOptions, 
+    insertDependency, 
+    selectTagBySlug,
+    getLayoutFromDependency,
+    getDependencyComponents
+} from './query';
 import { applyMeta, createTag, uriToPath, resolveUrlPath, parseComponentUrl } from './util';
 import { isString } from '@odgn/utils';
 import { BitField, toValues as bfToValues } from '@odgn/utils/bitfield';
+import { getComponentEntityId } from 'odgn-entity/src/component';
 
 
 
@@ -305,6 +313,8 @@ async function applyLayout(es: QueryableEntitySet, e: Entity, url: string, optio
 
     url = resolveUrlPath(url, srcUrl);
 
+    
+
     // find the entity matching the layout
     const layoutEid = await findEntityBySrcUrl(es, url, options);
 
@@ -315,7 +325,28 @@ async function applyLayout(es: QueryableEntitySet, e: Entity, url: string, optio
     }
 
     if (layoutEid !== undefined) {
+        
+        // get existing layout dependency for this e
+        // only one layout is allowed
+        let existing = await getDependencyComponents(es, e.id, ['layout'] );
+
+        // log('[applyLayout]', 'existing', existing);
+        // log('[applyLayout]', 'adding from', e.id, 'to', layoutEid);
+
+        let removeEids = [];
+        for( const com of existing ){
+            if( com.dst !== layoutEid ){
+                removeEids.push( getComponentEntityId(com) );
+            }
+        }
+
+        // delete the un-needed layout dep entity
+        if( removeEids.length > 0 ){
+            await es.removeEntity( removeEids );
+        }
+
         await insertDependency(es, e.id, layoutEid, 'layout');
+
     } else {
         log('[applyLayout]', 'could not find layout for', url);
         log('[applyLayout]', 'reading from', srcUrl);

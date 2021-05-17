@@ -1,5 +1,6 @@
 import { suite } from 'uvu';
 import assert from 'uvu/assert';
+import { parseEntity } from '../../../src/builder/config';
 import { addSrc, beforeEach, printAll, process } from '../../helpers';
 
 const test = suite('/processor/mdx/master');
@@ -69,12 +70,12 @@ import { e, layout } from '@site';
     Hello {e.Title.title}, layout is {layout.Title.title}
         `);
 
-    await process(site, {...options, beautify:true} );
+    await process(site, { ...options, beautify: true });
 
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
 
     assert.equal(e.Output.data,
-`<html lang="en">
+        `<html lang="en">
 
 <head>
     <title>Main Page</title>
@@ -120,9 +121,48 @@ Main Page
 
     let e = await site.getEntityBySrc('file:///pages/main.mdx');
 
-    log( e.Output.data );
+    log(e.Output.data);
 
 });
+
+
+test('override layout from parent', async ({ es, site, options }) => {
+    await addSrc(site, 'file:///layout/first.mdx', `
+        <body><h1>1st</h1>{children}</body>
+    `, { isRenderable: false });
+    await addSrc(site, 'file:///layout/second.mdx', `
+        <body><h1>2nd</h1>{children}</body>
+    `, { isRenderable: false });
+    await addSrc(site, 'file:///layout/third.mdx', `
+        <body><h1>3rd</h1>{children}</body>
+    `, { isRenderable: false });
+
+    await parseEntity(site, `
+    src: file:///dir.e.yaml
+    layout: /layout/first
+    `);
+
+    await parseEntity(site, `
+    src: file:///pages/dir.e.yaml
+    layout: /layout/second
+    `);
+
+    await addSrc(site, 'file:///pages/main.mdx', `
+---
+layout: /layout/third
+dst: /main.html
+---
+Main Page`);
+
+    await process(site, options);
+
+    let e = await site.getEntityBySrc('file:///pages/main.mdx');
+
+    assert.equal(e.Output.data,
+        `<body><p><h1>3rd</h1><p>Main Page</p></p></body>`);
+
+});
+
 
 
 test.run();

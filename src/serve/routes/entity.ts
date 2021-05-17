@@ -59,6 +59,7 @@ export default async function routes(app, { config: { site, process, processOutp
         
         if (eid === undefined) {
             req.log.warn(`${path} ${eid} not found`);
+
             return reply.code(404).send('not found');
         }
         
@@ -67,7 +68,6 @@ export default async function routes(app, { config: { site, process, processOutp
         let outputEntry = await site.getEntityOutput(eid);
         
         if (outputEntry === undefined) {
-            // let [srcPath, srcMime] = site.getSrcIndex().getByEid(eid, true);
 
             return reply.code(404).send(`/output not found for ${eid}`);
         }

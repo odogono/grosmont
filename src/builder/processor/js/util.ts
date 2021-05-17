@@ -2,7 +2,7 @@ import Util from 'util';
 import Path from 'path';
 import {
     getComponentDefId, getComponentEntityId, toComponentId,
-    Entity, EntityId, isEntityId,
+    Entity, EntityId, isEntityId, isEntity,
     QueryableEntitySet,
     StatementArgs
 } from "../../../es";
@@ -78,6 +78,7 @@ export function createRenderContext(site: Site, e: Entity, options: ProcessOptio
         processEntities: processEntities(site, e, options),
         fetchEntities: fetchEntities(site, e, options),
         resolveUrl: resolveUrl(site, e),
+        resolveCanonicalUrl: resolveCanonicalUrl(site,e),
         formatDate,
     };
 
@@ -85,10 +86,40 @@ export function createRenderContext(site: Site, e: Entity, options: ProcessOptio
 }
 
 
+function resolveCanonicalUrl(site: Site, e: Entity) {
+    return (q: EntityId | Entity | string) => {
+        let eid = isEntity(q) ? (q as Entity).id : isEntityId(q) ? (q as EntityId) : 0;
+
+        let siteUrl = site.getUrl();
+
+        if ( eid !== 0) {
+            let result = site.getEntityDstUrl(eid);
+            if( result === undefined ){
+                result = `${siteUrl}{{e://${e.id}/component/dst#url}}`;
+            }
+            
+            return new URL(result, siteUrl).href;
+        }
+        
+        let entry = resolveSiteUrl(site, q as string, q as string);
+        
+        if (entry === undefined) {
+            return '';
+        }
+        let [src, dst, _eid, mime, bf] = entry;
+
+        let result = new URL(dst, siteUrl).href; 
+        
+        return result;
+    };
+}
+
 function resolveUrl(site: Site, e: Entity) {
-    return (q: EntityId | string) => {
-        if (isEntityId(q)) {
-            let result = site.getEntityDstUrl(q as EntityId);
+    return (q: EntityId | Entity | string) => {
+        let eid = isEntity(q) ? (q as Entity).id : isEntityId(q) ? (q as EntityId) : 0;
+
+        if ( eid !== 0) {
+            let result = site.getEntityDstUrl(eid);
             if( result === undefined ){
                 result = `{{e://${e.id}/component/dst#url}}`;
             }
@@ -101,7 +132,7 @@ function resolveUrl(site: Site, e: Entity) {
         if (entry === undefined) {
             return '';
         }
-        let [src, dst, eid, mime, bf] = entry;
+        let [src, dst, _eid, mime, bf] = entry;
         return dst;
     }
 }
