@@ -96,7 +96,7 @@ async function processEntity(site: Site, e: Entity, options: EvalMdxOptions): Pr
         // most likely js
         if (!isUrlInternal(path)) {
             // log('[resolveImportLocal]', 'ext', path);
-            let remove = path === '@site' ? false : true;
+            let remove = (path === '@site' || path === '@ecset') ? false : true;
             if (remove) {
                 links.push(['ext', undefined, path, undefined, 'script']);
             }

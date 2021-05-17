@@ -2,6 +2,7 @@ import Path from 'path';
 import Eval from 'eval';
 import { transformModulesToCJS } from './transpile';
 
+import * as EcSet from '../es';
 
 export interface EvalOptions {
     require?: (path, fullPath) => any;
@@ -32,6 +33,10 @@ export function evalCode(code: string, path: string, options: EvalOptions = {}) 
         if (requirePath === '@odgn/grosmont' || requirePath === '@site') {
             // console.log('[evalCode]', 'context', {context});
             return context;
+        }
+
+        if( requirePath === '@ecset' ){
+            return EcSet;
         }
 
         const fullPath = Path.resolve(Path.dirname(path), requirePath);

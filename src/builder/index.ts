@@ -107,7 +107,7 @@ export function getProcessorSpec(site: Site, options: BuildProcessOptions = {}):
     return [
         ['/query#clearUpdates', 1000],
         ['/query#clearErrors', 999],
-        ['/processor/file'],
+        ['/processor/file', 100],
 
         ['/processor/mark#statics'],
         ['/processor/mark#jsx'],
